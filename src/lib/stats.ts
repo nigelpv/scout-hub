@@ -1,5 +1,4 @@
 import { ScoutingEntry, TeamStats } from './types';
-import { getEntries } from './storage';
 
 function calculateMedian(values: number[]): number {
     if (values.length === 0) return 0;
@@ -17,12 +16,12 @@ function calculateStdDev(values: number[], mean: number): number {
     return Math.sqrt(avgSquareDiff);
 }
 
-export function calculateTeamStats(teamNumber: number): TeamStats | null {
-    const entries = getEntries().filter(e => e.teamNumber === teamNumber);
-
+// Calculate stats from an array of entries (used by components that already have the data)
+export function calculateTeamStatsFromEntries(entries: ScoutingEntry[]): TeamStats | null {
     if (entries.length === 0) return null;
 
     const matchesPlayed = entries.length;
+    const teamNumber = entries[0].teamNumber;
 
     // Auto Stats
     const autoCyclesValues = entries.map(e => e.autoCycles);
@@ -66,7 +65,7 @@ export function calculateTeamStats(teamNumber: number): TeamStats | null {
     const avgReliability = entries.reduce((sum, e) => sum + e.reliability, 0) / matchesPlayed;
 
     // Score
-    const climbPoints = {
+    const climbPoints: Record<string, number> = {
         'none': 0,
         'attempted': 1,
         'low': 3,
@@ -74,9 +73,8 @@ export function calculateTeamStats(teamNumber: number): TeamStats | null {
         'high': 10
     };
 
-    const avgClimbPoints = entries.reduce((sum, e) => sum + climbPoints[e.climbResult], 0) / matchesPlayed;
+    const avgClimbPoints = entries.reduce((sum, e) => sum + (climbPoints[e.climbResult] || 0), 0) / matchesPlayed;
 
-    // Adjusted Total Score Formula
     const totalScore = (
         avgAutoCycles * 2 +
         avgTeleopCycles * 1.5 +
@@ -84,7 +82,7 @@ export function calculateTeamStats(teamNumber: number): TeamStats | null {
         avgReliability * 5 +
         avgDriverSkill * 3 +
         avgRobotSpeed * 2 +
-        (autoPreloadSuccessRate / 20) // Bonus points
+        (autoPreloadSuccessRate / 20)
     );
 
     return {
@@ -109,18 +107,20 @@ export function calculateTeamStats(teamNumber: number): TeamStats | null {
     };
 }
 
-export function getAllTeamStats(): TeamStats[] {
-    const entries = getEntries();
+// Calculate all team stats from an array of all entries
+export function getAllTeamStatsFromEntries(entries: ScoutingEntry[]): TeamStats[] {
     const teamNumbers = [...new Set(entries.map(e => e.teamNumber))];
 
     return teamNumbers
-        .map(num => calculateTeamStats(num))
+        .map(num => {
+            const teamEntries = entries.filter(e => e.teamNumber === num);
+            return calculateTeamStatsFromEntries(teamEntries);
+        })
         .filter((stats): stats is TeamStats => stats !== null)
         .sort((a, b) => b.totalScore - a.totalScore);
 }
 
-export function getUniqueTeams(): number[] {
-    const entries = getEntries();
+export function getUniqueTeamsFromEntries(entries: ScoutingEntry[]): number[] {
     return [...new Set(entries.map(e => e.teamNumber))].sort((a, b) => a - b);
 }
 

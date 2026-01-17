@@ -1,11 +1,24 @@
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { ClipboardList, Users, Trophy, Database } from 'lucide-react';
+import { ClipboardList, Users, Trophy, Database, Loader2 } from 'lucide-react';
 import { getEntries } from '@/lib/storage';
-import { getUniqueTeams } from '@/lib/stats';
+import { getUniqueTeamsFromEntries } from '@/lib/stats';
 
 const Index = () => {
-  const entriesCount = getEntries().length;
-  const teamsCount = getUniqueTeams().length;
+  const [entriesCount, setEntriesCount] = useState(0);
+  const [teamsCount, setTeamsCount] = useState(0);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const loadStats = async () => {
+      setLoading(true);
+      const entries = await getEntries();
+      setEntriesCount(entries.length);
+      setTeamsCount(getUniqueTeamsFromEntries(entries).length);
+      setLoading(false);
+    };
+    loadStats();
+  }, []);
 
   return (
     <div className="min-h-screen bg-background p-4 pb-8">
@@ -23,12 +36,20 @@ const Index = () => {
       <div className="grid grid-cols-2 gap-3 mb-8">
         <div className="stat-card text-center">
           <Database className="w-5 h-5 mx-auto mb-2 text-muted-foreground" />
-          <p className="font-mono text-2xl font-bold">{entriesCount}</p>
+          {loading ? (
+            <Loader2 className="w-6 h-6 animate-spin mx-auto" />
+          ) : (
+            <p className="font-mono text-2xl font-bold">{entriesCount}</p>
+          )}
           <p className="text-xs text-muted-foreground">Entries</p>
         </div>
         <div className="stat-card text-center">
           <Users className="w-5 h-5 mx-auto mb-2 text-muted-foreground" />
-          <p className="font-mono text-2xl font-bold">{teamsCount}</p>
+          {loading ? (
+            <Loader2 className="w-6 h-6 animate-spin mx-auto" />
+          ) : (
+            <p className="font-mono text-2xl font-bold">{teamsCount}</p>
+          )}
           <p className="text-xs text-muted-foreground">Teams</p>
         </div>
       </div>
@@ -62,7 +83,7 @@ const Index = () => {
 
       {/* Footer */}
       <p className="text-center text-xs text-muted-foreground mt-8">
-        Data stored locally on device
+        Data synced across all devices
       </p>
     </div>
   );

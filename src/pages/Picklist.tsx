@@ -1,16 +1,17 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { GripVertical, RotateCcw, Star, Lock, Unlock, Trash2, X } from 'lucide-react';
+import { GripVertical, RotateCcw, Star, Lock, Unlock, Trash2, X, Loader2 } from 'lucide-react';
 import { PageHeader } from '@/components/layout/PageHeader';
-import { getAllTeamStats, getRatingColor } from '@/lib/stats';
-import { getPicklist, savePicklist } from '@/lib/storage';
+import { getAllTeamStatsFromEntries, getRatingColor } from '@/lib/stats';
+import { getPicklist, savePicklist, removeFromPicklist, getEntries } from '@/lib/storage';
 import { PicklistTeam, TeamStats } from '@/lib/types';
 import { toast } from 'sonner';
 
 const Picklist = () => {
-  const allStats = getAllTeamStats();
+  const [allStats, setAllStats] = useState<TeamStats[]>([]);
   const [picklist, setPicklist] = useState<PicklistTeam[]>([]);
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
+  const [loading, setLoading] = useState(true);
 
   // Admin Mode State
   const [isAdmin, setIsAdmin] = useState(false);
@@ -18,29 +19,42 @@ const Picklist = () => {
   const [password, setPassword] = useState('');
 
   useEffect(() => {
-    const saved = getPicklist();
-    if (saved.length > 0) {
-      // Merge saved order with current teams
-      const savedTeamNumbers = new Set(saved.map(p => p.teamNumber));
-      const newTeams = allStats
-        .filter(s => !savedTeamNumbers.has(s.teamNumber))
-        .map((s, i) => ({
-          teamNumber: s.teamNumber,
-          rank: saved.length + i + 1,
-          manualOverride: false,
-        }));
+    const loadData = async () => {
+      setLoading(true);
 
-      setPicklist([...saved, ...newTeams]);
-    } else {
-      // Initialize from stats
-      setPicklist(
-        allStats.map((s, i) => ({
-          teamNumber: s.teamNumber,
-          rank: i + 1,
-          manualOverride: false,
-        }))
-      );
-    }
+      // Load entries and calculate stats
+      const entries = await getEntries();
+      const stats = getAllTeamStatsFromEntries(entries);
+      setAllStats(stats);
+
+      // Load picklist
+      const saved = await getPicklist();
+      if (saved.length > 0) {
+        // Merge saved order with current teams
+        const savedTeamNumbers = new Set(saved.map(p => p.teamNumber));
+        const newTeams = stats
+          .filter(s => !savedTeamNumbers.has(s.teamNumber))
+          .map((s, i) => ({
+            teamNumber: s.teamNumber,
+            rank: saved.length + i + 1,
+            manualOverride: false,
+          }));
+
+        setPicklist([...saved, ...newTeams]);
+      } else {
+        // Initialize from stats
+        setPicklist(
+          stats.map((s, i) => ({
+            teamNumber: s.teamNumber,
+            rank: i + 1,
+            manualOverride: false,
+          }))
+        );
+      }
+
+      setLoading(false);
+    };
+    loadData();
   }, []);
 
   const getStatsForTeam = (teamNumber: number): TeamStats | undefined => {
@@ -70,12 +84,12 @@ const Picklist = () => {
     setDraggedIndex(index);
   };
 
-  const handleDragEnd = () => {
+  const handleDragEnd = async () => {
     setDraggedIndex(null);
-    savePicklist(picklist);
+    await savePicklist(picklist);
   };
 
-  const handleTouchMove = (index: number, direction: 'up' | 'down') => {
+  const handleTouchMove = async (index: number, direction: 'up' | 'down') => {
     const newIndex = direction === 'up' ? index - 1 : index + 1;
     if (newIndex < 0 || newIndex >= picklist.length) return;
 
@@ -89,10 +103,10 @@ const Picklist = () => {
     });
 
     setPicklist(newList);
-    savePicklist(newList);
+    await savePicklist(newList);
   };
 
-  const resetToAuto = () => {
+  const resetToAuto = async () => {
     if (window.confirm('Reset order to default ranking?')) {
       const newList = allStats.map((s, i) => ({
         teamNumber: s.teamNumber,
@@ -100,7 +114,7 @@ const Picklist = () => {
         manualOverride: false,
       }));
       setPicklist(newList);
-      savePicklist(newList);
+      await savePicklist(newList);
     }
   };
 
@@ -118,18 +132,25 @@ const Picklist = () => {
     }
   };
 
-  const handleDeleteTeam = (index: number) => {
+  const handleDeleteTeam = async (index: number) => {
     if (window.confirm('Remove this team from picklist?')) {
-      const newList = [...picklist];
-      newList.splice(index, 1);
+      const teamNumber = picklist[index].teamNumber;
+      const success = await removeFromPicklist(teamNumber, password);
 
-      // Update ranks
-      newList.forEach((item, i) => {
-        item.rank = i + 1;
-      });
+      if (success) {
+        const newList = [...picklist];
+        newList.splice(index, 1);
 
-      setPicklist(newList);
-      savePicklist(newList);
+        // Update ranks
+        newList.forEach((item, i) => {
+          item.rank = i + 1;
+        });
+
+        setPicklist(newList);
+        toast.success('Team removed from picklist');
+      } else {
+        toast.error('Failed to remove team');
+      }
     }
   };
 
@@ -137,6 +158,17 @@ const Picklist = () => {
     setIsAdmin(false);
     toast.info('Exited admin mode');
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background">
+        <PageHeader title="Picklist" />
+        <div className="flex items-center justify-center py-20">
+          <Loader2 className="w-8 h-8 animate-spin text-primary" />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background pb-8 relative">

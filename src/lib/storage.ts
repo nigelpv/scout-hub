@@ -1,57 +1,130 @@
+// API configuration
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
+
 import { ScoutingEntry, PicklistTeam } from './types';
 
-const ENTRIES_KEY = 'frc_scouting_entries';
-const PICKLIST_KEY = 'frc_picklist';
-const EVENT_KEY = 'frc_current_event';
+// ============ ENTRIES ============
 
-export function getEntries(): ScoutingEntry[] {
-  const data = localStorage.getItem(ENTRIES_KEY);
-  return data ? JSON.parse(data) : [];
-}
-
-export function saveEntry(entry: ScoutingEntry): void {
-  const entries = getEntries();
-  const existingIndex = entries.findIndex(e => e.id === entry.id);
-
-  if (existingIndex >= 0) {
-    entries[existingIndex] = entry;
-  } else {
-    entries.push(entry);
+export async function getEntries(): Promise<ScoutingEntry[]> {
+  try {
+    const response = await fetch(`${API_URL}/entries`);
+    if (!response.ok) throw new Error('Failed to fetch entries');
+    return await response.json();
+  } catch (error) {
+    console.error('Error fetching entries:', error);
+    return [];
   }
-
-  localStorage.setItem(ENTRIES_KEY, JSON.stringify(entries));
 }
 
-export function deleteEntry(id: string): void {
-  const entries = getEntries().filter(e => e.id !== id);
-  localStorage.setItem(ENTRIES_KEY, JSON.stringify(entries));
+export async function getEntriesForTeam(teamNumber: number): Promise<ScoutingEntry[]> {
+  try {
+    const response = await fetch(`${API_URL}/entries/team/${teamNumber}`);
+    if (!response.ok) throw new Error('Failed to fetch team entries');
+    return await response.json();
+  } catch (error) {
+    console.error('Error fetching team entries:', error);
+    return [];
+  }
 }
 
-export function getEntriesForTeam(teamNumber: number): ScoutingEntry[] {
-  return getEntries().filter(e => e.teamNumber === teamNumber);
+export async function saveEntry(entry: ScoutingEntry): Promise<boolean> {
+  try {
+    const response = await fetch(`${API_URL}/entries`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(entry),
+    });
+    return response.ok;
+  } catch (error) {
+    console.error('Error saving entry:', error);
+    return false;
+  }
 }
 
-export function getEntriesForMatch(matchNumber: number): ScoutingEntry[] {
-  return getEntries().filter(e => e.matchNumber === matchNumber);
+export async function deleteEntry(id: string, password: string): Promise<boolean> {
+  try {
+    const response = await fetch(`${API_URL}/entries/${id}`, {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ password }),
+    });
+    return response.ok;
+  } catch (error) {
+    console.error('Error deleting entry:', error);
+    return false;
+  }
 }
 
-export function getPicklist(): PicklistTeam[] {
-  const data = localStorage.getItem(PICKLIST_KEY);
-  return data ? JSON.parse(data) : [];
+// ============ PICKLIST ============
+
+export async function getPicklist(): Promise<PicklistTeam[]> {
+  try {
+    const response = await fetch(`${API_URL}/picklist`);
+    if (!response.ok) throw new Error('Failed to fetch picklist');
+    return await response.json();
+  } catch (error) {
+    console.error('Error fetching picklist:', error);
+    return [];
+  }
 }
 
-export function savePicklist(picklist: PicklistTeam[]): void {
-  localStorage.setItem(PICKLIST_KEY, JSON.stringify(picklist));
+export async function savePicklist(picklist: PicklistTeam[]): Promise<boolean> {
+  try {
+    const response = await fetch(`${API_URL}/picklist`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(picklist),
+    });
+    return response.ok;
+  } catch (error) {
+    console.error('Error saving picklist:', error);
+    return false;
+  }
 }
+
+export async function addToPicklist(teamNumber: number): Promise<boolean> {
+  try {
+    const response = await fetch(`${API_URL}/picklist`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ teamNumber }),
+    });
+    return response.ok;
+  } catch (error) {
+    console.error('Error adding to picklist:', error);
+    return false;
+  }
+}
+
+export async function removeFromPicklist(teamNumber: number, password: string): Promise<boolean> {
+  try {
+    const response = await fetch(`${API_URL}/picklist/${teamNumber}`, {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ password }),
+    });
+    return response.ok;
+  } catch (error) {
+    console.error('Error removing from picklist:', error);
+    return false;
+  }
+}
+
+// ============ UTILITIES ============
+
+export function generateId(): string {
+  return `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+}
+
+// Event storage (still using localStorage for this simple preference)
+const EVENT_KEY = 'scout_current_event';
 
 export function getCurrentEvent(): string {
+  if (typeof window === 'undefined') return '';
   return localStorage.getItem(EVENT_KEY) || '';
 }
 
 export function setCurrentEvent(event: string): void {
+  if (typeof window === 'undefined') return;
   localStorage.setItem(EVENT_KEY, event);
-}
-
-export function generateId(): string {
-  return `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 }
