@@ -70,25 +70,20 @@
 }
 
 @layer components {
+
   /* Large touch-friendly button */
   .touch-button {
-    @apply min-h-[52px] px-6 rounded-xl font-semibold text-lg
-           active:scale-[0.98] transition-transform duration-75
-           flex items-center justify-center gap-2;
+    @apply min-h-[52px] px-6 rounded-xl font-semibold text-lg active:scale-[0.98] transition-transform duration-75 flex items-center justify-center gap-2;
   }
 
   /* Counter button for +/- */
   .counter-btn {
-    @apply w-14 h-14 rounded-xl font-bold text-2xl
-           flex items-center justify-center
-           active:scale-95 transition-transform duration-75;
+    @apply w-14 h-14 rounded-xl font-bold text-2xl flex items-center justify-center active:scale-95 transition-transform duration-75;
   }
 
   /* Rating button */
   .rating-btn {
-    @apply w-12 h-12 rounded-lg font-bold text-lg
-           flex items-center justify-center
-           transition-all duration-150;
+    @apply w-12 h-12 rounded-lg font-bold text-lg flex items-center justify-center transition-all duration-150;
   }
 
   /* Stat card */

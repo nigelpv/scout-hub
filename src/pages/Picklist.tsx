@@ -1,14 +1,21 @@
 import { useState, useEffect } from 'react';
-import { GripVertical, RotateCcw, Star } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { GripVertical, RotateCcw, Star, Lock, Unlock, Trash2, X } from 'lucide-react';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { getAllTeamStats, getRatingColor } from '@/lib/stats';
 import { getPicklist, savePicklist } from '@/lib/storage';
 import { PicklistTeam, TeamStats } from '@/lib/types';
+import { toast } from 'sonner';
 
 const Picklist = () => {
   const allStats = getAllTeamStats();
   const [picklist, setPicklist] = useState<PicklistTeam[]>([]);
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
+
+  // Admin Mode State
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [showAuth, setShowAuth] = useState(false);
+  const [password, setPassword] = useState('');
 
   useEffect(() => {
     const saved = getPicklist();
@@ -22,7 +29,7 @@ const Picklist = () => {
           rank: saved.length + i + 1,
           manualOverride: false,
         }));
-      
+
       setPicklist([...saved, ...newTeams]);
     } else {
       // Initialize from stats
@@ -41,6 +48,7 @@ const Picklist = () => {
   };
 
   const handleDragStart = (index: number) => {
+    if (isAdmin) return; // Disable drag in admin mode to avoid conflicts
     setDraggedIndex(index);
   };
 
@@ -52,7 +60,7 @@ const Picklist = () => {
     const [dragged] = newList.splice(draggedIndex, 1);
     dragged.manualOverride = true;
     newList.splice(index, 0, dragged);
-    
+
     // Update ranks
     newList.forEach((item, i) => {
       item.rank = i + 1;
@@ -75,7 +83,7 @@ const Picklist = () => {
     const [item] = newList.splice(index, 1);
     item.manualOverride = true;
     newList.splice(newIndex, 0, item);
-    
+
     newList.forEach((item, i) => {
       item.rank = i + 1;
     });
@@ -85,29 +93,103 @@ const Picklist = () => {
   };
 
   const resetToAuto = () => {
-    const newList = allStats.map((s, i) => ({
-      teamNumber: s.teamNumber,
-      rank: i + 1,
-      manualOverride: false,
-    }));
-    setPicklist(newList);
-    savePicklist(newList);
+    if (window.confirm('Reset order to default ranking?')) {
+      const newList = allStats.map((s, i) => ({
+        teamNumber: s.teamNumber,
+        rank: i + 1,
+        manualOverride: false,
+      }));
+      setPicklist(newList);
+      savePicklist(newList);
+    }
+  };
+
+  // Admin Functions
+  const handleAuth = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (password === '16782473') {
+      setIsAdmin(true);
+      setShowAuth(false);
+      setPassword('');
+      toast.success('Admin mode enabled');
+    } else {
+      toast.error('Incorrect password');
+      setPassword('');
+    }
+  };
+
+  const handleDeleteTeam = (index: number) => {
+    if (window.confirm('Remove this team from picklist?')) {
+      const newList = [...picklist];
+      newList.splice(index, 1);
+
+      // Update ranks
+      newList.forEach((item, i) => {
+        item.rank = i + 1;
+      });
+
+      setPicklist(newList);
+      savePicklist(newList);
+    }
+  };
+
+  const exitAdmin = () => {
+    setIsAdmin(false);
+    toast.info('Exited admin mode');
   };
 
   return (
-    <div className="min-h-screen bg-background pb-8">
-      <PageHeader 
-        title="Picklist" 
+    <div className="min-h-screen bg-background pb-8 relative">
+      <PageHeader
+        title={isAdmin ? "Picklist (Admin)" : "Picklist"}
         rightContent={
-          <button
-            onClick={resetToAuto}
-            className="p-2 rounded-lg hover:bg-secondary transition-colors"
-            title="Reset to auto-ranking"
-          >
-            <RotateCcw className="w-5 h-5" />
-          </button>
+          <div className="flex gap-2">
+            {!isAdmin && (
+              <button
+                onClick={resetToAuto}
+                className="p-2 rounded-lg hover:bg-secondary transition-colors"
+                title="Reset to auto-ranking"
+              >
+                <RotateCcw className="w-5 h-5" />
+              </button>
+            )}
+            <button
+              onClick={() => isAdmin ? exitAdmin() : setShowAuth(true)}
+              className={`p-2 rounded-lg transition-colors ${isAdmin ? 'bg-destructive/10 text-destructive' : 'hover:bg-secondary'}`}
+              title={isAdmin ? "Lock" : "Unlock Admin"}
+            >
+              {isAdmin ? <Unlock className="w-5 h-5" /> : <Lock className="w-5 h-5" />}
+            </button>
+          </div>
         }
       />
+
+      {/* Auth Modal */}
+      {showAuth && (
+        <div className="fixed inset-0 z-50 bg-background/80 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-card border border-border rounded-xl shadow-lg p-6 max-w-xs w-full">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="font-bold text-lg">Admin Access</h3>
+              <button onClick={() => setShowAuth(false)} className="text-muted-foreground hover:text-foreground">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <form onSubmit={handleAuth} className="space-y-4">
+              <input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="Enter password"
+                autoFocus
+                className="w-full h-10 px-3 rounded-md bg-secondary border border-transparent focus:border-primary outline-none"
+              />
+              <button type="submit" className="w-full h-10 bg-primary text-primary-foreground rounded-md font-medium">
+                Unlock
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
 
       <div className="p-4">
         {picklist.length === 0 ? (
@@ -124,28 +206,40 @@ const Picklist = () => {
               return (
                 <div
                   key={item.teamNumber}
-                  draggable
+                  draggable={!isAdmin}
                   onDragStart={() => handleDragStart(index)}
                   onDragOver={(e) => handleDragOver(e, index)}
                   onDragEnd={handleDragEnd}
-                  className={`stat-card flex items-center gap-3 cursor-grab active:cursor-grabbing transition-all ${
-                    draggedIndex === index ? 'opacity-50 scale-[0.98]' : ''
-                  }`}
+                  className={`stat-card flex items-center gap-3 transition-all ${!isAdmin ? 'cursor-grab active:cursor-grabbing' : ''
+                    } ${draggedIndex === index ? 'opacity-50 scale-[0.98]' : ''
+                    }`}
                 >
-                  {/* Drag Handle */}
-                  <div className="touch-none">
-                    <GripVertical className="w-5 h-5 text-muted-foreground" />
+                  {/* Drag Handle or Delete Button */}
+                  <div className="touch-none flex-shrink-0">
+                    {isAdmin ? (
+                      <button
+                        onClick={() => handleDeleteTeam(index)}
+                        className="p-1 rounded text-destructive hover:bg-destructive/10"
+                      >
+                        <Trash2 className="w-5 h-5" />
+                      </button>
+                    ) : (
+                      <GripVertical className="w-5 h-5 text-muted-foreground" />
+                    )}
                   </div>
 
                   {/* Rank */}
-                  <div className={`w-8 h-8 rounded-full flex items-center justify-center font-mono font-bold text-sm ${
-                    index < 3 ? 'bg-primary text-primary-foreground' : 'bg-secondary'
-                  }`}>
+                  <div className={`w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center font-mono font-bold text-sm ${index < 3 ? 'bg-primary text-primary-foreground' : 'bg-secondary'
+                    }`}>
                     {item.rank}
                   </div>
 
                   {/* Team Info */}
-                  <div className="flex-1 min-w-0">
+                  <Link
+                    to={`/team/${item.teamNumber}`}
+                    className="flex-1 min-w-0 hover:opacity-80 transition-opacity"
+                    onClick={(e) => isAdmin && e.preventDefault()} // Disable navigation in admin mode
+                  >
                     <div className="flex items-center gap-2">
                       <span className="font-mono text-lg font-bold">
                         {item.teamNumber}
@@ -162,25 +256,27 @@ const Picklist = () => {
                         Score: {stats.totalScore}
                       </span>
                     </div>
-                  </div>
+                  </Link>
 
-                  {/* Touch Controls */}
-                  <div className="flex flex-col gap-1">
-                    <button
-                      onClick={() => handleTouchMove(index, 'up')}
-                      disabled={index === 0}
-                      className="w-8 h-8 rounded bg-secondary flex items-center justify-center disabled:opacity-30"
-                    >
-                      ↑
-                    </button>
-                    <button
-                      onClick={() => handleTouchMove(index, 'down')}
-                      disabled={index === picklist.length - 1}
-                      className="w-8 h-8 rounded bg-secondary flex items-center justify-center disabled:opacity-30"
-                    >
-                      ↓
-                    </button>
-                  </div>
+                  {/* Touch Controls (Only when not Admin) */}
+                  {!isAdmin && (
+                    <div className="flex flex-col gap-1">
+                      <button
+                        onClick={() => handleTouchMove(index, 'up')}
+                        disabled={index === 0}
+                        className="w-8 h-8 rounded bg-secondary flex items-center justify-center disabled:opacity-30"
+                      >
+                        ↑
+                      </button>
+                      <button
+                        onClick={() => handleTouchMove(index, 'down')}
+                        disabled={index === picklist.length - 1}
+                        className="w-8 h-8 rounded bg-secondary flex items-center justify-center disabled:opacity-30"
+                      >
+                        ↓
+                      </button>
+                    </div>
+                  )}
                 </div>
               );
             })}
@@ -188,7 +284,7 @@ const Picklist = () => {
         )}
 
         <p className="text-center text-xs text-muted-foreground mt-6">
-          Drag or use arrows to reorder • <Star className="w-3 h-3 inline text-warning fill-warning" /> = manual override
+          {isAdmin ? 'Tap trash icon to remove teams' : 'Drag or use arrows to reorder • Lock icon for admin'}
         </p>
       </div>
     </div>
