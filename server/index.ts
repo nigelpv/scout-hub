@@ -1,16 +1,16 @@
 import express from 'express';
 import cors from 'cors';
 import { Pool } from 'pg';
-import entriesRouter from './routes/entries';
-import picklistRouter from './routes/picklist';
+import entriesRouter from './routes/entries.js';
+import picklistRouter from './routes/picklist.js';
 
 const app = express();
 const PORT = process.env.PORT || 3001;
 
 // Database connection
 export const pool = new Pool({
-    connectionString: process.env.DATABASE_URL,
-    ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
+  connectionString: process.env.DATABASE_URL,
+  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
 });
 
 // Middleware
@@ -23,14 +23,14 @@ app.use('/api/picklist', picklistRouter);
 
 // Health check
 app.get('/api/health', (req, res) => {
-    res.json({ status: 'ok', timestamp: Date.now() });
+  res.json({ status: 'ok', timestamp: Date.now() });
 });
 
 // Initialize database tables
 async function initDb() {
-    const client = await pool.connect();
-    try {
-        await client.query(`
+  const client = await pool.connect();
+  try {
+    await client.query(`
       CREATE TABLE IF NOT EXISTS scouting_entries (
         id TEXT PRIMARY KEY,
         event TEXT NOT NULL,
@@ -56,7 +56,7 @@ async function initDb() {
       );
     `);
 
-        await client.query(`
+    await client.query(`
       CREATE TABLE IF NOT EXISTS picklist (
         team_number INTEGER PRIMARY KEY,
         rank INTEGER NOT NULL,
@@ -64,16 +64,16 @@ async function initDb() {
       );
     `);
 
-        console.log('Database tables initialized');
-    } catch (err) {
-        console.error('Error initializing database:', err);
-    } finally {
-        client.release();
-    }
+    console.log('Database tables initialized');
+  } catch (err) {
+    console.error('Error initializing database:', err);
+  } finally {
+    client.release();
+  }
 }
 
 // Start server
 app.listen(PORT, async () => {
-    console.log(`Server running on port ${PORT}`);
-    await initDb();
+  console.log(`Server running on port ${PORT}`);
+  await initDb();
 });

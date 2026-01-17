@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { pool } from '../index';
+import { pool } from '../index.js';
 
 const router = Router();
 
@@ -9,7 +9,7 @@ const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || '16782473';
 router.get('/', async (req, res) => {
     try {
         const result = await pool.query('SELECT * FROM picklist ORDER BY rank ASC');
-        const picklist = result.rows.map(row => ({
+        const picklist = result.rows.map((row: any) => ({
             teamNumber: row.team_number,
             rank: row.rank,
             manualOverride: row.manual_override,

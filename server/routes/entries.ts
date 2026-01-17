@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { pool } from '../index';
+import { pool } from '../index.js';
 
 const router = Router();
 
@@ -11,7 +11,7 @@ router.get('/', async (req, res) => {
     try {
         const result = await pool.query('SELECT * FROM scouting_entries ORDER BY timestamp DESC');
         // Convert snake_case to camelCase for frontend compatibility
-        const entries = result.rows.map(row => ({
+        const entries = result.rows.map((row: any) => ({
             id: row.id,
             event: row.event,
             matchNumber: row.match_number,
@@ -49,7 +49,7 @@ router.get('/team/:teamNumber', async (req, res) => {
             'SELECT * FROM scouting_entries WHERE team_number = $1 ORDER BY timestamp DESC',
             [parseInt(teamNumber)]
         );
-        const entries = result.rows.map(row => ({
+        const entries = result.rows.map((row: any) => ({
             id: row.id,
             event: row.event,
             matchNumber: row.match_number,
