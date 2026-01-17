@@ -20,6 +20,7 @@ const TeamDetail = () => {
     const [isAdmin, setIsAdmin] = useState(false);
     const [showAuth, setShowAuth] = useState(false);
     const [password, setPassword] = useState('');
+    const [adminPassword, setAdminPassword] = useState('');
 
     const loadData = useCallback(async () => {
         setLoading(true);
@@ -37,6 +38,7 @@ const TeamDetail = () => {
     const handleAuth = (e: React.FormEvent) => {
         e.preventDefault();
         if (password === '16782473') {
+            setAdminPassword(password);
             setIsAdmin(true);
             setShowAuth(false);
             setPassword('');
@@ -49,7 +51,7 @@ const TeamDetail = () => {
 
     const handleDeleteMatch = async (id: string) => {
         if (window.confirm('Are you sure you want to delete this match? This cannot be undone.')) {
-            const success = await deleteEntry(id, password);
+            const success = await deleteEntry(id, adminPassword);
             if (success) {
                 loadData(); // Refresh stats and list
                 toast.success('Match deleted');

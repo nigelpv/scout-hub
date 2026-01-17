@@ -17,6 +17,7 @@ const Picklist = () => {
   const [isAdmin, setIsAdmin] = useState(false);
   const [showAuth, setShowAuth] = useState(false);
   const [password, setPassword] = useState('');
+  const [adminPassword, setAdminPassword] = useState('');
 
   useEffect(() => {
     const loadData = async () => {
@@ -122,6 +123,7 @@ const Picklist = () => {
   const handleAuth = (e: React.FormEvent) => {
     e.preventDefault();
     if (password === '16782473') {
+      setAdminPassword(password);
       setIsAdmin(true);
       setShowAuth(false);
       setPassword('');
@@ -135,7 +137,7 @@ const Picklist = () => {
   const handleDeleteTeam = async (index: number) => {
     if (window.confirm('Remove this team from picklist?')) {
       const teamNumber = picklist[index].teamNumber;
-      const success = await removeFromPicklist(teamNumber, password);
+      const success = await removeFromPicklist(teamNumber, adminPassword);
 
       if (success) {
         const newList = [...picklist];
