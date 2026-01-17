@@ -12,6 +12,7 @@ import { saveEntry, generateId, getCurrentEvent, setCurrentEvent } from '@/lib/s
 const ScoutMatch = () => {
     const navigate = useNavigate();
     const [saved, setSaved] = useState(false);
+    const [saving, setSaving] = useState(false);
 
     // Match info
     const [event, setEvent] = useState(getCurrentEvent());
@@ -41,11 +42,13 @@ const ScoutMatch = () => {
     const [reliability, setReliability] = useState(3);
     const [notes, setNotes] = useState('');
 
-    const handleSubmit = () => {
+    const handleSubmit = async () => {
         if (!teamNumber) {
             alert('Please enter a team number');
             return;
         }
+
+        setSaving(true);
 
         const entry: ScoutingEntry = {
             id: generateId(),
@@ -70,7 +73,14 @@ const ScoutMatch = () => {
             notes,
         };
 
-        saveEntry(entry);
+        const success = await saveEntry(entry);
+        setSaving(false);
+
+        if (!success) {
+            alert('Failed to save entry. Please try again.');
+            return;
+        }
+
         setCurrentEvent(event);
         setSaved(true);
 

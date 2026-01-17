@@ -2,9 +2,9 @@ import { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { StatBar } from '@/components/scouting/StatBar';
-import { calculateTeamStats, getRatingColor } from '@/lib/stats';
+import { calculateTeamStatsFromEntries, getRatingColor } from '@/lib/stats';
 import { getEntriesForTeam, deleteEntry } from '@/lib/storage';
-import { Target, Zap, Trophy, Shield, User, Gauge, Wrench, Lock, Unlock, Trash2, X, CircleDot } from 'lucide-react';
+import { Target, Zap, Trophy, Shield, User, Gauge, Wrench, Lock, Unlock, Trash2, X, CircleDot, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { TeamStats, ScoutingEntry } from '@/lib/types';
 
@@ -14,15 +14,19 @@ const TeamDetail = () => {
 
     const [stats, setStats] = useState<TeamStats | null>(null);
     const [entries, setEntries] = useState<ScoutingEntry[]>([]);
+    const [loading, setLoading] = useState(true);
 
     // Admin Mode State
     const [isAdmin, setIsAdmin] = useState(false);
     const [showAuth, setShowAuth] = useState(false);
     const [password, setPassword] = useState('');
 
-    const loadData = useCallback(() => {
-        setStats(calculateTeamStats(teamNum));
-        setEntries(getEntriesForTeam(teamNum));
+    const loadData = useCallback(async () => {
+        setLoading(true);
+        const teamEntries = await getEntriesForTeam(teamNum);
+        setEntries(teamEntries);
+        setStats(calculateTeamStatsFromEntries(teamEntries));
+        setLoading(false);
     }, [teamNum]);
 
     useEffect(() => {
@@ -43,11 +47,15 @@ const TeamDetail = () => {
         }
     };
 
-    const handleDeleteMatch = (id: string) => {
+    const handleDeleteMatch = async (id: string) => {
         if (window.confirm('Are you sure you want to delete this match? This cannot be undone.')) {
-            deleteEntry(id);
-            loadData(); // Refresh stats and list
-            toast.success('Match deleted');
+            const success = await deleteEntry(id, password);
+            if (success) {
+                loadData(); // Refresh stats and list
+                toast.success('Match deleted');
+            } else {
+                toast.error('Failed to delete match');
+            }
         }
     };
 
@@ -55,6 +63,17 @@ const TeamDetail = () => {
         setIsAdmin(false);
         toast.info('Exited admin mode');
     };
+
+    if (loading) {
+        return (
+            <div className="min-h-screen bg-background">
+                <PageHeader title={`Team ${teamNum}`} />
+                <div className="flex items-center justify-center py-20">
+                    <Loader2 className="w-8 h-8 animate-spin text-primary" />
+                </div>
+            </div>
+        );
+    }
 
     if (!stats) {
         return (

@@ -1,10 +1,36 @@
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { ChevronRight, TrendingUp } from 'lucide-react';
+import { ChevronRight, TrendingUp, Loader2 } from 'lucide-react';
 import { PageHeader } from '@/components/layout/PageHeader';
-import { getAllTeamStats, getRatingColor } from '@/lib/stats';
+import { getAllTeamStatsFromEntries, getRatingColor } from '@/lib/stats';
+import { getEntries } from '@/lib/storage';
+import { TeamStats } from '@/lib/types';
 
 const Teams = () => {
-  const teams = getAllTeamStats();
+  const [teams, setTeams] = useState<TeamStats[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const loadTeams = async () => {
+      setLoading(true);
+      const entries = await getEntries();
+      const stats = getAllTeamStatsFromEntries(entries);
+      setTeams(stats);
+      setLoading(false);
+    };
+    loadTeams();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background">
+        <PageHeader title="Teams" />
+        <div className="flex items-center justify-center py-20">
+          <Loader2 className="w-8 h-8 animate-spin text-primary" />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background pb-8">
