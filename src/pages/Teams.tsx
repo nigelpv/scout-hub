@@ -46,7 +46,7 @@ const Teams = () => {
                       Climb: <span className={getRatingColor(team.climbSuccessRate, 100)}>{team.climbSuccessRate}%</span>
                     </span>
                     <span className="text-muted-foreground">
-                      Fuel: <span className="text-foreground font-mono">{team.avgAutoFuel + team.avgTeleopFuel}</span>
+                      Cycles: <span className="text-foreground font-mono">{team.avgAutoCycles + team.avgTeleopCycles}</span>
                     </span>
                   </div>
                 </div>

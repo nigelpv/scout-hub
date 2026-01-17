@@ -12,13 +12,13 @@ export function getEntries(): ScoutingEntry[] {
 export function saveEntry(entry: ScoutingEntry): void {
   const entries = getEntries();
   const existingIndex = entries.findIndex(e => e.id === entry.id);
-  
+
   if (existingIndex >= 0) {
     entries[existingIndex] = entry;
   } else {
     entries.push(entry);
   }
-  
+
   localStorage.setItem(ENTRIES_KEY, JSON.stringify(entries));
 }
 
