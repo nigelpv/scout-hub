@@ -173,6 +173,7 @@ const TeamDetail = () => {
                         <div>
                             <StatBar value={stats.avgAutoCycles} max={15} label="Avg Auto Cycles" />
                             <div className="flex justify-between text-xs text-muted-foreground mt-1 px-1">
+                                <span>Mean: {stats.meanAutoCycles}</span>
                                 <span>Median: {stats.medianAutoCycles}</span>
                                 <span>StdDev: {stats.stdDevAutoCycles}</span>
                                 <span>Size: {stats.avgAutoCycleSize}</span>
@@ -191,6 +192,7 @@ const TeamDetail = () => {
                         <div>
                             <StatBar value={stats.avgTeleopCycles} max={30} label="Avg Teleop Cycles" />
                             <div className="flex justify-between text-xs text-muted-foreground mt-1 px-1">
+                                <span>Mean: {stats.meanTeleopCycles}</span>
                                 <span>Median: {stats.medianTeleopCycles}</span>
                                 <span>StdDev: {stats.stdDevTeleopCycles}</span>
                             </div>

@@ -26,6 +26,7 @@ export function calculateTeamStatsFromEntries(entries: ScoutingEntry[]): TeamSta
     // Auto Stats
     const autoCyclesValues = entries.map(e => e.autoCycles);
     const avgAutoCycles = autoCyclesValues.reduce((a, b) => a + b, 0) / matchesPlayed;
+    const meanAutoCycles = avgAutoCycles;
     const medianAutoCycles = calculateMedian(autoCyclesValues);
     const stdDevAutoCycles = calculateStdDev(autoCyclesValues, avgAutoCycles);
 
@@ -38,6 +39,7 @@ export function calculateTeamStatsFromEntries(entries: ScoutingEntry[]): TeamSta
     // Teleop Stats
     const teleopCyclesValues = entries.map(e => e.teleopCycles);
     const avgTeleopCycles = teleopCyclesValues.reduce((a, b) => a + b, 0) / matchesPlayed;
+    const meanTeleopCycles = avgTeleopCycles;
     const medianTeleopCycles = calculateMedian(teleopCyclesValues);
     const stdDevTeleopCycles = calculateStdDev(teleopCyclesValues, avgTeleopCycles);
 
@@ -89,11 +91,13 @@ export function calculateTeamStatsFromEntries(entries: ScoutingEntry[]): TeamSta
         teamNumber,
         matchesPlayed,
         avgAutoCycles: Math.round(avgAutoCycles * 10) / 10,
+        meanAutoCycles: Math.round(meanAutoCycles * 10) / 10,
         medianAutoCycles: Math.round(medianAutoCycles * 10) / 10,
         stdDevAutoCycles: Math.round(stdDevAutoCycles * 10) / 10,
         autoPreloadSuccessRate: Math.round(autoPreloadSuccessRate),
         avgAutoCycleSize: Math.round(avgAutoCycleSize * 10) / 10,
         avgTeleopCycles: Math.round(avgTeleopCycles * 10) / 10,
+        meanTeleopCycles: Math.round(meanTeleopCycles * 10) / 10,
         medianTeleopCycles: Math.round(medianTeleopCycles * 10) / 10,
         stdDevTeleopCycles: Math.round(stdDevTeleopCycles * 10) / 10,
         avgCycleSize: Math.round(avgCycleSize * 10) / 10,
