@@ -39,11 +39,13 @@ export interface TeamStats {
     teamNumber: number;
     matchesPlayed: number;
     avgAutoCycles: number;
+    meanAutoCycles: number;
     medianAutoCycles: number;
     stdDevAutoCycles: number;
     autoPreloadSuccessRate: number;
     avgAutoCycleSize: number;
     avgTeleopCycles: number;
+    meanTeleopCycles: number;
     medianTeleopCycles: number;
     stdDevTeleopCycles: number;
     avgCycleSize: number;
