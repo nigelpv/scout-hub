@@ -10,25 +10,35 @@ import TeamDetail from "./pages/TeamDetail";
 import Picklist from "./pages/Picklist";
 import NotFound from "./pages/NotFound";
 
+import { initializeSync } from "./lib/storage";
+import { useEffect } from "react";
+
 const queryClient = new QueryClient();
 
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Index />} />
-          <Route path="/scout" element={<ScoutMatch />} />
-          <Route path="/teams" element={<Teams />} />
-          <Route path="/team/:teamNumber" element={<TeamDetail />} />
-          <Route path="/picklist" element={<Picklist />} />
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </BrowserRouter>
-    </TooltipProvider>
-  </QueryClientProvider>
-);
+const App = () => {
+  useEffect(() => {
+    const cleanup = initializeSync();
+    return cleanup;
+  }, []);
+
+  return (
+    <QueryClientProvider client={queryClient}>
+      <TooltipProvider>
+        <Toaster />
+        <Sonner />
+        <BrowserRouter>
+          <Routes>
+            <Route path="/" element={<Index />} />
+            <Route path="/scout" element={<ScoutMatch />} />
+            <Route path="/teams" element={<Teams />} />
+            <Route path="/team/:teamNumber" element={<TeamDetail />} />
+            <Route path="/picklist" element={<Picklist />} />
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </BrowserRouter>
+      </TooltipProvider>
+    </QueryClientProvider>
+  );
+};
 
 export default App;
