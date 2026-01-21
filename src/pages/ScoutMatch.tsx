@@ -45,8 +45,8 @@ const ScoutMatch = () => {
     const [notes, setNotes] = useState('');
 
     const handleSubmit = async () => {
-        if (!teamNumber) {
-            alert('Please enter a team number');
+        if (!teamNumber || isNaN(parseInt(teamNumber))) {
+            toast.error('Please enter a valid team number');
             return;
         }
 

@@ -133,10 +133,12 @@ export async function syncPendingEntries(): Promise<void> {
       if (response.ok) {
         successCount++;
       } else {
-        // If 500 or 400 error, keep it pending? 
+        const errorText = await response.text();
+        console.error(`Sync failed for entry ${entry.id}: ${response.status} ${response.statusText} - ${errorText}`);
         remaining.push(entry);
       }
     } catch (error) {
+      console.error(`Sync network error for entry ${entry.id}:`, error);
       remaining.push(entry);
     }
   }
