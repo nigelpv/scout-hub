@@ -32,6 +32,7 @@ router.get('/', async (req, res) => {
             driverSkill: row.driver_skill,
             robotSpeed: row.robot_speed,
             reliability: row.reliability,
+            shootingRange: row.shooting_range as 'short' | 'medium' | 'long',
             notes: row.notes,
         }));
         res.json(entries);
@@ -70,6 +71,7 @@ router.get('/team/:teamNumber', async (req, res) => {
             driverSkill: row.driver_skill,
             robotSpeed: row.robot_speed,
             reliability: row.reliability,
+            shootingRange: row.shooting_range as 'short' | 'medium' | 'long',
             notes: row.notes,
         }));
         res.json(entries);
@@ -88,8 +90,9 @@ router.post('/', async (req, res) => {
         id, event, match_number, team_number, scout_name, timestamp,
         auto_cycles, auto_preload, auto_preload_scored, auto_est_cycle_size, auto_climb,
         teleop_cycles, estimated_cycle_size, defense_played, defense_effectiveness,
-        climb_result, climb_stability, driver_skill, robot_speed, reliability, notes
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21)`,
+        climb_result, climb_stability, driver_skill, robot_speed, reliability, 
+        shooting_range, notes
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22)`,
             [
                 entry.id,
                 entry.event,
@@ -111,6 +114,7 @@ router.post('/', async (req, res) => {
                 entry.driverSkill || 3,
                 entry.robotSpeed || 3,
                 entry.reliability || 3,
+                entry.shootingRange || 'short',
                 entry.notes || '',
             ]
         );

@@ -40,6 +40,7 @@ const ScoutMatch = () => {
     const [driverSkill, setDriverSkill] = useState(3);
     const [robotSpeed, setRobotSpeed] = useState(3);
     const [reliability, setReliability] = useState(3);
+    const [shootingRange, setShootingRange] = useState<'short' | 'medium' | 'long'>('short');
     const [notes, setNotes] = useState('');
 
     const handleSubmit = async () => {
@@ -70,6 +71,7 @@ const ScoutMatch = () => {
             driverSkill,
             robotSpeed,
             reliability,
+            shootingRange,
             notes,
         };
 
@@ -102,6 +104,7 @@ const ScoutMatch = () => {
             setDriverSkill(3);
             setRobotSpeed(3);
             setReliability(3);
+            setShootingRange('short');
             setNotes('');
             setSaved(false);
         }, 1500);
@@ -227,6 +230,16 @@ const ScoutMatch = () => {
                             label="Defense Effectiveness"
                         />
                     )}
+                    <OptionSelector
+                        value={shootingRange}
+                        onChange={(v) => setShootingRange(v as typeof shootingRange)}
+                        label="Shooting Range"
+                        options={[
+                            { value: 'short' as const, label: 'Short' },
+                            { value: 'medium' as const, label: 'Medium' },
+                            { value: 'long' as const, label: 'Long' },
+                        ] as const}
+                    />
                 </section>
 
                 {/* Endgame */}

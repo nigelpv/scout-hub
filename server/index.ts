@@ -52,6 +52,7 @@ async function initDb() {
         driver_skill INTEGER DEFAULT 3,
         robot_speed INTEGER DEFAULT 3,
         reliability INTEGER DEFAULT 3,
+        shooting_range TEXT DEFAULT 'short',
         notes TEXT DEFAULT ''
       );
     `);
