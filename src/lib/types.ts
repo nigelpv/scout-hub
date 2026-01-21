@@ -32,6 +32,7 @@ export interface ScoutingEntry {
     driverSkill: number; // 1-5
     robotSpeed: number; // 1-5
     reliability: number; // 1-5
+    shootingRange: 'short' | 'medium' | 'long';
     notes: string;
 }
 

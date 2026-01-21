@@ -285,6 +285,7 @@ const TeamDetail = () => {
                                 <div className="grid grid-cols-2 gap-2 text-sm text-muted-foreground mb-1">
                                     <div>Auto: {entry.autoCycles} ({entry.autoEstCycleSize || 0}sz)</div>
                                     <div>Preload: {entry.autoPreload ? (entry.autoPreloadScored ? '✅' : '❌') : '-'}</div>
+                                    <div>Range: {entry.shootingRange || 'short'}</div>
                                 </div>
                                 <div className="grid grid-cols-2 gap-2 text-sm text-muted-foreground">
                                     <div>Teleop: {entry.teleopCycles} ({entry.estimatedCycleSize || 0}sz)</div>
