@@ -119,9 +119,10 @@ router.post('/', async (req, res) => {
             ]
         );
         res.status(201).json({ success: true, id: entry.id });
-    } catch (err) {
-        console.error('Error creating entry:', err);
-        res.status(500).json({ error: 'Failed to create entry' });
+    } catch (err: any) {
+        console.error('Error creating entry:', err.message);
+        console.error('Stack:', err.stack);
+        res.status(500).json({ error: 'Failed to create entry', details: err.message });
     }
 });
 
