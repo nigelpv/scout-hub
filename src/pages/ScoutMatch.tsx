@@ -8,6 +8,7 @@ import { OptionSelector } from '@/components/scouting/OptionSelector';
 import { RatingField } from '@/components/scouting/RatingField';
 import { ScoutingEntry } from '@/lib/types';
 import { saveEntry, generateId, getCurrentEvent, setCurrentEvent } from '@/lib/storage';
+import { toast } from 'sonner';
 
 const ScoutMatch = () => {
     const navigate = useNavigate();
@@ -75,12 +76,20 @@ const ScoutMatch = () => {
             notes,
         };
 
-        const success = await saveEntry(entry);
+        const { success, offline } = await saveEntry(entry);
         setSaving(false);
 
         if (!success) {
-            alert('Failed to save entry. Please try again.');
+            toast.error('Failed to save entry. Please try again.');
             return;
+        }
+
+        if (offline) {
+            toast.info('Saved offline! Will sync automatically when service is restored.', {
+                duration: 5000,
+            });
+        } else {
+            toast.success('Entry saved to server!');
         }
 
         setCurrentEvent(event);
