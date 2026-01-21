@@ -12,6 +12,7 @@ import NotFound from "./pages/NotFound";
 
 import { initializeSync } from "./lib/storage";
 import { useEffect } from "react";
+import { SyncIndicator } from "./components/scouting/SyncIndicator";
 
 const queryClient = new QueryClient();
 
@@ -26,6 +27,7 @@ const App = () => {
       <TooltipProvider>
         <Toaster />
         <Sonner />
+        <SyncIndicator />
         <BrowserRouter>
           <Routes>
             <Route path="/" element={<Index />} />
