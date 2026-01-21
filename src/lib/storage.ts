@@ -8,6 +8,32 @@ import { toast } from 'sonner';
 const EVENT_KEY = 'scout_current_event';
 const PENDING_ENTRIES_KEY = 'scout_pending_entries';
 
+// Custom event for sync status updates
+export const SYNC_EVENT = 'scout_sync_update';
+
+export interface SyncStatus {
+  pendingCount: number;
+  isSyncing: boolean;
+}
+
+export function subscribeToSync(callback: (status: SyncStatus) => void): () => void {
+  const handler = (e: Event) => {
+    const customEvent = e as CustomEvent<SyncStatus>;
+    callback(customEvent.detail);
+  };
+
+  window.addEventListener(SYNC_EVENT, handler);
+  return () => window.removeEventListener(SYNC_EVENT, handler);
+}
+
+function dispatchSyncUpdate(isSyncing: boolean) {
+  const status: SyncStatus = {
+    pendingCount: getPendingCount(),
+    isSyncing
+  };
+  window.dispatchEvent(new CustomEvent(SYNC_EVENT, { detail: status }));
+}
+
 // ============ ENTRIES ============
 
 export async function getEntries(): Promise<ScoutingEntry[]> {
@@ -64,6 +90,7 @@ function queueEntryLocally(entry: ScoutingEntry) {
   const pending = getPendingEntries();
   pending.push(entry);
   localStorage.setItem(PENDING_ENTRIES_KEY, JSON.stringify(pending));
+  dispatchSyncUpdate(false);
 }
 
 function getPendingEntries(): ScoutingEntry[] {
@@ -71,9 +98,25 @@ function getPendingEntries(): ScoutingEntry[] {
   return stored ? JSON.parse(stored) : [];
 }
 
+let isSyncing = false;
+
 export async function syncPendingEntries(): Promise<void> {
+  if (isSyncing) return;
+
   const pending = getPendingEntries();
-  if (pending.length === 0) return;
+  if (pending.length === 0) {
+    dispatchSyncUpdate(false);
+    return;
+  }
+
+  // Double check we are actually online before trying to sync
+  if (!navigator.onLine) {
+    console.log('Sync triggered but navigator is offline');
+    return;
+  }
+
+  isSyncing = true;
+  dispatchSyncUpdate(true);
 
   console.log(`Attempting to sync ${pending.length} pending entries...`);
   const remaining: ScoutingEntry[] = [];
@@ -90,6 +133,7 @@ export async function syncPendingEntries(): Promise<void> {
       if (response.ok) {
         successCount++;
       } else {
+        // If 500 or 400 error, keep it pending? 
         remaining.push(entry);
       }
     } catch (error) {
@@ -98,6 +142,9 @@ export async function syncPendingEntries(): Promise<void> {
   }
 
   localStorage.setItem(PENDING_ENTRIES_KEY, JSON.stringify(remaining));
+
+  isSyncing = false;
+  dispatchSyncUpdate(false);
 
   if (successCount > 0) {
     toast.success(`Synced ${successCount} entries!`);
@@ -111,8 +158,11 @@ export function initializeSync(): () => void {
   syncPendingEntries();
 
   const handleOnline = () => {
-    console.log('App is online, triggering sync...');
-    syncPendingEntries();
+    console.log('App is online, triggering sync in 3s...');
+    // Add delay to let connection stabilize
+    setTimeout(() => {
+      syncPendingEntries();
+    }, 3000);
   };
 
   window.addEventListener('online', handleOnline);
