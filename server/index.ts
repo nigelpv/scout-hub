@@ -66,6 +66,19 @@ async function initDb() {
     `);
 
     console.log('Database tables initialized');
+
+    // Migration: Add shooting_range if it doesn't exist
+    try {
+      await client.query(`
+        ALTER TABLE scouting_entries 
+        ADD COLUMN IF NOT EXISTS shooting_range TEXT DEFAULT 'short'
+      `);
+      console.log('Applied migration: Added shooting_range column');
+    } catch (err) {
+      // Ignore if column already exists (for older postgres versions that don't support IF NOT EXISTS)
+      console.log('Migration note: shooting_range column check completed');
+    }
+
   } catch (err) {
     console.error('Error initializing database:', err);
   } finally {
