@@ -13,6 +13,8 @@ import NotFound from "./pages/NotFound";
 import { initializeSync } from "./lib/storage";
 import { useEffect } from "react";
 import { SyncIndicator } from "./components/scouting/SyncIndicator";
+import { PwaInstallPrompt } from "./components/pwa/PwaInstallPrompt";
+import { ReloadPrompt } from "./components/pwa/ReloadPrompt";
 
 const queryClient = new QueryClient();
 
@@ -28,6 +30,8 @@ const App = () => {
         <Toaster />
         <Sonner />
         <SyncIndicator />
+        <PwaInstallPrompt />
+        <ReloadPrompt />
         <BrowserRouter>
           <Routes>
             <Route path="/" element={<Index />} />
