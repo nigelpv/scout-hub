@@ -3,8 +3,8 @@ import { useParams } from 'react-router-dom';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { StatBar } from '@/components/scouting/StatBar';
 import { calculateTeamStatsFromEntries, getRatingColor } from '@/lib/stats';
-import { getEntriesForTeam, deleteEntry } from '@/lib/storage';
-import { Target, Zap, Trophy, Shield, User, Gauge, Wrench, Lock, Unlock, Trash2, X, CircleDot, Loader2 } from 'lucide-react';
+import { getEntriesForTeam, deleteEntry, deleteEntries } from '@/lib/storage';
+import { Target, Zap, Trophy, Shield, User, Gauge, Wrench, Lock, Unlock, Trash2, X, CircleDot, Loader2, CheckSquare, Square } from 'lucide-react';
 import { toast } from 'sonner';
 import { TeamStats, ScoutingEntry } from '@/lib/types';
 
@@ -21,6 +21,7 @@ const TeamDetail = () => {
     const [showAuth, setShowAuth] = useState(false);
     const [password, setPassword] = useState('');
     const [adminPassword, setAdminPassword] = useState('');
+    const [selectedEntries, setSelectedEntries] = useState<Set<string>>(new Set());
 
     const loadData = useCallback(async () => {
         setLoading(true);
@@ -28,6 +29,7 @@ const TeamDetail = () => {
         setEntries(teamEntries);
         setStats(calculateTeamStatsFromEntries(teamEntries));
         setLoading(false);
+        setSelectedEntries(new Set()); // Clear selection on reload
     }, [teamNum]);
 
     useEffect(() => {
@@ -61,8 +63,35 @@ const TeamDetail = () => {
         }
     };
 
+    const toggleSelection = (id: string) => {
+        const newSelection = new Set(selectedEntries);
+        if (newSelection.has(id)) {
+            newSelection.delete(id);
+        } else {
+            newSelection.add(id);
+        }
+        setSelectedEntries(newSelection);
+    };
+
+    const handleBatchDelete = async () => {
+        if (selectedEntries.size === 0) return;
+
+        if (window.confirm(`Are you sure you want to delete ${selectedEntries.size} matches? This cannot be undone.`)) {
+            const ids = Array.from(selectedEntries);
+            const success = await deleteEntries(ids, adminPassword);
+
+            if (success) {
+                loadData();
+                toast.success(`Deleted ${ids.length} matches`);
+            } else {
+                toast.error('Failed to delete matches');
+            }
+        }
+    };
+
     const exitAdmin = () => {
         setIsAdmin(false);
+        setSelectedEntries(new Set());
         toast.info('Exited admin mode');
     };
 
@@ -140,6 +169,21 @@ const TeamDetail = () => {
                                 Unlock
                             </button>
                         </form>
+                    </div>
+                </div>
+            )}
+
+            {/* Batch Action Bar */}
+            {isAdmin && selectedEntries.size > 0 && (
+                <div className="fixed bottom-4 left-4 right-4 z-40 animate-in slide-in-from-bottom-4 fade-in">
+                    <div className="bg-destructive text-destructive-foreground rounded-xl shadow-lg p-4 flex items-center justify-between">
+                        <span className="font-medium">{selectedEntries.size} selected</span>
+                        <button
+                            onClick={handleBatchDelete}
+                            className="bg-white/20 hover:bg-white/30 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+                        >
+                            Delete Selected
+                        </button>
                     </div>
                 </div>
             )}
@@ -260,34 +304,55 @@ const TeamDetail = () => {
 
                 {/* Recent Matches */}
                 <div className="stat-card">
-                    <h2 className="font-semibold mb-4">Match History</h2>
+                    <div className="flex items-center justify-between mb-4">
+                        <h2 className="font-semibold">Match History</h2>
+                        {isAdmin && (
+                            <span className="text-xs text-muted-foreground">
+                                Tap checkboxes to select multiple
+                            </span>
+                        )}
+                    </div>
                     <div className="space-y-3">
                         {entries.slice().reverse().map((entry) => (
                             <div key={entry.id} className="border-b border-border pb-3 last:border-0 last:pb-0">
                                 <div className="flex justify-between items-center mb-1">
                                     <div className="flex items-center gap-3">
-                                        {isAdmin && (
+                                        {isAdmin ? (
+                                            <button
+                                                onClick={() => toggleSelection(entry.id)}
+                                                className={`p-1 -ml-1 rounded transition-colors ${selectedEntries.has(entry.id) ? 'text-primary' : 'text-muted-foreground'}`}
+                                            >
+                                                {selectedEntries.has(entry.id) ? (
+                                                    <CheckSquare className="w-5 h-5" />
+                                                ) : (
+                                                    <Square className="w-5 h-5" />
+                                                )}
+                                            </button>
+                                        ) : null}
+                                        <span className="font-mono font-medium">Match {entry.matchNumber}</span>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-sm text-muted-foreground">
+                                            {climbLabels[entry.climbResult]}
+                                        </span>
+                                        {isAdmin && !selectedEntries.has(entry.id) && (
                                             <button
                                                 onClick={() => handleDeleteMatch(entry.id)}
-                                                className="p-1 -ml-1 text-destructive hover:bg-destructive/10 rounded"
-                                                title="Delete Match"
+                                                className="p-1 text-muted-foreground hover:text-destructive transition-colors ml-2"
+                                                title="Delete Single Match"
                                             >
                                                 <Trash2 className="w-4 h-4" />
                                             </button>
                                         )}
-                                        <span className="font-mono font-medium">Match {entry.matchNumber}</span>
                                     </div>
-                                    <span className="text-sm text-muted-foreground">
-                                        {climbLabels[entry.climbResult]}
-                                    </span>
                                 </div>
                                 {/* Auto Details using new schema */}
-                                <div className="grid grid-cols-2 gap-2 text-sm text-muted-foreground mb-1">
+                                <div className={`grid grid-cols-2 gap-2 text-sm text-muted-foreground mb-1 ${isAdmin ? 'pl-7' : ''}`}>
                                     <div>Auto: {entry.autoCycles} ({entry.autoEstCycleSize || 0}sz)</div>
                                     <div>Preload: {entry.autoPreload ? (entry.autoPreloadScored ? '✅' : '❌') : '-'}</div>
                                     <div>Range: {entry.shootingRange || 'short'}</div>
                                 </div>
-                                <div className="grid grid-cols-2 gap-2 text-sm text-muted-foreground">
+                                <div className={`grid grid-cols-2 gap-2 text-sm text-muted-foreground ${isAdmin ? 'pl-7' : ''}`}>
                                     <div>Teleop: {entry.teleopCycles} ({entry.estimatedCycleSize || 0}sz)</div>
                                     {entry.autoClimb && entry.autoClimb !== 'none' && (
                                         <div>AutoClimb: {autoClimbLabels[entry.autoClimb]}</div>
@@ -295,7 +360,7 @@ const TeamDetail = () => {
                                 </div>
 
                                 {entry.notes && (
-                                    <p className="text-sm text-muted-foreground mt-2 italic">
+                                    <p className={`text-sm text-muted-foreground mt-2 italic ${isAdmin ? 'pl-7' : ''}`}>
                                         "{entry.notes}"
                                     </p>
                                 )}

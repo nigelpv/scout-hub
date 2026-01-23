@@ -189,6 +189,34 @@ export async function deleteEntry(id: string, password: string): Promise<boolean
   }
 }
 
+export async function deleteEntries(ids: string[], password: string): Promise<boolean> {
+  try {
+    const response = await fetch(`${API_URL}/entries/delete-batch`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ids, password }),
+    });
+    return response.ok;
+  } catch (error) {
+    console.error('Error deleting entries:', error);
+    return false;
+  }
+}
+
+export async function deleteTeamData(teamNumber: number, password: string): Promise<boolean> {
+  try {
+    const response = await fetch(`${API_URL}/entries/team/${teamNumber}`, {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ password }),
+    });
+    return response.ok;
+  } catch (error) {
+    console.error('Error deleting team data:', error);
+    return false;
+  }
+}
+
 // ============ PICKLIST ============
 
 export async function getPicklist(): Promise<PicklistTeam[]> {
