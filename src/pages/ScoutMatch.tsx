@@ -24,6 +24,7 @@ const ScoutMatch = () => {
     const [autoCycles, setAutoCycles] = useState(0);
     const [autoPreload, setAutoPreload] = useState(false);
     const [autoPreloadScored, setAutoPreloadScored] = useState(false);
+    const [autoPreloadCount, setAutoPreloadCount] = useState(0);
     const [autoEstCycleSize, setAutoEstCycleSize] = useState(0);
     const [autoClimb, setAutoClimb] = useState<'none' | 'side' | 'middle'>('none');
 
@@ -61,6 +62,7 @@ const ScoutMatch = () => {
             autoCycles,
             autoPreload,
             autoPreloadScored: autoPreload ? autoPreloadScored : false,
+            autoPreloadCount: autoPreload ? (autoPreloadScored ? 8 : autoPreloadCount) : 0,
             autoEstCycleSize,
             autoClimb,
             teleopCycles,
@@ -102,6 +104,7 @@ const ScoutMatch = () => {
             setAutoCycles(0);
             setAutoPreload(false);
             setAutoPreloadScored(false);
+            setAutoPreloadCount(0);
             setAutoEstCycleSize(0);
             setAutoClimb('none');
             setTeleopCycles(0);
@@ -186,11 +189,41 @@ const ScoutMatch = () => {
                         label="Preload?"
                     />
                     {autoPreload && (
-                        <ToggleField
-                            value={autoPreloadScored}
-                            onChange={setAutoPreloadScored}
-                            label="Scored Preload?"
-                        />
+                        <>
+                            <ToggleField
+                                value={autoPreloadScored}
+                                onChange={(checked) => {
+                                    setAutoPreloadScored(checked);
+                                    if (checked) {
+                                        // If they scored ALL, we don't need a specific count (it implies 8)
+                                        // But we'll handle the logic in stats/saving
+                                    }
+                                }}
+                                label="Scored ALL of Preload?"
+                            />
+                            {!autoPreloadScored && (
+                                <div className="py-2">
+                                    <label className="text-sm font-medium mb-1 block">How many scored? (0-8)</label>
+                                    <div className="flex items-center gap-4">
+                                        <button
+                                            onClick={() => setAutoPreloadCount(Math.max(0, autoPreloadCount - 1))}
+                                            className="w-12 h-12 rounded-full bg-secondary flex items-center justify-center text-xl font-bold active:bg-secondary/70 transition-colors"
+                                        >
+                                            -
+                                        </button>
+                                        <span className="font-mono text-3xl font-bold min-w-[2ch] text-center">
+                                            {autoPreloadCount}
+                                        </span>
+                                        <button
+                                            onClick={() => setAutoPreloadCount(Math.min(8, autoPreloadCount + 1))}
+                                            className="w-12 h-12 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xl font-bold active:bg-primary/90 transition-colors shadow-sm"
+                                        >
+                                            +
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
+                        </>
                     )}
                     <Counter
                         value={autoCycles}

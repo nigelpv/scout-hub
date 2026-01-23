@@ -76,7 +76,20 @@ async function initDb() {
       console.log('Applied migration: Added shooting_range column');
     } catch (err) {
       // Ignore if column already exists (for older postgres versions that don't support IF NOT EXISTS)
-      console.log('Migration note: shooting_range column check completed');
+      console.log('Applied migration: Added shooting_range column');
+    } catch (err) {
+      // Ignore
+    }
+
+    // Migration: Add auto_preload_count
+    try {
+      await client.query(`
+        ALTER TABLE scouting_entries 
+        ADD COLUMN IF NOT EXISTS auto_preload_count INTEGER DEFAULT 0
+      `);
+      console.log('Applied migration: Added auto_preload_count column');
+    } catch (err) {
+      console.log('Migration note: auto_preload_count column check completed');
     }
 
   } catch (err) {
