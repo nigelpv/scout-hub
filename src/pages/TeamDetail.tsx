@@ -305,10 +305,29 @@ const TeamDetail = () => {
                 {/* Recent Matches */}
                 <div className="stat-card">
                     <div className="flex items-center justify-between mb-4">
-                        <h2 className="font-semibold">Match History</h2>
+                        <div className="flex items-center gap-4">
+                            <h2 className="font-semibold">Match History</h2>
+                            {isAdmin && (
+                                <div className="flex gap-2 text-xs">
+                                    <button
+                                        onClick={() => setSelectedEntries(new Set(entries.map(e => e.id)))}
+                                        className="text-primary hover:underline font-medium"
+                                    >
+                                        Select All
+                                    </button>
+                                    <span className="text-muted-foreground">|</span>
+                                    <button
+                                        onClick={() => setSelectedEntries(new Set())}
+                                        className="text-muted-foreground hover:text-foreground hover:underline font-medium"
+                                    >
+                                        Deselect
+                                    </button>
+                                </div>
+                            )}
+                        </div>
                         {isAdmin && (
                             <span className="text-xs text-muted-foreground">
-                                Tap checkboxes to select multiple
+                                {selectedEntries.size} select
                             </span>
                         )}
                     </div>
