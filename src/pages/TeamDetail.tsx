@@ -334,7 +334,7 @@ const TeamDetail = () => {
                     <div className="space-y-3">
                         {entries.slice().reverse().map((entry) => (
                             <div key={entry.id} className="border-b border-border pb-3 last:border-0 last:pb-0">
-                                <div className="flex justify-between items-center mb-1">
+                                <div className="flex justify-between items-center mb-2">
                                     <div className="flex items-center gap-3">
                                         {isAdmin ? (
                                             <button
@@ -348,12 +348,12 @@ const TeamDetail = () => {
                                                 )}
                                             </button>
                                         ) : null}
-                                        <span className="font-mono font-medium">Match {entry.matchNumber}</span>
+                                        <span className="font-mono font-bold text-base">Match {entry.matchNumber}</span>
                                     </div>
                                     <div className="flex items-center gap-2">
-                                        <span className="text-sm text-muted-foreground">
-                                            {climbLabels[entry.climbResult]}
-                                        </span>
+                                        <div className="bg-secondary px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                                            {entry.shootingRange}
+                                        </div>
                                         {isAdmin && !selectedEntries.has(entry.id) && (
                                             <button
                                                 onClick={() => handleDeleteMatch(entry.id)}
@@ -365,24 +365,80 @@ const TeamDetail = () => {
                                         )}
                                     </div>
                                 </div>
-                                {/* Auto Details using new schema */}
-                                <div className={`grid grid-cols-2 gap-2 text-sm text-muted-foreground mb-1 ${isAdmin ? 'pl-7' : ''}`}>
-                                    <div>Auto: {entry.autoCycles} ({entry.autoEstCycleSize || 0}sz)</div>
-                                    <div>Preload: {entry.autoPreload ? (entry.autoPreloadScored ? '✅' : '❌') : '-'}</div>
-                                    <div>Range: {entry.shootingRange || 'short'}</div>
-                                </div>
-                                <div className={`grid grid-cols-2 gap-2 text-sm text-muted-foreground ${isAdmin ? 'pl-7' : ''}`}>
-                                    <div>Teleop: {entry.teleopCycles} ({entry.estimatedCycleSize || 0}sz)</div>
-                                    {entry.autoClimb && entry.autoClimb !== 'none' && (
-                                        <div>AutoClimb: {autoClimbLabels[entry.autoClimb]}</div>
+
+                                <div className={`space-y-3 ${isAdmin ? 'pl-7' : ''}`}>
+                                    {/* Stats Grid */}
+                                    <div className="grid grid-cols-2 gap-3">
+                                        {/* Auto Column */}
+                                        <div className="space-y-1">
+                                            <p className="text-[10px] uppercase font-bold text-muted-foreground tracking-tight">Autonomous</p>
+                                            <div className="text-sm space-y-1">
+                                                <div className="flex justify-between border-b border-border/50 pb-0.5">
+                                                    <span>Cycles</span>
+                                                    <span className="font-mono font-medium text-foreground">{entry.autoCycles} ({entry.autoEstCycleSize || 0}sz)</span>
+                                                </div>
+                                                <div className="flex justify-between border-b border-border/50 pb-0.5">
+                                                    <span>Preload</span>
+                                                    <span className="font-medium text-foreground">
+                                                        {entry.autoPreload
+                                                            ? (entry.autoPreloadScored ? 'Scored All' : `${entry.autoPreloadCount || 0} Scored`)
+                                                            : 'None'}
+                                                    </span>
+                                                </div>
+                                                <div className="flex justify-between border-b border-border/50 pb-0.5">
+                                                    <span>Climb</span>
+                                                    <span className="font-medium text-foreground">{autoClimbLabels[entry.autoClimb]}</span>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* Teleop Column */}
+                                        <div className="space-y-1">
+                                            <p className="text-[10px] uppercase font-bold text-muted-foreground tracking-tight">Teleop & Endgame</p>
+                                            <div className="text-sm space-y-1">
+                                                <div className="flex justify-between border-b border-border/50 pb-0.5">
+                                                    <span>Cycles</span>
+                                                    <span className="font-mono font-medium text-foreground">{entry.teleopCycles} ({entry.estimatedCycleSize || 0}sz)</span>
+                                                </div>
+                                                <div className="flex justify-between border-b border-border/50 pb-0.5">
+                                                    <span>Defense</span>
+                                                    <span className="font-medium text-foreground">
+                                                        {entry.defensePlayed ? `Lvl ${entry.defenseEffectiveness}` : 'None'}
+                                                    </span>
+                                                </div>
+                                                <div className="flex justify-between border-b border-border/50 pb-0.5">
+                                                    <span>Climb</span>
+                                                    <span className="font-medium text-foreground">{climbLabels[entry.climbResult]} {entry.climbResult !== 'none' && entry.climbResult !== 'attempted' && `(${entry.climbStability}★)`}</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Ratings Row */}
+                                    <div className="bg-secondary/40 rounded-lg p-2 flex justify-around items-center text-center">
+                                        <div>
+                                            <p className="text-[8px] uppercase font-bold text-muted-foreground">Driver</p>
+                                            <p className={`font-mono font-bold ${getRatingColor(entry.driverSkill)}`}>{entry.driverSkill}</p>
+                                        </div>
+                                        <div className="w-[1px] h-6 bg-border/50" />
+                                        <div>
+                                            <p className="text-[8px] uppercase font-bold text-muted-foreground">Speed</p>
+                                            <p className={`font-mono font-bold ${getRatingColor(entry.robotSpeed)}`}>{entry.robotSpeed}</p>
+                                        </div>
+                                        <div className="w-[1px] h-6 bg-border/50" />
+                                        <div>
+                                            <p className="text-[8px] uppercase font-bold text-muted-foreground">Reliability</p>
+                                            <p className={`font-mono font-bold ${getRatingColor(entry.reliability)}`}>{entry.reliability}</p>
+                                        </div>
+                                    </div>
+
+                                    {entry.notes && (
+                                        <div className="text-sm text-muted-foreground bg-secondary/20 p-2 rounded border-l-2 border-primary/30">
+                                            <span className="font-bold text-[10px] uppercase block mb-0.5 opacity-70">Notes</span>
+                                            <p className="italic">"{entry.notes}"</p>
+                                        </div>
                                     )}
                                 </div>
-
-                                {entry.notes && (
-                                    <p className={`text-sm text-muted-foreground mt-2 italic ${isAdmin ? 'pl-7' : ''}`}>
-                                        "{entry.notes}"
-                                    </p>
-                                )}
                             </div>
                         ))}
                     </div>
