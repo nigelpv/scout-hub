@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { ChevronRight, TrendingUp, Loader2, Lock, Unlock, Trash2, X } from 'lucide-react';
+import { ChevronRight, TrendingUp, Loader2, Lock, Unlock, Trash2, X, CheckSquare, Square } from 'lucide-react';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { getAllTeamStatsFromEntries, getRatingColor } from '@/lib/stats';
 import { getEntries, deleteTeamData } from '@/lib/storage';
@@ -16,6 +16,7 @@ const Teams = () => {
   const [showAuth, setShowAuth] = useState(false);
   const [password, setPassword] = useState('');
   const [adminPassword, setAdminPassword] = useState('');
+  const [selectedTeams, setSelectedTeams] = useState<Set<number>>(new Set());
 
   const loadTeams = async () => {
     setLoading(true);
@@ -23,6 +24,7 @@ const Teams = () => {
     const stats = getAllTeamStatsFromEntries(entries);
     setTeams(stats);
     setLoading(false);
+    setSelectedTeams(new Set());
   };
 
   useEffect(() => {
@@ -44,6 +46,25 @@ const Teams = () => {
     }
   };
 
+  const toggleSelection = (teamNumber: number) => {
+    const newSelection = new Set(selectedTeams);
+    if (newSelection.has(teamNumber)) {
+      newSelection.delete(teamNumber);
+    } else {
+      newSelection.add(teamNumber);
+    }
+    setSelectedTeams(newSelection);
+  };
+
+  const handleSelectAll = () => {
+    const allTeamNumbers = teams.map(t => t.teamNumber);
+    setSelectedTeams(new Set(allTeamNumbers));
+  };
+
+  const handleDeselectAll = () => {
+    setSelectedTeams(new Set());
+  };
+
   const handleDeleteTeam = async (e: React.MouseEvent, teamNumber: number) => {
     e.preventDefault(); // Prevent navigation
     if (window.confirm(`Are you sure you want to delete ALL data for Team ${teamNumber}? This cannot be undone.`)) {
@@ -57,8 +78,29 @@ const Teams = () => {
     }
   };
 
+  const handleBatchDelete = async () => {
+    if (selectedTeams.size === 0) return;
+
+    if (window.confirm(`Are you sure you want to delete ALL data for ${selectedTeams.size} teams? This cannot be undone.`)) {
+      let successCount = 0;
+      // Iterate and delete each team
+      for (const teamNumber of selectedTeams) {
+        const success = await deleteTeamData(teamNumber, adminPassword);
+        if (success) successCount++;
+      }
+
+      if (successCount > 0) {
+        toast.success(`Deleted data for ${successCount} teams`);
+        loadTeams();
+      } else {
+        toast.error('Failed to delete teams');
+      }
+    }
+  };
+
   const exitAdmin = () => {
     setIsAdmin(false);
+    setSelectedTeams(new Set());
     toast.info('Exited admin mode');
   };
 
@@ -115,6 +157,45 @@ const Teams = () => {
         </div>
       )}
 
+      {/* Select All / Actions Bar */}
+      {isAdmin && (
+        <div className="px-4 py-2 flex items-center justify-between bg-secondary/30 border-b border-border">
+          <div className="flex gap-2">
+            <button
+              onClick={handleSelectAll}
+              className="text-xs font-medium text-primary hover:underline"
+            >
+              Select All
+            </button>
+            <span className="text-xs text-muted-foreground">|</span>
+            <button
+              onClick={handleDeselectAll}
+              className="text-xs font-medium text-muted-foreground hover:text-foreground hover:underline"
+            >
+              Deselect
+            </button>
+          </div>
+          <span className="text-xs text-muted-foreground">
+            {selectedTeams.size} selected
+          </span>
+        </div>
+      )}
+
+      {/* Batch Delete Floating Button */}
+      {isAdmin && selectedTeams.size > 0 && (
+        <div className="fixed bottom-4 left-4 right-4 z-40 animate-in slide-in-from-bottom-4 fade-in">
+          <div className="bg-destructive text-destructive-foreground rounded-xl shadow-lg p-4 flex items-center justify-between">
+            <span className="font-medium">{selectedTeams.size} teams selected</span>
+            <button
+              onClick={handleBatchDelete}
+              className="bg-white/20 hover:bg-white/30 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+            >
+              Delete All Data
+            </button>
+          </div>
+        </div>
+      )}
+
       <div className="p-4">
         {teams.length === 0 ? (
           <div className="text-center py-12">
@@ -129,24 +210,31 @@ const Teams = () => {
               <Link
                 key={team.teamNumber}
                 to={`/team/${team.teamNumber}`}
-                onClick={(e) => isAdmin && e.preventDefault()} // proper navigation blocking if desired, though here we put delete separate
-                className={`stat-card flex items-center gap-4 transition-transform ${!isAdmin ? 'active:scale-[0.99]' : ''}`}
+                onClick={(e) => {
+                  if (isAdmin) {
+                    e.preventDefault();
+                    toggleSelection(team.teamNumber);
+                  }
+                }}
+                className={`stat-card flex items-center gap-4 transition-transform ${!isAdmin ? 'active:scale-[0.99]' : 'cursor-pointer'}`}
               >
-                {/* Drag/Delete Handle for Admin */}
+                {/* Checkbox for Admin */}
                 {isAdmin && (
-                  <button
-                    onClick={(e) => handleDeleteTeam(e, team.teamNumber)}
-                    className="p-2 -ml-2 text-destructive hover:bg-destructive/10 rounded-lg"
-                    title="Delete All Team Data"
-                  >
-                    <Trash2 className="w-5 h-5" />
-                  </button>
+                  <div className={`p-1 -ml-1 rounded ${selectedTeams.has(team.teamNumber) ? 'text-primary' : 'text-muted-foreground'}`}>
+                    {selectedTeams.has(team.teamNumber) ? (
+                      <CheckSquare className="w-5 h-5" />
+                    ) : (
+                      <Square className="w-5 h-5" />
+                    )}
+                  </div>
                 )}
 
                 {/* Rank */}
-                <div className="w-8 h-8 rounded-full bg-secondary flex items-center justify-center font-mono font-bold text-sm">
-                  {index + 1}
-                </div>
+                {!isAdmin && (
+                  <div className="w-8 h-8 rounded-full bg-secondary flex items-center justify-center font-mono font-bold text-sm">
+                    {index + 1}
+                  </div>
+                )}
 
                 {/* Team Info */}
                 <div className="flex-1 min-w-0">
@@ -177,6 +265,14 @@ const Teams = () => {
                 </div>
 
                 {!isAdmin && <ChevronRight className="w-5 h-5 text-muted-foreground" />}
+                {isAdmin && !selectedTeams.has(team.teamNumber) && (
+                  <button
+                    onClick={(e) => handleDeleteTeam(e, team.teamNumber)}
+                    className="p-2 text-muted-foreground hover:text-destructive transition-colors"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                )}
               </Link>
             ))}
           </div>
