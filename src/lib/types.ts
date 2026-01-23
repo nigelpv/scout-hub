@@ -14,7 +14,8 @@ export interface ScoutingEntry {
     // Autonomous
     autoCycles: number;
     autoPreload: boolean;
-    autoPreloadScored: boolean;
+    autoPreloadScored: boolean; // "Scored ALL of Preload?"
+    autoPreloadCount?: number; // 0-8 if not Scored ALL
     autoEstCycleSize: number;
     autoClimb: 'none' | 'side' | 'middle';
 

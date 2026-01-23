@@ -21,6 +21,7 @@ router.get('/', async (req, res) => {
             autoCycles: row.auto_cycles,
             autoPreload: row.auto_preload,
             autoPreloadScored: row.auto_preload_scored,
+            autoPreloadCount: row.auto_preload_count,
             autoEstCycleSize: row.auto_est_cycle_size,
             autoClimb: row.auto_climb,
             teleopCycles: row.teleop_cycles,
@@ -60,6 +61,7 @@ router.get('/team/:teamNumber', async (req, res) => {
             autoCycles: row.auto_cycles,
             autoPreload: row.auto_preload,
             autoPreloadScored: row.auto_preload_scored,
+            autoPreloadCount: row.auto_preload_count,
             autoEstCycleSize: row.auto_est_cycle_size,
             autoClimb: row.auto_climb,
             teleopCycles: row.teleop_cycles,
@@ -88,11 +90,11 @@ router.post('/', async (req, res) => {
         await pool.query(
             `INSERT INTO scouting_entries (
         id, event, match_number, team_number, scout_name, timestamp,
-        auto_cycles, auto_preload, auto_preload_scored, auto_est_cycle_size, auto_climb,
+        auto_cycles, auto_preload, auto_preload_scored, auto_preload_count, auto_est_cycle_size, auto_climb,
         teleop_cycles, estimated_cycle_size, defense_played, defense_effectiveness,
         climb_result, climb_stability, driver_skill, robot_speed, reliability, 
         shooting_range, notes
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22)`,
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23)`,
             [
                 entry.id,
                 entry.event,
@@ -103,6 +105,7 @@ router.post('/', async (req, res) => {
                 entry.autoCycles || 0,
                 entry.autoPreload || false,
                 entry.autoPreloadScored || false,
+                entry.autoPreloadCount || 0,
                 entry.autoEstCycleSize || 0,
                 entry.autoClimb || 'none',
                 entry.teleopCycles || 0,
