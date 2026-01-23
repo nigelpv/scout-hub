@@ -69,23 +69,25 @@ export function calculateTeamStatsFromEntries(entries: ScoutingEntry[]): TeamSta
     // Score
     const climbPoints: Record<string, number> = {
         'none': 0,
-        'attempted': 1,
-        'low': 3,
-        'mid': 6,
-        'high': 10
+        'attempted': 0,
+        'low': 10,
+        'mid': 20,
+        'high': 30
     };
 
     const avgClimbPoints = entries.reduce((sum, e) => sum + (climbPoints[e.climbResult] || 0), 0) / matchesPlayed;
 
-    const totalScore = (
-        avgAutoCycles * 2 +
-        avgTeleopCycles * 1.5 +
-        avgClimbPoints * 3 +
-        avgReliability * 5 +
-        avgDriverSkill * 3 +
-        avgRobotSpeed * 2 +
-        (autoPreloadSuccessRate / 20)
-    );
+    // Auto Climb Points (15 pts for any successful climb in Auto)
+    const successfulAutoClimbs = entries.filter(e => e.autoClimb && e.autoClimb !== 'none').length;
+    const avgAutoClimbPoints = (successfulAutoClimbs * 15) / matchesPlayed;
+
+    // Total Score Calculation (Standardized)
+    // Auto: 1pt per fuel + 15pts per climb
+    // Teleop: 1pt per fuel + Climb Points (10/20/30)
+    const avgAutoScore = (avgAutoCycles * 1) + avgAutoClimbPoints;
+    const avgTeleopScore = (avgTeleopCycles * 1) + avgClimbPoints;
+
+    const totalScore = avgAutoScore + avgTeleopScore;
 
     return {
         teamNumber,
