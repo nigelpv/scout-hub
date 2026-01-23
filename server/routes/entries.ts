@@ -126,6 +126,56 @@ router.post('/', async (req, res) => {
     }
 });
 
+// DELETE batch entries (requires admin password)
+router.post('/delete-batch', async (req, res) => {
+    try {
+        const { ids, password } = req.body;
+
+        if (password !== ADMIN_PASSWORD) {
+            return res.status(401).json({ error: 'Unauthorized' });
+        }
+
+        if (!Array.isArray(ids) || ids.length === 0) {
+            return res.status(400).json({ error: 'No IDs provided' });
+        }
+
+        const client = await pool.connect();
+        try {
+            await client.query('BEGIN');
+            const placeholders = ids.map((_, i) => `$${i + 1}`).join(',');
+            await client.query(`DELETE FROM scouting_entries WHERE id IN (${placeholders})`, ids);
+            await client.query('COMMIT');
+            res.json({ success: true, count: ids.length });
+        } catch (e) {
+            await client.query('ROLLBACK');
+            throw e;
+        } finally {
+            client.release();
+        }
+    } catch (err) {
+        console.error('Error deleting batch:', err);
+        res.status(500).json({ error: 'Failed to delete entries' });
+    }
+});
+
+// DELETE all entries for a team (requires admin password)
+router.delete('/team/:teamNumber', async (req, res) => {
+    try {
+        const { teamNumber } = req.params;
+        const { password } = req.body;
+
+        if (password !== ADMIN_PASSWORD) {
+            return res.status(401).json({ error: 'Unauthorized' });
+        }
+
+        await pool.query('DELETE FROM scouting_entries WHERE team_number = $1', [parseInt(teamNumber)]);
+        res.json({ success: true });
+    } catch (err) {
+        console.error('Error deleting team data:', err);
+        res.status(500).json({ error: 'Failed to delete team data' });
+    }
+});
+
 // DELETE entry (requires admin password)
 router.delete('/:id', async (req, res) => {
     try {
