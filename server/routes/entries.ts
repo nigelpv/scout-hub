@@ -86,10 +86,10 @@ router.post('/', async (req, res) => {
         const countResult = await pool.query('SELECT COUNT(*) FROM scouting_entries');
         const count = parseInt(countResult.rows[0].count);
 
-        if (count >= 300) {
+        if (count >= 500) {
             return res.status(403).json({
                 error: 'Entry limit reached',
-                message: 'The website is limited to 300 entries. Please delete old entries to add more.'
+                message: 'The website is limited to 500 entries. Please delete old entries to add more.'
             });
         }
 
