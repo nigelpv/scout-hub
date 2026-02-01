@@ -19,43 +19,64 @@ const Picklist = () => {
   const [password, setPassword] = useState('');
   const [adminPassword, setAdminPassword] = useState('');
 
+  const processData = (entries: any[], savedPicklist: any[]) => {
+    const stats = getAllTeamStatsFromEntries(entries);
+    setAllStats(stats);
+
+    if (savedPicklist.length > 0) {
+      const savedTeamNumbers = new Set(savedPicklist.map(p => p.teamNumber));
+      const newTeams = stats
+        .filter(s => !savedTeamNumbers.has(s.teamNumber))
+        .map((s, i) => ({
+          teamNumber: s.teamNumber,
+          rank: savedPicklist.length + i + 1,
+          manualOverride: false,
+        }));
+      setPicklist([...savedPicklist, ...newTeams]);
+    } else {
+      setPicklist(
+        stats.map((s, i) => ({
+          teamNumber: s.teamNumber,
+          rank: i + 1,
+          manualOverride: false,
+        }))
+      );
+    }
+    setLoading(false);
+  };
+
   useEffect(() => {
     const loadData = async () => {
       setLoading(true);
-
-      // Load entries and calculate stats
-      const entries = await getEntries();
-      const stats = getAllTeamStatsFromEntries(entries);
-      setAllStats(stats);
-
-      // Load picklist
-      const saved = await getPicklist();
-      if (saved.length > 0) {
-        // Merge saved order with current teams
-        const savedTeamNumbers = new Set(saved.map(p => p.teamNumber));
-        const newTeams = stats
-          .filter(s => !savedTeamNumbers.has(s.teamNumber))
-          .map((s, i) => ({
-            teamNumber: s.teamNumber,
-            rank: saved.length + i + 1,
-            manualOverride: false,
-          }));
-
-        setPicklist([...saved, ...newTeams]);
-      } else {
-        // Initialize from stats
-        setPicklist(
-          stats.map((s, i) => ({
-            teamNumber: s.teamNumber,
-            rank: i + 1,
-            manualOverride: false,
-          }))
-        );
-      }
-
-      setLoading(false);
+      const [entries, saved] = await Promise.all([getEntries(), getPicklist()]);
+      processData(entries, saved);
     };
     loadData();
+
+    const handleEntriesUpdate = (e: any) => {
+      processData(e.detail, picklist);
+    };
+
+    const handlePicklistUpdate = (e: any) => {
+      processData(allStats.length > 0 ? [] : [], e.detail); // Simplified, we just need to re-run the merge logic
+      // Actually simpler to just track what we have:
+    };
+
+    // More robust listeners
+    const onEntriesUpdate = (e: any) => {
+      setAllStats(getAllTeamStatsFromEntries(e.detail));
+    };
+    const onPicklistUpdate = (e: any) => {
+      setPicklist(e.detail);
+    };
+
+    window.addEventListener('scout_entries_updated', onEntriesUpdate);
+    window.addEventListener('scout_picklist_updated', onPicklistUpdate);
+
+    return () => {
+      window.removeEventListener('scout_entries_updated', onEntriesUpdate);
+      window.removeEventListener('scout_picklist_updated', onPicklistUpdate);
+    };
   }, []);
 
   const getStatsForTeam = (teamNumber: number): TeamStats | undefined => {

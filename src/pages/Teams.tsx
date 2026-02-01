@@ -29,6 +29,16 @@ const Teams = () => {
 
   useEffect(() => {
     loadTeams();
+
+    const handleUpdate = (e: any) => {
+      const updatedEntries = e.detail;
+      const stats = getAllTeamStatsFromEntries(updatedEntries);
+      setTeams(stats);
+      setLoading(false);
+    };
+
+    window.addEventListener('scout_entries_updated', handleUpdate);
+    return () => window.removeEventListener('scout_entries_updated', handleUpdate);
   }, []);
 
   // Admin Functions

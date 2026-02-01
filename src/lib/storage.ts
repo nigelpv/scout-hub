@@ -7,6 +7,8 @@ import { toast } from 'sonner';
 // ============ KEYS ============
 const EVENT_KEY = 'scout_current_event';
 const PENDING_ENTRIES_KEY = 'scout_pending_entries';
+const ENTRIES_CACHE_KEY = 'scout_entries_cache';
+const PICKLIST_CACHE_KEY = 'scout_picklist_cache';
 
 // Custom event for sync status updates
 export const SYNC_EVENT = 'scout_sync_update';
@@ -38,14 +40,30 @@ function dispatchSyncUpdate(isSyncing: boolean) {
 // ============ ENTRIES ============
 
 export async function getEntries(): Promise<ScoutingEntry[]> {
-  try {
-    const response = await fetch(`${API_URL}/entries`);
-    if (!response.ok) throw new Error('Failed to fetch entries');
-    return await response.json();
-  } catch (error) {
-    console.error('Error fetching entries:', error);
-    return [];
-  }
+  // Return cached data immediately if available
+  const cached = localStorage.getItem(ENTRIES_CACHE_KEY);
+  let initialEntries: ScoutingEntry[] = cached ? JSON.parse(cached) : [];
+
+  // Fetch from server in the background
+  const fetchPromise = (async () => {
+    try {
+      const response = await fetch(`${API_URL}/entries`);
+      if (!response.ok) throw new Error('Failed to fetch entries');
+      const data = await response.json();
+      localStorage.setItem(ENTRIES_CACHE_KEY, JSON.stringify(data));
+
+      // Dispatch event so UI can refresh if it wants
+      window.dispatchEvent(new CustomEvent('scout_entries_updated', { detail: data }));
+
+      return data;
+    } catch (error) {
+      console.error('Error fetching entries:', error);
+      return initialEntries;
+    }
+  })();
+
+  // If we have cached data, return it. If not, wait for fetch.
+  return initialEntries.length > 0 ? initialEntries : fetchPromise;
 }
 
 export async function getEntriesForTeam(teamNumber: number): Promise<ScoutingEntry[]> {
@@ -79,6 +97,12 @@ export async function saveEntry(entry: ScoutingEntry): Promise<{ success: boolea
     });
 
     if (response.ok) {
+      // Update local cache immediately
+      const current = await getEntries();
+      const updated = [entry, ...current];
+      localStorage.setItem(ENTRIES_CACHE_KEY, JSON.stringify(updated));
+      window.dispatchEvent(new CustomEvent('scout_entries_updated', { detail: updated }));
+
       return { success: true };
     }
 
@@ -207,6 +231,12 @@ export async function deleteEntry(id: string, password: string): Promise<boolean
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ password }),
     });
+    if (response.ok) {
+      const current = await getEntries();
+      const updated = current.filter(e => e.id !== id);
+      localStorage.setItem(ENTRIES_CACHE_KEY, JSON.stringify(updated));
+      window.dispatchEvent(new CustomEvent('scout_entries_updated', { detail: updated }));
+    }
     return response.ok;
   } catch (error) {
     console.error('Error deleting entry:', error);
@@ -221,6 +251,12 @@ export async function deleteEntries(ids: string[], password: string): Promise<bo
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ ids, password }),
     });
+    if (response.ok) {
+      const current = await getEntries();
+      const updated = current.filter(e => !ids.includes(e.id));
+      localStorage.setItem(ENTRIES_CACHE_KEY, JSON.stringify(updated));
+      window.dispatchEvent(new CustomEvent('scout_entries_updated', { detail: updated }));
+    }
     return response.ok;
   } catch (error) {
     console.error('Error deleting entries:', error);
@@ -235,6 +271,12 @@ export async function deleteTeamData(teamNumber: number, password: string): Prom
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ password }),
     });
+    if (response.ok) {
+      const current = await getEntries();
+      const updated = current.filter(e => e.teamNumber !== teamNumber);
+      localStorage.setItem(ENTRIES_CACHE_KEY, JSON.stringify(updated));
+      window.dispatchEvent(new CustomEvent('scout_entries_updated', { detail: updated }));
+    }
     return response.ok;
   } catch (error) {
     console.error('Error deleting team data:', error);
@@ -245,14 +287,24 @@ export async function deleteTeamData(teamNumber: number, password: string): Prom
 // ============ PICKLIST ============
 
 export async function getPicklist(): Promise<PicklistTeam[]> {
-  try {
-    const response = await fetch(`${API_URL}/picklist`);
-    if (!response.ok) throw new Error('Failed to fetch picklist');
-    return await response.json();
-  } catch (error) {
-    console.error('Error fetching picklist:', error);
-    return [];
-  }
+  const cached = localStorage.getItem(PICKLIST_CACHE_KEY);
+  let initialPicklist: PicklistTeam[] = cached ? JSON.parse(cached) : [];
+
+  const fetchPromise = (async () => {
+    try {
+      const response = await fetch(`${API_URL}/picklist`);
+      if (!response.ok) throw new Error('Failed to fetch picklist');
+      const data = await response.json();
+      localStorage.setItem(PICKLIST_CACHE_KEY, JSON.stringify(data));
+      window.dispatchEvent(new CustomEvent('scout_picklist_updated', { detail: data }));
+      return data;
+    } catch (error) {
+      console.error('Error fetching picklist:', error);
+      return initialPicklist;
+    }
+  })();
+
+  return initialPicklist.length > 0 ? initialPicklist : fetchPromise;
 }
 
 export async function savePicklist(picklist: PicklistTeam[]): Promise<boolean> {
@@ -262,6 +314,10 @@ export async function savePicklist(picklist: PicklistTeam[]): Promise<boolean> {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(picklist),
     });
+    if (response.ok) {
+      localStorage.setItem(PICKLIST_CACHE_KEY, JSON.stringify(picklist));
+      window.dispatchEvent(new CustomEvent('scout_picklist_updated', { detail: picklist }));
+    }
     return response.ok;
   } catch (error) {
     console.error('Error saving picklist:', error);

@@ -9,16 +9,43 @@ const Index = () => {
   const [teamsCount, setTeamsCount] = useState(0);
   const [loading, setLoading] = useState(true);
 
+  const [wakeUpHint, setWakeUpHint] = useState(false);
+  const [isFirstLoad, setIsFirstLoad] = useState(true);
+
   useEffect(() => {
     const loadStats = async () => {
-      setLoading(true);
+      // If we have cached data, this returns instantly.
+      // If not, it waits for the server.
       const entries = await getEntries();
       setEntriesCount(entries.length);
       setTeamsCount(getUniqueTeamsFromEntries(entries).length);
       setLoading(false);
+      setIsFirstLoad(false);
     };
+
     loadStats();
-  }, []);
+
+    // Listen for background background cache updates (Stale-While-Revalidate)
+    const handleUpdate = (e: any) => {
+      const updatedEntries = e.detail;
+      setEntriesCount(updatedEntries.length);
+      setTeamsCount(getUniqueTeamsFromEntries(updatedEntries).length);
+      setLoading(false);
+      setWakeUpHint(false);
+    };
+
+    window.addEventListener('scout_entries_updated', handleUpdate);
+
+    // If still loading after 3 seconds, show the "waking up" hint
+    const timer = setTimeout(() => {
+      if (loading) setWakeUpHint(true);
+    }, 3000);
+
+    return () => {
+      window.removeEventListener('scout_entries_updated', handleUpdate);
+      clearTimeout(timer);
+    };
+  }, [loading]);
 
   const getLimitColor = () => {
     if (entriesCount >= ENTRY_LIMIT) return 'text-destructive';
@@ -63,6 +90,14 @@ const Index = () => {
           <p className="text-xs text-muted-foreground">Teams</p>
         </div>
       </div>
+
+      {wakeUpHint && (
+        <div className="bg-primary/5 border border-primary/20 rounded-lg p-3 mb-6 animate-in fade-in slide-in-from-top-2 duration-500">
+          <p className="text-xs text-primary text-center leading-relaxed">
+            <span className="font-bold">Wait a moment!</span> The server is waking up (this happens if it hasn't been used in a while). It'll be ready in about 30 seconds.
+          </p>
+        </div>
+      )}
 
       {/* Navigation */}
       <div className="space-y-3">
