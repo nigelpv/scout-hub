@@ -3,7 +3,7 @@ import { pool } from '../index.js';
 
 const router = Router();
 
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'REDACTED';
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
 
 // GET picklist
 router.get('/', async (req, res) => {

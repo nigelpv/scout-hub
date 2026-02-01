@@ -4,7 +4,7 @@ import { pool } from '../index.js';
 const router = Router();
 
 // Admin password for delete operations
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'REDACTED';
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
 
 // GET all entries
 router.get('/', async (req, res) => {
