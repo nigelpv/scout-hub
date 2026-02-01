@@ -12,7 +12,7 @@ const PICKLIST_CACHE_KEY = 'scout_picklist_cache';
 
 // Custom event for sync status updates
 export const SYNC_EVENT = 'scout_sync_update';
-export const ENTRY_LIMIT = 300;
+export const ENTRY_LIMIT = 6767;
 
 export interface SyncStatus {
   pendingCount: number;
