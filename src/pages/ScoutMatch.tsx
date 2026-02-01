@@ -202,26 +202,13 @@ const ScoutMatch = () => {
                                 label="Scored ALL of Preload?"
                             />
                             {!autoPreloadScored && (
-                                <div className="py-2">
-                                    <label className="text-sm font-medium mb-1 block">How many scored? (0-8)</label>
-                                    <div className="flex items-center gap-4">
-                                        <button
-                                            onClick={() => setAutoPreloadCount(Math.max(0, autoPreloadCount - 1))}
-                                            className="w-12 h-12 rounded-full bg-secondary flex items-center justify-center text-xl font-bold active:bg-secondary/70 transition-colors"
-                                        >
-                                            -
-                                        </button>
-                                        <span className="font-mono text-3xl font-bold min-w-[2ch] text-center">
-                                            {autoPreloadCount}
-                                        </span>
-                                        <button
-                                            onClick={() => setAutoPreloadCount(Math.min(8, autoPreloadCount + 1))}
-                                            className="w-12 h-12 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xl font-bold active:bg-primary/90 transition-colors shadow-sm"
-                                        >
-                                            +
-                                        </button>
-                                    </div>
-                                </div>
+                                <Counter
+                                    value={autoPreloadCount}
+                                    onChange={setAutoPreloadCount}
+                                    min={0}
+                                    max={8}
+                                    label="How many scored? (0-8)"
+                                />
                             )}
                         </>
                     )}
