@@ -114,7 +114,6 @@ const TeamDetail = () => {
 
     const climbLabels: Record<string, string> = {
         'none': 'None',
-        'attempted': 'Attempted',
         'low': 'Low',
         'mid': 'Mid',
         'high': 'High',
@@ -261,20 +260,13 @@ const TeamDetail = () => {
                         <Zap className="w-5 h-5 text-purple-500" />
                         <h2 className="font-semibold">Performance</h2>
                     </div>
-                    <div className="grid grid-cols-3 gap-4 text-center">
+                    <div className="grid grid-cols-2 gap-4 text-center">
                         <div>
                             <User className="w-5 h-5 mx-auto mb-1 text-muted-foreground" />
                             <p className={`font-mono text-2xl font-bold ${getRatingColor(stats.avgDriverSkill)}`}>
                                 {stats.avgDriverSkill}
                             </p>
                             <p className="text-xs text-muted-foreground">Driver</p>
-                        </div>
-                        <div>
-                            <Gauge className="w-5 h-5 mx-auto mb-1 text-muted-foreground" />
-                            <p className={`font-mono text-2xl font-bold ${getRatingColor(stats.avgRobotSpeed)}`}>
-                                {stats.avgRobotSpeed}
-                            </p>
-                            <p className="text-xs text-muted-foreground">Speed</p>
                         </div>
                         <div>
                             <Wrench className="w-5 h-5 mx-auto mb-1 text-muted-foreground" />
@@ -398,12 +390,14 @@ const TeamDetail = () => {
                                                 <div className="flex justify-between border-b border-border/50 pb-0.5">
                                                     <span>Defense</span>
                                                     <span className="font-medium text-foreground">
-                                                        {entry.defensePlayed ? `Lvl ${entry.defenseEffectiveness}` : 'None'}
+                                                        <span className="font-medium text-foreground">
+                                                            {entry.defenseRating > 0 ? `Lvl ${entry.defenseRating}` : 'None'}
+                                                        </span>
                                                     </span>
                                                 </div>
                                                 <div className="flex justify-between border-b border-border/50 pb-0.5">
                                                     <span>Climb</span>
-                                                    <span className="font-medium text-foreground">{climbLabels[entry.climbResult]} {entry.climbResult !== 'none' && entry.climbResult !== 'attempted' && `(${entry.climbStability}★)`}</span>
+                                                    <span className="font-medium text-foreground">{climbLabels[entry.climbResult]} {entry.climbResult !== 'none' && `(${entry.climbStability}★)`}</span>
                                                 </div>
                                             </div>
                                         </div>
@@ -414,11 +408,6 @@ const TeamDetail = () => {
                                         <div>
                                             <p className="text-[8px] uppercase font-bold text-muted-foreground">Driver</p>
                                             <p className={`font-mono font-bold ${getRatingColor(entry.driverSkill)}`}>{entry.driverSkill}</p>
-                                        </div>
-                                        <div className="w-[1px] h-6 bg-border/50" />
-                                        <div>
-                                            <p className="text-[8px] uppercase font-bold text-muted-foreground">Speed</p>
-                                            <p className={`font-mono font-bold ${getRatingColor(entry.robotSpeed)}`}>{entry.robotSpeed}</p>
                                         </div>
                                         <div className="w-[1px] h-6 bg-border/50" />
                                         <div>

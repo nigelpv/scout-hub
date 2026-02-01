@@ -57,19 +57,14 @@ export function calculateTeamStatsFromEntries(entries: ScoutingEntry[]): TeamSta
     const highMidClimbRate = (highMidClimbs / matchesPlayed) * 100;
 
     // Rating Stats
-    const defenseEntries = entries.filter(e => e.defensePlayed);
-    const avgDefenseRating = defenseEntries.length > 0
-        ? defenseEntries.reduce((sum, e) => sum + e.defenseEffectiveness, 0) / defenseEntries.length
-        : 0;
+    const avgDefenseRating = entries.reduce((sum, e) => sum + (e.defenseRating || 0), 0) / matchesPlayed;
 
     const avgDriverSkill = entries.reduce((sum, e) => sum + e.driverSkill, 0) / matchesPlayed;
-    const avgRobotSpeed = entries.reduce((sum, e) => sum + e.robotSpeed, 0) / matchesPlayed;
     const avgReliability = entries.reduce((sum, e) => sum + e.reliability, 0) / matchesPlayed;
 
     // Score calculation (Match-by-Match)
     const teleopClimbPoints: Record<string, number> = {
         'none': 0,
-        'attempted': 0,
         'low': 10,
         'mid': 20,
         'high': 30
@@ -115,7 +110,6 @@ export function calculateTeamStatsFromEntries(entries: ScoutingEntry[]): TeamSta
         highMidClimbRate: Math.round(highMidClimbRate),
         avgDefenseRating: Math.round(avgDefenseRating * 10) / 10,
         avgDriverSkill: Math.round(avgDriverSkill * 10) / 10,
-        avgRobotSpeed: Math.round(avgRobotSpeed * 10) / 10,
         avgReliability: Math.round(avgReliability * 10) / 10,
         totalScore: Math.round(totalScore * 10) / 10,
     };
