@@ -31,16 +31,14 @@ const ScoutMatch = () => {
     // Teleop
     const [teleopCycles, setTeleopCycles] = useState(0);
     const [estimatedCycleSize, setEstimatedCycleSize] = useState(0);
-    const [defensePlayed, setDefensePlayed] = useState(false);
-    const [defenseEffectiveness, setDefenseEffectiveness] = useState(3);
+    const [defenseRating, setDefenseRating] = useState(0);
 
     // Endgame
-    const [climbResult, setClimbResult] = useState<'none' | 'attempted' | 'low' | 'mid' | 'high'>('none');
+    const [climbResult, setClimbResult] = useState<'none' | 'low' | 'mid' | 'high'>('none');
     const [climbStability, setClimbStability] = useState(3);
 
     // Overall
     const [driverSkill, setDriverSkill] = useState(3);
-    const [robotSpeed, setRobotSpeed] = useState(3);
     const [reliability, setReliability] = useState(3);
     const [shootingRange, setShootingRange] = useState<'short' | 'medium' | 'long'>('short');
     const [notes, setNotes] = useState('');
@@ -67,12 +65,10 @@ const ScoutMatch = () => {
             autoClimb,
             teleopCycles,
             estimatedCycleSize,
-            defensePlayed,
-            defenseEffectiveness: defensePlayed ? defenseEffectiveness : 0,
-            climbResult,
+            defenseRating,
+            climbResult: climbResult as any,
             climbStability,
             driverSkill,
-            robotSpeed,
             reliability,
             shootingRange,
             notes,
@@ -111,12 +107,10 @@ const ScoutMatch = () => {
             setAutoClimb('none');
             setTeleopCycles(0);
             setEstimatedCycleSize(0);
-            setDefensePlayed(false);
-            setDefenseEffectiveness(3);
+            setDefenseRating(0);
             setClimbResult('none');
             setClimbStability(3);
             setDriverSkill(3);
-            setRobotSpeed(3);
             setReliability(3);
             setShootingRange('short');
             setNotes('');
@@ -249,18 +243,11 @@ const ScoutMatch = () => {
                         onChange={setEstimatedCycleSize}
                         label="Est. Cycle Size"
                     />
-                    <ToggleField
-                        value={defensePlayed}
-                        onChange={setDefensePlayed}
-                        label="Played Defense?"
+                    <RatingField
+                        value={defenseRating}
+                        onChange={setDefenseRating}
+                        label="Defense Rating"
                     />
-                    {defensePlayed && (
-                        <RatingField
-                            value={defenseEffectiveness}
-                            onChange={setDefenseEffectiveness}
-                            label="Defense Effectiveness"
-                        />
-                    )}
                     <OptionSelector
                         value={shootingRange}
                         onChange={(v) => setShootingRange(v as typeof shootingRange)}
@@ -282,13 +269,12 @@ const ScoutMatch = () => {
                         label="Climb Result"
                         options={[
                             { value: 'none' as const, label: 'None' },
-                            { value: 'attempted' as const, label: 'Attempted' },
                             { value: 'low' as const, label: 'Low' },
                             { value: 'mid' as const, label: 'Mid' },
                             { value: 'high' as const, label: 'High' },
                         ] as const}
                     />
-                    {climbResult !== 'none' && climbResult !== 'attempted' && (
+                    {climbResult !== 'none' && (
                         <RatingField
                             value={climbStability}
                             onChange={setClimbStability}
@@ -304,11 +290,6 @@ const ScoutMatch = () => {
                         value={driverSkill}
                         onChange={setDriverSkill}
                         label="Driver Skill"
-                    />
-                    <RatingField
-                        value={robotSpeed}
-                        onChange={setRobotSpeed}
-                        label="Robot Speed"
                     />
                     <RatingField
                         value={reliability}

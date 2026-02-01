@@ -22,16 +22,14 @@ export interface ScoutingEntry {
     // Teleop
     teleopCycles: number;
     estimatedCycleSize: number;
-    defensePlayed: boolean;
-    defenseEffectiveness: number; // 1-5
+    defenseRating: number; // 0-5 (0 = none)
 
     // Endgame
-    climbResult: 'none' | 'attempted' | 'low' | 'mid' | 'high';
+    climbResult: 'none' | 'low' | 'mid' | 'high';
     climbStability: number; // 1-5
 
     // Overall
     driverSkill: number; // 1-5
-    robotSpeed: number; // 1-5
     reliability: number; // 1-5
     shootingRange: 'short' | 'medium' | 'long';
     notes: string;
@@ -55,7 +53,6 @@ export interface TeamStats {
     highMidClimbRate: number;
     avgDefenseRating: number;
     avgDriverSkill: number;
-    avgRobotSpeed: number;
     avgReliability: number;
     totalScore: number; // Computed ranking score
 }
