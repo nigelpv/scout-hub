@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { ClipboardList, Users, Trophy, Database, Loader2 } from 'lucide-react';
-import { getEntries } from '@/lib/storage';
+import { getEntries, ENTRY_LIMIT } from '@/lib/storage';
 import { getUniqueTeamsFromEntries } from '@/lib/stats';
 
 const Index = () => {
@@ -19,6 +19,12 @@ const Index = () => {
     };
     loadStats();
   }, []);
+
+  const getLimitColor = () => {
+    if (entriesCount >= ENTRY_LIMIT) return 'text-destructive';
+    if (entriesCount >= ENTRY_LIMIT * 0.8) return 'text-warning';
+    return 'text-foreground';
+  };
 
   return (
     <div className="min-h-screen bg-background p-4 pb-8">
@@ -39,9 +45,13 @@ const Index = () => {
           {loading ? (
             <Loader2 className="w-6 h-6 animate-spin mx-auto" />
           ) : (
-            <p className="font-mono text-2xl font-bold">{entriesCount}</p>
+            <div className="flex flex-col items-center">
+              <p className={`font-mono text-xl font-bold ${getLimitColor()}`}>
+                {entriesCount} <span className="text-xs text-muted-foreground font-normal">/ {ENTRY_LIMIT}</span>
+              </p>
+            </div>
           )}
-          <p className="text-xs text-muted-foreground">Entries</p>
+          <p className="text-xs text-muted-foreground mt-1">Total Entries</p>
         </div>
         <div className="stat-card text-center">
           <Users className="w-5 h-5 mx-auto mb-2 text-muted-foreground" />

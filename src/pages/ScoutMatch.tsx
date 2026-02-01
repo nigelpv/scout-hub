@@ -78,11 +78,13 @@ const ScoutMatch = () => {
             notes,
         };
 
-        const { success, offline } = await saveEntry(entry);
+        const { success, offline, limitReached } = await saveEntry(entry);
         setSaving(false);
 
         if (!success) {
-            toast.error('Failed to save entry. Please try again.');
+            if (!limitReached) {
+                toast.error('Failed to save entry. Please try again.');
+            }
             return;
         }
 

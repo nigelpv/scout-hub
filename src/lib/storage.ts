@@ -10,6 +10,7 @@ const PENDING_ENTRIES_KEY = 'scout_pending_entries';
 
 // Custom event for sync status updates
 export const SYNC_EVENT = 'scout_sync_update';
+export const ENTRY_LIMIT = 300;
 
 export interface SyncStatus {
   pendingCount: number;
@@ -58,8 +59,18 @@ export async function getEntriesForTeam(teamNumber: number): Promise<ScoutingEnt
   }
 }
 
-export async function saveEntry(entry: ScoutingEntry): Promise<{ success: boolean; offline?: boolean }> {
+export async function saveEntry(entry: ScoutingEntry): Promise<{ success: boolean; offline?: boolean; limitReached?: boolean }> {
   try {
+    // Check limit before saving
+    const currentEntries = await getEntries();
+    const pending = getPendingEntries();
+    const totalCount = currentEntries.length + pending.length;
+
+    if (totalCount >= ENTRY_LIMIT) {
+      toast.error(`Entry limit reached (${ENTRY_LIMIT}). Please delete old entries first.`);
+      return { success: false, limitReached: true };
+    }
+
     // Try to save to server
     const response = await fetch(`${API_URL}/entries`, {
       method: 'POST',
@@ -71,6 +82,12 @@ export async function saveEntry(entry: ScoutingEntry): Promise<{ success: boolea
       return { success: true };
     }
 
+    // If server says limit reached (403), don't queue locally
+    if (response.status === 403) {
+      toast.error(`Entry limit reached on server. Please delete old entries.`);
+      return { success: false, limitReached: true };
+    }
+
     // If server error (500+), queue it locally
     if (response.status >= 500) {
       queueEntryLocally(entry);
@@ -79,7 +96,15 @@ export async function saveEntry(entry: ScoutingEntry): Promise<{ success: boolea
 
     return { success: false };
   } catch (error) {
-    // Network error (offline), queue it locally
+    // Network error (offline), check if we can queue locally
+    const pending = getPendingEntries();
+    // We don't know exact server count here, but we can guess from last fetch
+    // For simplicity, we'll try to queue unless pending is huge
+    if (pending.length >= ENTRY_LIMIT) {
+      toast.error('Local buffer full. Sync and delete entries first.');
+      return { success: false, limitReached: true };
+    }
+
     console.warn('Network error, saving entry locally:', error);
     queueEntryLocally(entry);
     return { success: true, offline: true };

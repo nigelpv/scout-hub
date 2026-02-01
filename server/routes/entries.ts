@@ -86,6 +86,17 @@ router.get('/team/:teamNumber', async (req, res) => {
 // POST new entry
 router.post('/', async (req, res) => {
     try {
+        // Check entry limit (300)
+        const countResult = await pool.query('SELECT COUNT(*) FROM scouting_entries');
+        const count = parseInt(countResult.rows[0].count);
+
+        if (count >= 300) {
+            return res.status(403).json({
+                error: 'Entry limit reached',
+                message: 'The website is limited to 300 entries. Please delete old entries to add more.'
+            });
+        }
+
         const entry = req.body;
         await pool.query(
             `INSERT INTO scouting_entries (
