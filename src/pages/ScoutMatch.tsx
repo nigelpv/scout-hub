@@ -291,20 +291,17 @@ const ScoutMatch = () => {
                         onChange={setDriverSkill}
                         label="Driver Skill"
                     />
-                    <div className="py-3">
-                        <label className="text-foreground font-medium block mb-3">Travel</label>
-                        <OptionSelector
-                            value={obstacleNavigation}
-                            onChange={(v) => setObstacleNavigation(v as typeof obstacleNavigation)}
-                            label="Travel"
-                            options={[
-                                { value: 'none' as const, label: 'None' },
-                                { value: 'trench' as const, label: 'Go in trench' },
-                                { value: 'bump' as const, label: 'Go over bump' },
-                                { value: 'both' as const, label: 'Both' },
-                            ] as const}
-                        />
-                    </div>
+                    <OptionSelector
+                        value={obstacleNavigation}
+                        onChange={(v) => setObstacleNavigation(v as typeof obstacleNavigation)}
+                        label="Travel"
+                        options={[
+                            { value: 'none' as const, label: 'None' },
+                            { value: 'trench' as const, label: 'Go in trench' },
+                            { value: 'bump' as const, label: 'Go over bump' },
+                            { value: 'both' as const, label: 'Both' },
+                        ] as const}
+                    />
                     <div className="py-3">
                         <label className="text-foreground font-medium block mb-3">Notes</label>
                         <textarea
