@@ -361,7 +361,7 @@ export function generateId(): string {
 
 export function getCurrentEvent(): string {
   if (typeof window === 'undefined') return '';
-  return localStorage.getItem(EVENT_KEY) || '';
+  return localStorage.getItem(EVENT_KEY) || '2025camb';
 }
 
 export function setCurrentEvent(event: string): void {
