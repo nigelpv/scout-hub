@@ -120,9 +120,14 @@ const TeamDetail = () => {
     };
 
     const autoClimbLabels: Record<string, string> = {
-        'none': 'None',
-        'side': 'Side',
         'middle': 'Middle',
+    };
+
+    const navLabels: Record<string, string> = {
+        'none': 'None',
+        'trench': 'Trench',
+        'bump': 'Bump',
+        'both': 'Trench & Bump',
     };
 
     return (
@@ -390,6 +395,10 @@ const TeamDetail = () => {
                                             <div className="flex justify-between border-b border-border/50 pb-0.5">
                                                 <span>Climb</span>
                                                 <span className="font-medium text-foreground">{climbLabels[entry.climbResult]} {entry.climbResult !== 'none' && `(${entry.climbStability}★)`}</span>
+                                            </div>
+                                            <div className="flex justify-between border-b border-border/50 pb-0.5">
+                                                <span>Nav</span>
+                                                <span className="font-medium text-foreground">{navLabels[entry.obstacleNavigation || 'none']}</span>
                                             </div>
                                         </div>
                                     </div>

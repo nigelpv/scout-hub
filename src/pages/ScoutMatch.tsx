@@ -40,6 +40,7 @@ const ScoutMatch = () => {
     // Overall
     const [driverSkill, setDriverSkill] = useState(3);
     const [shootingRange, setShootingRange] = useState<'short' | 'medium' | 'long'>('short');
+    const [obstacleNavigation, setObstacleNavigation] = useState<'none' | 'trench' | 'bump' | 'both'>('none');
     const [notes, setNotes] = useState('');
 
     const handleSubmit = async () => {
@@ -69,6 +70,7 @@ const ScoutMatch = () => {
             climbStability,
             driverSkill,
             shootingRange,
+            obstacleNavigation,
             notes,
         };
 
@@ -110,6 +112,7 @@ const ScoutMatch = () => {
             setClimbStability(3);
             setDriverSkill(3);
             setShootingRange('short');
+            setObstacleNavigation('none');
             setNotes('');
             setSaved(false);
         }, 1500);
@@ -288,6 +291,20 @@ const ScoutMatch = () => {
                         onChange={setDriverSkill}
                         label="Driver Skill"
                     />
+                    <div className="py-3">
+                        <label className="text-foreground font-medium block mb-3">Obstacles</label>
+                        <OptionSelector
+                            value={obstacleNavigation}
+                            onChange={(v) => setObstacleNavigation(v as typeof obstacleNavigation)}
+                            label="Obstacle Navigation"
+                            options={[
+                                { value: 'none' as const, label: 'None' },
+                                { value: 'trench' as const, label: 'Go in trench' },
+                                { value: 'bump' as const, label: 'Go over bump' },
+                                { value: 'both' as const, label: 'Both' },
+                            ] as const}
+                        />
+                    </div>
                     <div className="py-3">
                         <label className="text-foreground font-medium block mb-3">Notes</label>
                         <textarea

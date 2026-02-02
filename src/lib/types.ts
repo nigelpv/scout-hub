@@ -31,6 +31,7 @@ export interface ScoutingEntry {
     // Overall
     driverSkill: number; // 1-5
     shootingRange: 'short' | 'medium' | 'long';
+    obstacleNavigation: 'none' | 'trench' | 'bump' | 'both';
     notes: string;
 }
 

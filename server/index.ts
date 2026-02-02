@@ -52,6 +52,7 @@ async function initDb() {
         driver_skill INTEGER DEFAULT 3,
         robot_speed INTEGER DEFAULT 3,
         shooting_range TEXT DEFAULT 'short',
+        obstacle_navigation TEXT DEFAULT 'none',
         notes TEXT DEFAULT ''
       );
     `);
@@ -86,6 +87,17 @@ async function initDb() {
       console.log('Applied migration: Added auto_preload_count column');
     } catch (err) {
       console.log('Migration note: auto_preload_count column check completed');
+    }
+
+    // Migration: Add obstacle_navigation
+    try {
+      await client.query(`
+        ALTER TABLE scouting_entries 
+        ADD COLUMN IF NOT EXISTS obstacle_navigation TEXT DEFAULT 'none'
+      `);
+      console.log('Applied migration: Added obstacle_navigation column');
+    } catch (err) {
+      // Ignore if column exists
     }
 
   } catch (err) {
