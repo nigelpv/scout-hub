@@ -292,11 +292,11 @@ const ScoutMatch = () => {
                         label="Driver Skill"
                     />
                     <div className="py-3">
-                        <label className="text-foreground font-medium block mb-3">Obstacles</label>
+                        <label className="text-foreground font-medium block mb-3">Travel</label>
                         <OptionSelector
                             value={obstacleNavigation}
                             onChange={(v) => setObstacleNavigation(v as typeof obstacleNavigation)}
-                            label="Obstacle Navigation"
+                            label="Travel"
                             options={[
                                 { value: 'none' as const, label: 'None' },
                                 { value: 'trench' as const, label: 'Go in trench' },

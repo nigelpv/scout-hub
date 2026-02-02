@@ -397,7 +397,7 @@ const TeamDetail = () => {
                                                 <span className="font-medium text-foreground">{climbLabels[entry.climbResult]} {entry.climbResult !== 'none' && `(${entry.climbStability}★)`}</span>
                                             </div>
                                             <div className="flex justify-between border-b border-border/50 pb-0.5">
-                                                <span>Nav</span>
+                                                <span>Travel</span>
                                                 <span className="font-medium text-foreground">{navLabels[entry.obstacleNavigation || 'none']}</span>
                                             </div>
                                         </div>
