@@ -253,8 +253,8 @@ const ScoutMatch = () => {
                                         onClick={() => setAlliancePosition(pos)}
                                         className={`h-12 rounded-lg font-bold text-sm transition-all ${alliancePosition === pos
                                             ? pos.startsWith('Red')
-                                                ? 'bg-destructive text-white ring-2 ring-destructive ring-offset-2 ring-offset-background'
-                                                : 'bg-primary text-white ring-2 ring-primary ring-offset-2 ring-offset-background'
+                                                ? 'bg-alliance-red text-white ring-2 ring-alliance-red ring-offset-2 ring-offset-background'
+                                                : 'bg-alliance-blue text-white ring-2 ring-alliance-blue ring-offset-2 ring-offset-background'
                                             : 'bg-secondary text-muted-foreground hover:bg-secondary/80'
                                             }`}
                                     >
