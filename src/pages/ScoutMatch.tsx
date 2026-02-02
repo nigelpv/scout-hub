@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Save, CheckCircle } from 'lucide-react';
+import { Save, CheckCircle, RefreshCw, Loader2 } from 'lucide-react';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Counter } from '@/components/scouting/Counter';
 import { ToggleField } from '@/components/scouting/ToggleField';
@@ -9,6 +9,7 @@ import { RatingField } from '@/components/scouting/RatingField';
 import { ScoutingEntry } from '@/lib/types';
 import { saveEntry, generateId, getCurrentEvent, setCurrentEvent } from '@/lib/storage';
 import { toast } from 'sonner';
+import { fetchTeamEvents, determineCurrentEvent, fetchMatchData, getTeamFromMatch } from '@/lib/tba';
 
 const ScoutMatch = () => {
     const navigate = useNavigate();
@@ -19,6 +20,48 @@ const ScoutMatch = () => {
     const [event, setEvent] = useState(getCurrentEvent());
     const [matchNumber, setMatchNumber] = useState(1);
     const [teamNumber, setTeamNumber] = useState('');
+    const [alliancePosition, setAlliancePosition] = useState('Red 1');
+    const [loadingTBA, setLoadingTBA] = useState(false);
+
+    // Auto-fetch event for team 2473 on mount
+    useEffect(() => {
+        const loadEvent = async () => {
+            const cachedEvent = getCurrentEvent();
+            // If we have a cached event, we still check for the "best" one
+            // but we can skip if the user just set it manually? 
+            // The user said "the event code is the event next event possible"
+            setLoadingTBA(true);
+            const events = await fetchTeamEvents('frc2473', new Date().getFullYear());
+            const currentEvent = determineCurrentEvent(events);
+            if (currentEvent) {
+                setEvent(currentEvent.key);
+                setCurrentEvent(currentEvent.key);
+            }
+            setLoadingTBA(false);
+        };
+
+        loadEvent();
+    }, []);
+
+    // Auto-fetch team number when match or position changes
+    useEffect(() => {
+        const updateTeam = async () => {
+            if (!event || !matchNumber || !alliancePosition) return;
+
+            setLoadingTBA(true);
+            const matchData = await fetchMatchData(event, matchNumber);
+            if (matchData) {
+                const team = getTeamFromMatch(matchData, alliancePosition);
+                if (team) {
+                    setTeamNumber(team);
+                }
+            }
+            setLoadingTBA(false);
+        };
+
+        const timer = setTimeout(updateTeam, 500); // Debounce
+        return () => clearTimeout(timer);
+    }, [event, matchNumber, alliancePosition]);
 
     // Autonomous
     const [autoCycles, setAutoCycles] = useState(0);
@@ -141,7 +184,27 @@ const ScoutMatch = () => {
 
                     <div className="space-y-4">
                         <div>
-                            <label className="text-sm text-muted-foreground block mb-2">Event</label>
+                            <div className="flex items-center justify-between mb-2">
+                                <label className="text-sm text-muted-foreground block">Event</label>
+                                <button
+                                    onClick={async () => {
+                                        setLoadingTBA(true);
+                                        const events = await fetchTeamEvents('frc2473', new Date().getFullYear());
+                                        const currentEvent = determineCurrentEvent(events);
+                                        if (currentEvent) {
+                                            setEvent(currentEvent.key);
+                                            setCurrentEvent(currentEvent.key);
+                                            toast.success(`Set event to ${currentEvent.key}`);
+                                        }
+                                        setLoadingTBA(false);
+                                    }}
+                                    className="text-xs text-primary flex items-center gap-1 hover:underline"
+                                    disabled={loadingTBA}
+                                >
+                                    <RefreshCw className={`w-3 h-3 ${loadingTBA ? 'animate-spin' : ''}`} />
+                                    Auto-refresh
+                                </button>
+                            </div>
                             <input
                                 type="text"
                                 value={event}
@@ -164,13 +227,40 @@ const ScoutMatch = () => {
                             </div>
                             <div>
                                 <label className="text-sm text-muted-foreground block mb-2">Team #</label>
-                                <input
-                                    type="number"
-                                    value={teamNumber}
-                                    onChange={(e) => setTeamNumber(e.target.value)}
-                                    placeholder="0000"
-                                    className="w-full h-12 px-4 rounded-lg bg-secondary text-foreground font-mono text-lg font-bold text-center border-0 focus:ring-2 ring-primary"
-                                />
+                                <div className="relative">
+                                    <input
+                                        type="number"
+                                        value={teamNumber}
+                                        onChange={(e) => setTeamNumber(e.target.value)}
+                                        placeholder="0000"
+                                        className="w-full h-12 px-4 rounded-lg bg-secondary text-foreground font-mono text-lg font-bold text-center border-0 focus:ring-2 ring-primary"
+                                    />
+                                    {loadingTBA && (
+                                        <div className="absolute right-2 top-3">
+                                            <Loader2 className="w-6 h-6 animate-spin text-primary opacity-50" />
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label className="text-sm text-muted-foreground block mb-2">Alliance Position</label>
+                            <div className="grid grid-cols-3 gap-2">
+                                {['Red 1', 'Red 2', 'Red 3', 'Blue 1', 'Blue 2', 'Blue 3'].map((pos) => (
+                                    <button
+                                        key={pos}
+                                        onClick={() => setAlliancePosition(pos)}
+                                        className={`h-12 rounded-lg font-bold text-sm transition-all ${alliancePosition === pos
+                                            ? pos.startsWith('Red')
+                                                ? 'bg-destructive text-white ring-2 ring-destructive ring-offset-2 ring-offset-background'
+                                                : 'bg-primary text-white ring-2 ring-primary ring-offset-2 ring-offset-background'
+                                            : 'bg-secondary text-muted-foreground hover:bg-secondary/80'
+                                            }`}
+                                    >
+                                        {pos}
+                                    </button>
+                                ))}
                             </div>
                         </div>
                     </div>
