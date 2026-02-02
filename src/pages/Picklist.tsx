@@ -299,10 +299,10 @@ const Picklist = () => {
                       )}
                     </div>
                     <div className="flex items-center gap-3 text-sm mt-1">
-                      <span className={getRatingColor(stats.avgReliability)}>
-                        Rel: {stats.avgReliability}
-                      </span>
                       <span className="text-muted-foreground">
+                        Matches: {stats.matchesPlayed}
+                      </span>
+                      <span className="text-muted-foreground font-medium">
                         Score: {stats.totalScore}
                       </span>
                     </div>

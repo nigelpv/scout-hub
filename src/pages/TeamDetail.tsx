@@ -4,7 +4,7 @@ import { PageHeader } from '@/components/layout/PageHeader';
 import { StatBar } from '@/components/scouting/StatBar';
 import { calculateTeamStatsFromEntries, getRatingColor } from '@/lib/stats';
 import { getEntriesForTeam, deleteEntry, deleteEntries } from '@/lib/storage';
-import { Target, Zap, Trophy, Shield, User, Gauge, Wrench, Lock, Unlock, Trash2, X, CircleDot, Loader2, CheckSquare, Square } from 'lucide-react';
+import { Target, Zap, Trophy, Shield, User, Gauge, Lock, Unlock, Trash2, X, CircleDot, Loader2, CheckSquare, Square } from 'lucide-react';
 import { toast } from 'sonner';
 import { TeamStats, ScoutingEntry } from '@/lib/types';
 
@@ -260,172 +260,158 @@ const TeamDetail = () => {
                         <Zap className="w-5 h-5 text-purple-500" />
                         <h2 className="font-semibold">Performance</h2>
                     </div>
-                    <div className="grid grid-cols-2 gap-4 text-center">
-                        <div>
-                            <User className="w-5 h-5 mx-auto mb-1 text-muted-foreground" />
-                            <p className={`font-mono text-2xl font-bold ${getRatingColor(stats.avgDriverSkill)}`}>
-                                {stats.avgDriverSkill}
-                            </p>
-                            <p className="text-xs text-muted-foreground">Driver</p>
-                        </div>
-                        <div>
-                            <Wrench className="w-5 h-5 mx-auto mb-1 text-muted-foreground" />
-                            <p className={`font-mono text-2xl font-bold ${getRatingColor(stats.avgReliability)}`}>
-                                {stats.avgReliability}
-                            </p>
-                            <p className="text-xs text-muted-foreground">Reliable</p>
-                        </div>
+                    <div className="text-center">
+                        <User className="w-5 h-5 mx-auto mb-1 text-muted-foreground" />
+                        <p className={`font-mono text-2xl font-bold ${getRatingColor(stats.avgDriverSkill)}`}>
+                            {stats.avgDriverSkill}
+                        </p>
+                        <p className="text-xs text-muted-foreground">Driver Skill</p>
                     </div>
                 </div>
+            </div>
 
-                {/* Defense */}
-                {stats.avgDefenseRating > 0 && (
-                    <div className="stat-card">
-                        <div className="flex items-center gap-2 mb-4">
-                            <Shield className="w-5 h-5 text-destructive" />
-                            <h2 className="font-semibold">Defense</h2>
-                        </div>
-                        <StatBar value={stats.avgDefenseRating} max={5} label="Avg Defense Rating" />
-                    </div>
-                )}
-
-                {/* Recent Matches */}
+            {/* Defense */}
+            {stats.avgDefenseRating > 0 && (
                 <div className="stat-card">
-                    <div className="flex items-center justify-between mb-4">
-                        <div className="flex items-center gap-4">
-                            <h2 className="font-semibold">Match History</h2>
-                            {isAdmin && (
-                                <div className="flex gap-2 text-xs">
-                                    <button
-                                        onClick={() => setSelectedEntries(new Set(entries.map(e => e.id)))}
-                                        className="text-primary hover:underline font-medium"
-                                    >
-                                        Select All
-                                    </button>
-                                    <span className="text-muted-foreground">|</span>
-                                    <button
-                                        onClick={() => setSelectedEntries(new Set())}
-                                        className="text-muted-foreground hover:text-foreground hover:underline font-medium"
-                                    >
-                                        Deselect
-                                    </button>
-                                </div>
-                            )}
-                        </div>
+                    <div className="flex items-center gap-2 mb-4">
+                        <Shield className="w-5 h-5 text-destructive" />
+                        <h2 className="font-semibold">Defense</h2>
+                    </div>
+                    <StatBar value={stats.avgDefenseRating} max={5} label="Avg Defense Rating" />
+                </div>
+            )}
+
+            {/* Recent Matches */}
+            <div className="stat-card">
+                <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-4">
+                        <h2 className="font-semibold">Match History</h2>
                         {isAdmin && (
-                            <span className="text-xs text-muted-foreground">
-                                {selectedEntries.size} select
-                            </span>
+                            <div className="flex gap-2 text-xs">
+                                <button
+                                    onClick={() => setSelectedEntries(new Set(entries.map(e => e.id)))}
+                                    className="text-primary hover:underline font-medium"
+                                >
+                                    Select All
+                                </button>
+                                <span className="text-muted-foreground">|</span>
+                                <button
+                                    onClick={() => setSelectedEntries(new Set())}
+                                    className="text-muted-foreground hover:text-foreground hover:underline font-medium"
+                                >
+                                    Deselect
+                                </button>
+                            </div>
                         )}
                     </div>
-                    <div className="space-y-3">
-                        {entries.slice().reverse().map((entry) => (
-                            <div key={entry.id} className="border-b border-border pb-3 last:border-0 last:pb-0">
-                                <div className="flex justify-between items-center mb-2">
-                                    <div className="flex items-center gap-3">
-                                        {isAdmin ? (
-                                            <button
-                                                onClick={() => toggleSelection(entry.id)}
-                                                className={`p-1 -ml-1 rounded transition-colors ${selectedEntries.has(entry.id) ? 'text-primary' : 'text-muted-foreground'}`}
-                                            >
-                                                {selectedEntries.has(entry.id) ? (
-                                                    <CheckSquare className="w-5 h-5" />
-                                                ) : (
-                                                    <Square className="w-5 h-5" />
-                                                )}
-                                            </button>
-                                        ) : null}
-                                        <span className="font-mono font-bold text-base">Match {entry.matchNumber}</span>
-                                    </div>
-                                    <div className="flex items-center gap-2">
-                                        <div className="bg-secondary px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
-                                            {entry.shootingRange}
-                                        </div>
-                                        {isAdmin && !selectedEntries.has(entry.id) && (
-                                            <button
-                                                onClick={() => handleDeleteMatch(entry.id)}
-                                                className="p-1 text-muted-foreground hover:text-destructive transition-colors ml-2"
-                                                title="Delete Single Match"
-                                            >
-                                                <Trash2 className="w-4 h-4" />
-                                            </button>
-                                        )}
-                                    </div>
+                    {isAdmin && (
+                        <span className="text-xs text-muted-foreground">
+                            {selectedEntries.size} select
+                        </span>
+                    )}
+                </div>
+                <div className="space-y-3">
+                    {entries.slice().reverse().map((entry) => (
+                        <div key={entry.id} className="border-b border-border pb-3 last:border-0 last:pb-0">
+                            <div className="flex justify-between items-center mb-2">
+                                <div className="flex items-center gap-3">
+                                    {isAdmin ? (
+                                        <button
+                                            onClick={() => toggleSelection(entry.id)}
+                                            className={`p-1 -ml-1 rounded transition-colors ${selectedEntries.has(entry.id) ? 'text-primary' : 'text-muted-foreground'}`}
+                                        >
+                                            {selectedEntries.has(entry.id) ? (
+                                                <CheckSquare className="w-5 h-5" />
+                                            ) : (
+                                                <Square className="w-5 h-5" />
+                                            )}
+                                        </button>
+                                    ) : null}
+                                    <span className="font-mono font-bold text-base">Match {entry.matchNumber}</span>
                                 </div>
-
-                                <div className={`space-y-3 ${isAdmin ? 'pl-7' : ''}`}>
-                                    {/* Stats Grid */}
-                                    <div className="grid grid-cols-2 gap-3">
-                                        {/* Auto Column */}
-                                        <div className="space-y-1">
-                                            <p className="text-[10px] uppercase font-bold text-muted-foreground tracking-tight">Autonomous</p>
-                                            <div className="text-sm space-y-1">
-                                                <div className="flex justify-between border-b border-border/50 pb-0.5">
-                                                    <span>Cycles</span>
-                                                    <span className="font-mono font-medium text-foreground">{entry.autoCycles} ({entry.autoEstCycleSize || 0}sz)</span>
-                                                </div>
-                                                <div className="flex justify-between border-b border-border/50 pb-0.5">
-                                                    <span>Preload</span>
-                                                    <span className="font-medium text-foreground">
-                                                        {entry.autoPreload
-                                                            ? (entry.autoPreloadScored ? 'Scored All' : `${entry.autoPreloadCount || 0} Scored`)
-                                                            : 'None'}
-                                                    </span>
-                                                </div>
-                                                <div className="flex justify-between border-b border-border/50 pb-0.5">
-                                                    <span>Climb</span>
-                                                    <span className="font-medium text-foreground">{autoClimbLabels[entry.autoClimb]}</span>
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        {/* Teleop Column */}
-                                        <div className="space-y-1">
-                                            <p className="text-[10px] uppercase font-bold text-muted-foreground tracking-tight">Teleop & Endgame</p>
-                                            <div className="text-sm space-y-1">
-                                                <div className="flex justify-between border-b border-border/50 pb-0.5">
-                                                    <span>Cycles</span>
-                                                    <span className="font-mono font-medium text-foreground">{entry.teleopCycles} ({entry.estimatedCycleSize || 0}sz)</span>
-                                                </div>
-                                                <div className="flex justify-between border-b border-border/50 pb-0.5">
-                                                    <span>Defense</span>
-                                                    <span className="font-medium text-foreground">
-                                                        <span className="font-medium text-foreground">
-                                                            {entry.defenseRating > 0 ? `Lvl ${entry.defenseRating}` : 'None'}
-                                                        </span>
-                                                    </span>
-                                                </div>
-                                                <div className="flex justify-between border-b border-border/50 pb-0.5">
-                                                    <span>Climb</span>
-                                                    <span className="font-medium text-foreground">{climbLabels[entry.climbResult]} {entry.climbResult !== 'none' && `(${entry.climbStability}★)`}</span>
-                                                </div>
-                                            </div>
-                                        </div>
+                                <div className="flex items-center gap-2">
+                                    <div className="bg-secondary px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                                        {entry.shootingRange}
                                     </div>
-
-                                    {/* Ratings Row */}
-                                    <div className="bg-secondary/40 rounded-lg p-2 flex justify-around items-center text-center">
-                                        <div>
-                                            <p className="text-[8px] uppercase font-bold text-muted-foreground">Driver</p>
-                                            <p className={`font-mono font-bold ${getRatingColor(entry.driverSkill)}`}>{entry.driverSkill}</p>
-                                        </div>
-                                        <div className="w-[1px] h-6 bg-border/50" />
-                                        <div>
-                                            <p className="text-[8px] uppercase font-bold text-muted-foreground">Reliability</p>
-                                            <p className={`font-mono font-bold ${getRatingColor(entry.reliability)}`}>{entry.reliability}</p>
-                                        </div>
-                                    </div>
-
-                                    {entry.notes && (
-                                        <div className="text-sm text-muted-foreground bg-secondary/20 p-2 rounded border-l-2 border-primary/30">
-                                            <span className="font-bold text-[10px] uppercase block mb-0.5 opacity-70">Notes</span>
-                                            <p className="italic">"{entry.notes}"</p>
-                                        </div>
+                                    {isAdmin && !selectedEntries.has(entry.id) && (
+                                        <button
+                                            onClick={() => handleDeleteMatch(entry.id)}
+                                            className="p-1 text-muted-foreground hover:text-destructive transition-colors ml-2"
+                                            title="Delete Single Match"
+                                        >
+                                            <Trash2 className="w-4 h-4" />
+                                        </button>
                                     )}
                                 </div>
                             </div>
-                        ))}
-                    </div>
+
+                            <div className={`space-y-3 ${isAdmin ? 'pl-7' : ''}`}>
+                                {/* Stats Grid */}
+                                <div className="grid grid-cols-2 gap-3">
+                                    {/* Auto Column */}
+                                    <div className="space-y-1">
+                                        <p className="text-[10px] uppercase font-bold text-muted-foreground tracking-tight">Autonomous</p>
+                                        <div className="text-sm space-y-1">
+                                            <div className="flex justify-between border-b border-border/50 pb-0.5">
+                                                <span>Cycles</span>
+                                                <span className="font-mono font-medium text-foreground">{entry.autoCycles} ({entry.autoEstCycleSize || 0}sz)</span>
+                                            </div>
+                                            <div className="flex justify-between border-b border-border/50 pb-0.5">
+                                                <span>Preload</span>
+                                                <span className="font-medium text-foreground">
+                                                    {entry.autoPreload
+                                                        ? (entry.autoPreloadScored ? 'Scored All' : `${entry.autoPreloadCount || 0} Scored`)
+                                                        : 'None'}
+                                                </span>
+                                            </div>
+                                            <div className="flex justify-between border-b border-border/50 pb-0.5">
+                                                <span>Climb</span>
+                                                <span className="font-medium text-foreground">{autoClimbLabels[entry.autoClimb]}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Teleop Column */}
+                                    <div className="space-y-1">
+                                        <p className="text-[10px] uppercase font-bold text-muted-foreground tracking-tight">Teleop & Endgame</p>
+                                        <div className="text-sm space-y-1">
+                                            <div className="flex justify-between border-b border-border/50 pb-0.5">
+                                                <span>Cycles</span>
+                                                <span className="font-mono font-medium text-foreground">{entry.teleopCycles} ({entry.estimatedCycleSize || 0}sz)</span>
+                                            </div>
+                                            <div className="flex justify-between border-b border-border/50 pb-0.5">
+                                                <span>Defense</span>
+                                                <span className="font-medium text-foreground">
+                                                    <span className="font-medium text-foreground">
+                                                        {entry.defenseRating > 0 ? `Lvl ${entry.defenseRating}` : 'None'}
+                                                    </span>
+                                                </span>
+                                            </div>
+                                            <div className="flex justify-between border-b border-border/50 pb-0.5">
+                                                <span>Climb</span>
+                                                <span className="font-medium text-foreground">{climbLabels[entry.climbResult]} {entry.climbResult !== 'none' && `(${entry.climbStability}★)`}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Ratings Row */}
+                                <div className="bg-secondary/40 rounded-lg p-2 flex justify-around items-center text-center">
+                                    <div>
+                                        <p className="text-[8px] uppercase font-bold text-muted-foreground">Driver Skill</p>
+                                        <p className={`font-mono font-bold ${getRatingColor(entry.driverSkill)}`}>{entry.driverSkill}</p>
+                                    </div>
+                                </div>
+
+                                {entry.notes && (
+                                    <div className="text-sm text-muted-foreground bg-secondary/20 p-2 rounded border-l-2 border-primary/30">
+                                        <span className="font-bold text-[10px] uppercase block mb-0.5 opacity-70">Notes</span>
+                                        <p className="italic">"{entry.notes}"</p>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    ))}
                 </div>
             </div>
         </div>

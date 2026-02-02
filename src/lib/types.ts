@@ -30,7 +30,6 @@ export interface ScoutingEntry {
 
     // Overall
     driverSkill: number; // 1-5
-    reliability: number; // 1-5
     shootingRange: 'short' | 'medium' | 'long';
     notes: string;
 }
@@ -53,7 +52,6 @@ export interface TeamStats {
     highMidClimbRate: number;
     avgDefenseRating: number;
     avgDriverSkill: number;
-    avgReliability: number;
     totalScore: number; // Computed ranking score
 }
 

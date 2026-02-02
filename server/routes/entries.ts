@@ -30,7 +30,6 @@ router.get('/', async (req, res) => {
             climbResult: row.climb_result,
             climbStability: row.climb_stability,
             driverSkill: row.driver_skill,
-            reliability: row.reliability,
             shootingRange: row.shooting_range as 'short' | 'medium' | 'long',
             notes: row.notes,
         }));
@@ -68,7 +67,6 @@ router.get('/team/:teamNumber', async (req, res) => {
             climbResult: row.climb_result,
             climbStability: row.climb_stability,
             driverSkill: row.driver_skill,
-            reliability: row.reliability,
             shootingRange: row.shooting_range as 'short' | 'medium' | 'long',
             notes: row.notes,
         }));
@@ -99,9 +97,9 @@ router.post('/', async (req, res) => {
         id, event, match_number, team_number, scout_name, timestamp,
         auto_cycles, auto_preload, auto_preload_scored, auto_preload_count, auto_est_cycle_size, auto_climb,
         teleop_cycles, estimated_cycle_size, defense_played, defense_effectiveness,
-        climb_result, climb_stability, driver_skill, robot_speed, reliability, 
+        climb_result, climb_stability, driver_skill, robot_speed, 
         shooting_range, notes
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23)`,
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22)`,
             [
                 entry.id,
                 entry.event,
@@ -123,7 +121,6 @@ router.post('/', async (req, res) => {
                 entry.climbStability || 3,
                 entry.driverSkill || 3,
                 0, // robot_speed (removed from frontend)
-                entry.reliability || 3,
                 entry.shootingRange || 'short',
                 entry.notes || '',
             ]

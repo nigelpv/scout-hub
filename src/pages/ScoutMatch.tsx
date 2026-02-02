@@ -39,7 +39,6 @@ const ScoutMatch = () => {
 
     // Overall
     const [driverSkill, setDriverSkill] = useState(3);
-    const [reliability, setReliability] = useState(3);
     const [shootingRange, setShootingRange] = useState<'short' | 'medium' | 'long'>('short');
     const [notes, setNotes] = useState('');
 
@@ -69,7 +68,6 @@ const ScoutMatch = () => {
             climbResult: climbResult as any,
             climbStability,
             driverSkill,
-            reliability,
             shootingRange,
             notes,
         };
@@ -111,7 +109,6 @@ const ScoutMatch = () => {
             setClimbResult('none');
             setClimbStability(3);
             setDriverSkill(3);
-            setReliability(3);
             setShootingRange('short');
             setNotes('');
             setSaved(false);
@@ -290,11 +287,6 @@ const ScoutMatch = () => {
                         value={driverSkill}
                         onChange={setDriverSkill}
                         label="Driver Skill"
-                    />
-                    <RatingField
-                        value={reliability}
-                        onChange={setReliability}
-                        label="Reliability"
                     />
                     <div className="py-3">
                         <label className="text-foreground font-medium block mb-3">Notes</label>
