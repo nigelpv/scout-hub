@@ -3,9 +3,11 @@ const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
 
 import { ScoutingEntry, PicklistTeam } from './types';
 import { toast } from 'sonner';
+import { EVENT_KEY } from './config';
+
+const STORAGE_KEY = 'scout_entries';
 
 // ============ KEYS ============
-const EVENT_KEY = 'scout_current_event';
 const PENDING_ENTRIES_KEY = 'scout_pending_entries';
 const ENTRIES_CACHE_KEY = 'scout_entries_cache';
 const PICKLIST_CACHE_KEY = 'scout_picklist_cache';
@@ -360,11 +362,10 @@ export function generateId(): string {
 }
 
 export function getCurrentEvent(): string {
-  if (typeof window === 'undefined') return '';
-  return localStorage.getItem(EVENT_KEY) || '2025camb';
+  return EVENT_KEY;
 }
 
 export function setCurrentEvent(event: string): void {
-  if (typeof window === 'undefined') return;
-  localStorage.setItem(EVENT_KEY, event);
+  // Event is configured in config.ts, so we don't allow setting it via this function
+  console.log('setCurrentEvent called, but event is configured as:', EVENT_KEY);
 }

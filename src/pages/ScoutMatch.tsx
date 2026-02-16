@@ -23,25 +23,7 @@ const ScoutMatch = () => {
     const [alliancePosition, setAlliancePosition] = useState('Red 1');
     const [loadingTBA, setLoadingTBA] = useState(false);
 
-    // Auto-fetch event for team 2473 on mount
-    useEffect(() => {
-        const loadEvent = async () => {
-            const cachedEvent = getCurrentEvent();
-            // If we have a cached event, we still check for the "best" one
-            // but we can skip if the user just set it manually? 
-            // The user said "the event code is the event next event possible"
-            setLoadingTBA(true);
-            const events = await fetchTeamEvents('frc2473', new Date().getFullYear());
-            const currentEvent = determineCurrentEvent(events);
-            if (currentEvent) {
-                setEvent(currentEvent.key);
-                setCurrentEvent(currentEvent.key);
-            }
-            setLoadingTBA(false);
-        };
-
-        loadEvent();
-    }, []);
+    // Event is configured in config.ts and storage.ts
 
     // Auto-fetch team number when match or position changes
     useEffect(() => {
@@ -184,33 +166,12 @@ const ScoutMatch = () => {
 
                     <div className="space-y-4">
                         <div>
-                            <div className="flex items-center justify-between mb-2">
-                                <label className="text-sm text-muted-foreground block">Event</label>
-                                <button
-                                    onClick={async () => {
-                                        setLoadingTBA(true);
-                                        const events = await fetchTeamEvents('frc2473', new Date().getFullYear());
-                                        const currentEvent = determineCurrentEvent(events);
-                                        if (currentEvent) {
-                                            setEvent(currentEvent.key);
-                                            setCurrentEvent(currentEvent.key);
-                                            toast.success(`Set event to ${currentEvent.key}`);
-                                        }
-                                        setLoadingTBA(false);
-                                    }}
-                                    className="text-xs text-primary flex items-center gap-1 hover:underline"
-                                    disabled={loadingTBA}
-                                >
-                                    <RefreshCw className={`w-3 h-3 ${loadingTBA ? 'animate-spin' : ''}`} />
-                                    Auto-refresh
-                                </button>
-                            </div>
+                            <label className="text-sm text-muted-foreground block mb-2">Event</label>
                             <input
                                 type="text"
                                 value={event}
-                                onChange={(e) => setEvent(e.target.value)}
-                                placeholder="Event name or code"
-                                className="w-full h-12 px-4 rounded-lg bg-secondary text-foreground border-0 focus:ring-2 ring-primary"
+                                readOnly
+                                className="w-full h-12 px-4 rounded-lg bg-secondary/50 text-muted-foreground border-0 cursor-not-allowed font-mono"
                             />
                         </div>
 
