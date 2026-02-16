@@ -4,6 +4,7 @@ import { GripVertical, RotateCcw, Star, Lock, Unlock, Trash2, X, Loader2 } from 
 import { PageHeader } from '@/components/layout/PageHeader';
 import { getAllTeamStatsFromEntries, getRatingColor } from '@/lib/stats';
 import { getPicklist, savePicklist, removeFromPicklist, getEntries } from '@/lib/storage';
+import { verifyAdminPassword } from '@/lib/auth';
 import { PicklistTeam, TeamStats } from '@/lib/types';
 import { toast } from 'sonner';
 
@@ -143,11 +144,15 @@ const Picklist = () => {
   // Admin Functions
   const handleAuth = (e: React.FormEvent) => {
     e.preventDefault();
-    setAdminPassword(password);
-    setIsAdmin(true);
-    setShowAuth(false);
-    setPassword('');
-    toast.success('Admin mode enabled');
+    if (verifyAdminPassword(password)) {
+      setAdminPassword(password);
+      setIsAdmin(true);
+      setShowAuth(false);
+      setPassword('');
+      toast.success('Admin mode enabled');
+    } else {
+      toast.error('Invalid admin password');
+    }
   };
 
   const handleDeleteTeam = async (index: number) => {

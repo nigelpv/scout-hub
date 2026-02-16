@@ -1,9 +1,11 @@
 import { Router } from 'express';
 import { pool } from '../index.js';
 
+import { getAdminPassword } from '../lib/auth.js';
+
 const router = Router();
 
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
+const ADMIN_PASSWORD = getAdminPassword();
 
 // GET picklist
 router.get('/', async (req, res) => {
