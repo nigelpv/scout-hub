@@ -17,8 +17,6 @@ class N:
         return N(self.v ** (p.v if isinstance(p,N) else p))
     def __mod__(self,m):
         return N(self.v % (m.v if isinstance(m,N) else m))
-    def __neg__(self):
-        return N(-self.v)
     def __int__(self):
         return self.v
     def __repr__(self):
@@ -26,15 +24,15 @@ class N:
 
 def generate_password(k):
     k = N(k)
-    a = N(2)*k + 1
+    a = N(2)*k + N(1)
     b = -k
     c = k
     d = k
-    e = N(3)*k + 2
+    e = N(3)*k + N(2)
     f = N(4)*k
     g = -k
     h = N(2)*k
-    i = N(5)*k + 1
+    i = N(5)*k + N(1)
 
     ei_fh = e*i - f*h
     di_fg = d*i - f*g
@@ -42,7 +40,7 @@ def generate_password(k):
 
     det = a*ei_fh - b*di_fg + c*dh_eg
 
-    integral = N(int((3/4)*1e6))
+    integral = N(int(3/4 * 1e6))
     collapse = (k - N(7))**3 * N(1000000)
     offset = N(18)
     scale = N(1395)
