@@ -2,6 +2,7 @@
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
 
 import { ScoutingEntry, PicklistTeam } from './types';
+import { HARDCODED_EVENT_KEY } from './config';
 import { toast } from 'sonner';
 
 // ============ KEYS ============
@@ -360,11 +361,11 @@ export function generateId(): string {
 }
 
 export function getCurrentEvent(): string {
-  if (typeof window === 'undefined') return '';
-  return localStorage.getItem(EVENT_KEY) || '2025camb';
+  return HARDCODED_EVENT_KEY;
 }
 
 export function setCurrentEvent(event: string): void {
-  if (typeof window === 'undefined') return;
-  localStorage.setItem(EVENT_KEY, event);
+  // Event is hardcoded, so we don't allow setting it
+  // This is a no-op to prevent UI from thinking it can change it
+  console.log('setCurrentEvent called, but event is hardcoded to:', HARDCODED_EVENT_KEY);
 }
