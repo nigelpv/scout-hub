@@ -4,7 +4,6 @@ import { ChevronRight, TrendingUp, Loader2, Lock, Unlock, Trash2, X, CheckSquare
 import { PageHeader } from '@/components/layout/PageHeader';
 import { getAllTeamStatsFromEntries, getRatingColor } from '@/lib/stats';
 import { getEntries, deleteTeamData } from '@/lib/storage';
-import { verifyAdminPassword } from '@/lib/auth';
 import { TeamStats } from '@/lib/types';
 import { toast } from 'sonner';
 
@@ -45,15 +44,11 @@ const Teams = () => {
   // Admin Functions
   const handleAuth = (e: React.FormEvent) => {
     e.preventDefault();
-    if (verifyAdminPassword(password)) {
-      setAdminPassword(password);
-      setIsAdmin(true);
-      setShowAuth(false);
-      setPassword('');
-      toast.success('Admin mode enabled');
-    } else {
-      toast.error('Invalid admin password');
-    }
+    setAdminPassword(password);
+    setIsAdmin(true);
+    setShowAuth(false);
+    setPassword('');
+    toast.success('Admin mode enabled');
   };
 
   const toggleSelection = (teamNumber: number) => {

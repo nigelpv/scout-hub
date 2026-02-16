@@ -1,12 +1,10 @@
 import { Router } from 'express';
 import { pool } from '../index.js';
 
-import { getAdminPassword } from '../lib/auth.js';
-
 const router = Router();
 
 // Admin password for delete operations
-const ADMIN_PASSWORD = getAdminPassword();
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
 
 // GET all entries
 router.get('/', async (req, res) => {
