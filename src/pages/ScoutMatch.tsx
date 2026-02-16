@@ -17,7 +17,7 @@ const ScoutMatch = () => {
     const [saving, setSaving] = useState(false);
 
     // Match info
-    const [event, setEvent] = useState(getCurrentEvent());
+    const matchEvent = getCurrentEvent();
     const [matchNumber, setMatchNumber] = useState(1);
     const [teamNumber, setTeamNumber] = useState('');
     const [alliancePosition, setAlliancePosition] = useState('Red 1');
@@ -46,10 +46,10 @@ const ScoutMatch = () => {
     // Auto-fetch team number when match or position changes
     useEffect(() => {
         const updateTeam = async () => {
-            if (!event || !matchNumber || !alliancePosition) return;
+            if (!matchEvent || !matchNumber || !alliancePosition) return;
 
             setLoadingTBA(true);
-            const matchData = await fetchMatchData(event, matchNumber);
+            const matchData = await fetchMatchData(matchEvent, matchNumber);
             if (matchData) {
                 const team = getTeamFromMatch(matchData, alliancePosition);
                 if (team) {
@@ -61,7 +61,7 @@ const ScoutMatch = () => {
 
         const timer = setTimeout(updateTeam, 500); // Debounce
         return () => clearTimeout(timer);
-    }, [event, matchNumber, alliancePosition]);
+    }, [matchEvent, matchNumber, alliancePosition]);
 
     // Autonomous
     const [autoCycles, setAutoCycles] = useState(0);
@@ -96,7 +96,7 @@ const ScoutMatch = () => {
 
         const entry: ScoutingEntry = {
             id: generateId(),
-            event,
+            event: matchEvent,
             matchNumber,
             teamNumber: parseInt(teamNumber),
             timestamp: Date.now(),
@@ -135,7 +135,7 @@ const ScoutMatch = () => {
             toast.success('Entry saved to server!');
         }
 
-        setCurrentEvent(event);
+        setCurrentEvent(matchEvent);
         setSaved(true);
 
         setTimeout(() => {
@@ -183,15 +183,7 @@ const ScoutMatch = () => {
                     <h2 className="section-header">Match Info</h2>
 
                     <div className="space-y-4">
-                        <div>
-                            <label className="text-sm text-muted-foreground block mb-2">Event</label>
-                            <input
-                                type="text"
-                                value={event}
-                                readOnly
-                                className="w-full h-12 px-4 rounded-lg bg-secondary/50 text-muted-foreground border-0 cursor-not-allowed font-mono"
-                            />
-                        </div>
+                        {/* Event is locked to 2025camb */}
 
                         <div className="grid grid-cols-2 gap-4">
                             <div>
