@@ -23,25 +23,9 @@ const ScoutMatch = () => {
     const [alliancePosition, setAlliancePosition] = useState('Red 1');
     const [loadingTBA, setLoadingTBA] = useState(false);
 
-    // Auto-fetch event for team 2473 on mount
-    useEffect(() => {
-        const loadEvent = async () => {
-            const cachedEvent = getCurrentEvent();
-            // If we have a cached event, we still check for the "best" one
-            // but we can skip if the user just set it manually? 
-            // The user said "the event code is the event next event possible"
-            setLoadingTBA(true);
-            const events = await fetchTeamEvents('frc2473', new Date().getFullYear());
-            const currentEvent = determineCurrentEvent(events);
-            if (currentEvent) {
-                setEvent(currentEvent.key);
-                setCurrentEvent(currentEvent.key);
-            }
-            setLoadingTBA(false);
-        };
 
-        loadEvent();
-    }, []);
+    // Event is locked to 2025camb in config.ts
+
 
     // Auto-fetch team number when match or position changes
     useEffect(() => {
