@@ -86,7 +86,7 @@ const ScoutMatch = () => {
             autoClimb,
             teleopCycles,
             defenseRating,
-            climbResult,
+            climbResult: climbResult as any,
             climbStability,
             shootingRange,
             obstacleNavigation,

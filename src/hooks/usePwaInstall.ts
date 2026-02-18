@@ -1,12 +1,10 @@
 import { useState, useEffect } from 'react';
 
 export function usePwaInstall() {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
     const [isInstallable, setIsInstallable] = useState(false);
 
     useEffect(() => {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const handler = (e: any) => {
             // Prevent the mini-infobar from appearing on mobile
             e.preventDefault();
