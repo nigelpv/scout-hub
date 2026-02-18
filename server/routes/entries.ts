@@ -11,6 +11,7 @@ router.get('/', async (req, res) => {
     try {
         const result = await pool.query('SELECT * FROM scouting_entries ORDER BY timestamp DESC');
         // Convert snake_case to camelCase for frontend compatibility
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const entries = result.rows.map((row: any) => ({
             id: row.id,
             event: row.event,
@@ -49,6 +50,7 @@ router.get('/team/:teamNumber', async (req, res) => {
             'SELECT * FROM scouting_entries WHERE team_number = $1 ORDER BY timestamp DESC',
             [parseInt(teamNumber)]
         );
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const entries = result.rows.map((row: any) => ({
             id: row.id,
             event: row.event,
@@ -129,6 +131,7 @@ router.post('/', async (req, res) => {
             ]
         );
         res.status(201).json({ success: true, id: entry.id });
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (err: any) {
         console.error('Error creating entry:', err.message);
         console.error('Stack:', err.stack);

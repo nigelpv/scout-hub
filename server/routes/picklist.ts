@@ -9,6 +9,7 @@ const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
 router.get('/', async (req, res) => {
     try {
         const result = await pool.query('SELECT * FROM picklist ORDER BY rank ASC');
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const picklist = result.rows.map((row: any) => ({
             teamNumber: row.team_number,
             rank: row.rank,

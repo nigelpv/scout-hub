@@ -19,7 +19,7 @@ const Picklist = () => {
   const [password, setPassword] = useState('');
   const [adminPassword, setAdminPassword] = useState('');
 
-  const processData = (entries: any[], savedPicklist: any[]) => {
+  const processData = (entries: import('@/lib/types').ScoutingEntry[], savedPicklist: PicklistTeam[]) => {
     const stats = getAllTeamStatsFromEntries(entries);
     setAllStats(stats);
 
@@ -53,21 +53,21 @@ const Picklist = () => {
     };
     loadData();
 
-    const handleEntriesUpdate = (e: any) => {
-      processData(e.detail, picklist);
+    const handleEntriesUpdate = (e: Event) => {
+      processData((e as CustomEvent).detail, picklist);
     };
 
-    const handlePicklistUpdate = (e: any) => {
-      processData(allStats.length > 0 ? [] : [], e.detail); // Simplified, we just need to re-run the merge logic
+    const handlePicklistUpdate = (e: Event) => {
+      processData(allStats.length > 0 ? [] : [], (e as CustomEvent).detail); // Simplified, we just need to re-run the merge logic
       // Actually simpler to just track what we have:
     };
 
     // More robust listeners
-    const onEntriesUpdate = (e: any) => {
-      setAllStats(getAllTeamStatsFromEntries(e.detail));
+    const onEntriesUpdate = (e: Event) => {
+      setAllStats(getAllTeamStatsFromEntries((e as CustomEvent).detail));
     };
-    const onPicklistUpdate = (e: any) => {
-      setPicklist(e.detail);
+    const onPicklistUpdate = (e: Event) => {
+      setPicklist((e as CustomEvent).detail);
     };
 
     window.addEventListener('scout_entries_updated', onEntriesUpdate);
