@@ -158,9 +158,9 @@ const PitScout = () => {
                                         onChange={(v) => setClimbLevel(v as any)}
                                         label="Highest Level"
                                         options={[
-                                            { value: 'low', label: 'Low' },
-                                            { value: 'mid', label: 'Mid' },
-                                            { value: 'high', label: 'High' },
+                                            { value: 'low', label: 'L1' },
+                                            { value: 'mid', label: 'L2' },
+                                            { value: 'high', label: 'L3' },
                                         ]}
                                     />
                                 </div>
