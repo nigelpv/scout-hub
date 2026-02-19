@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { ClipboardList, Users, Trophy, Database, Loader2 } from 'lucide-react';
+import { ClipboardList, Users, Trophy, Database, Loader2, Box } from 'lucide-react';
 import { getEntries, ENTRY_LIMIT } from '@/lib/storage';
 import { getUniqueTeamsFromEntries } from '@/lib/stats';
 
@@ -107,6 +107,14 @@ const Index = () => {
         >
           <ClipboardList className="w-5 h-5" />
           Scout a Match
+        </Link>
+
+        <Link
+          to="/pit-scout"
+          className="touch-button w-full bg-secondary text-secondary-foreground"
+        >
+          <Box className="w-5 h-5" />
+          Pit-Scout
         </Link>
 
         <Link

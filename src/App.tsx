@@ -8,6 +8,7 @@ import ScoutMatch from "./pages/ScoutMatch";
 import Teams from "./pages/Teams";
 import TeamDetail from "./pages/TeamDetail";
 import Picklist from "./pages/Picklist";
+import PitScout from "./pages/PitScout";
 import NotFound from "./pages/NotFound";
 
 import { initializeSync } from "./lib/storage";
@@ -39,6 +40,7 @@ const App = () => {
             <Route path="/teams" element={<Teams />} />
             <Route path="/team/:teamNumber" element={<TeamDetail />} />
             <Route path="/picklist" element={<Picklist />} />
+            <Route path="/pit-scout" element={<PitScout />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
