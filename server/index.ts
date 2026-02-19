@@ -1,17 +1,10 @@
 import express from 'express';
 import cors from 'cors';
-import { Pool } from 'pg';
 import entriesRouter from './routes/entries.js';
 import picklistRouter from './routes/picklist.js';
 
 const app = express();
 const PORT = process.env.PORT || 3001;
-
-// Database connection
-export const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
-});
 
 // Middleware
 app.use(cors());
@@ -26,89 +19,11 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', timestamp: Date.now() });
 });
 
-// Initialize database tables
-async function initDb() {
-  const client = await pool.connect();
-  try {
-    await client.query(`
-      CREATE TABLE IF NOT EXISTS scouting_entries (
-        id TEXT PRIMARY KEY,
-        event TEXT NOT NULL,
-        match_number INTEGER NOT NULL,
-        team_number INTEGER NOT NULL,
-        scout_name TEXT,
-        timestamp BIGINT NOT NULL,
-        auto_cycles INTEGER DEFAULT 0,
-        auto_preload BOOLEAN DEFAULT FALSE,
-        auto_preload_scored BOOLEAN DEFAULT FALSE,
-        auto_est_cycle_size INTEGER DEFAULT 0,
-        auto_climb TEXT DEFAULT 'none',
-        teleop_cycles INTEGER DEFAULT 0,
-        estimated_cycle_size INTEGER DEFAULT 0,
-        defense_played BOOLEAN DEFAULT FALSE,
-        defense_effectiveness INTEGER DEFAULT 0,
-        climb_result TEXT DEFAULT 'none',
-        climb_stability INTEGER DEFAULT 3,
-        driver_skill INTEGER DEFAULT 3,
-        robot_speed INTEGER DEFAULT 3,
-        shooting_range TEXT DEFAULT 'short',
-        obstacle_navigation TEXT DEFAULT 'none',
-        notes TEXT DEFAULT ''
-      );
-    `);
-
-    await client.query(`
-      CREATE TABLE IF NOT EXISTS picklist (
-        team_number INTEGER PRIMARY KEY,
-        rank INTEGER NOT NULL,
-        manual_override BOOLEAN DEFAULT FALSE
-      );
-    `);
-
-    console.log('Database tables initialized');
-
-    // Migration: Add shooting_range if it doesn't exist
-    try {
-      await client.query(`
-        ALTER TABLE scouting_entries 
-        ADD COLUMN IF NOT EXISTS shooting_range TEXT DEFAULT 'short'
-      `);
-      console.log('Applied migration: Added shooting_range column');
-    } catch (err) {
-      // Ignore if column exists
-    }
-
-    // Migration: Add auto_preload_count
-    try {
-      await client.query(`
-        ALTER TABLE scouting_entries 
-        ADD COLUMN IF NOT EXISTS auto_preload_count INTEGER DEFAULT 0
-      `);
-      console.log('Applied migration: Added auto_preload_count column');
-    } catch (err) {
-      console.log('Migration note: auto_preload_count column check completed');
-    }
-
-    // Migration: Add obstacle_navigation
-    try {
-      await client.query(`
-        ALTER TABLE scouting_entries 
-        ADD COLUMN IF NOT EXISTS obstacle_navigation TEXT DEFAULT 'none'
-      `);
-      console.log('Applied migration: Added obstacle_navigation column');
-    } catch (err) {
-      // Ignore if column exists
-    }
-
-  } catch (err) {
-    console.error('Error initializing database:', err);
-  } finally {
-    client.release();
-  }
+// Start server if not running as a serverless function
+if (process.env.NODE_ENV !== 'production' || !process.env.VERCEL) {
+  app.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`);
+  });
 }
 
-// Start server
-app.listen(PORT, async () => {
-  console.log(`Server running on port ${PORT}`);
-  await initDb();
-});
+export default app;

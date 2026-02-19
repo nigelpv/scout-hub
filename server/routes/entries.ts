@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { pool } from '../index.js';
+import { supabase } from '../supabase.js';
 
 const router = Router();
 
@@ -9,9 +9,16 @@ const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
 // GET all entries
 router.get('/', async (req, res) => {
     try {
-        const result = await pool.query('SELECT * FROM scouting_entries ORDER BY timestamp DESC');
+        const { data: entries, error } = await supabase
+            .from('scouting_entries')
+            .select('*')
+            .order('timestamp', { ascending: false });
+
+        if (error) throw error;
+
         // Convert snake_case to camelCase for frontend compatibility
-        const entries = result.rows.map((row: any) => ({
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const mappedEntries = entries.map((row: any) => ({
             id: row.id,
             event: row.event,
             matchNumber: row.match_number,
@@ -22,19 +29,16 @@ router.get('/', async (req, res) => {
             autoPreload: row.auto_preload,
             autoPreloadScored: row.auto_preload_scored,
             autoPreloadCount: row.auto_preload_count,
-            autoEstCycleSize: row.auto_est_cycle_size,
             autoClimb: row.auto_climb,
             teleopCycles: row.teleop_cycles,
-            estimatedCycleSize: row.estimated_cycle_size,
             defenseRating: row.defense_effectiveness,
             climbResult: row.climb_result,
             climbStability: row.climb_stability,
-            driverSkill: row.driver_skill,
             shootingRange: row.shooting_range as 'short' | 'medium' | 'long',
             obstacleNavigation: row.obstacle_navigation as 'none' | 'trench' | 'bump' | 'both',
             notes: row.notes,
         }));
-        res.json(entries);
+        res.json(mappedEntries);
     } catch (err) {
         console.error('Error fetching entries:', err);
         res.status(500).json({ error: 'Failed to fetch entries' });
@@ -45,11 +49,16 @@ router.get('/', async (req, res) => {
 router.get('/team/:teamNumber', async (req, res) => {
     try {
         const { teamNumber } = req.params;
-        const result = await pool.query(
-            'SELECT * FROM scouting_entries WHERE team_number = $1 ORDER BY timestamp DESC',
-            [parseInt(teamNumber)]
-        );
-        const entries = result.rows.map((row: any) => ({
+        const { data: entries, error } = await supabase
+            .from('scouting_entries')
+            .select('*')
+            .eq('team_number', parseInt(teamNumber))
+            .order('timestamp', { ascending: false });
+
+        if (error) throw error;
+
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const mappedEntries = entries.map((row: any) => ({
             id: row.id,
             event: row.event,
             matchNumber: row.match_number,
@@ -60,19 +69,16 @@ router.get('/team/:teamNumber', async (req, res) => {
             autoPreload: row.auto_preload,
             autoPreloadScored: row.auto_preload_scored,
             autoPreloadCount: row.auto_preload_count,
-            autoEstCycleSize: row.auto_est_cycle_size,
             autoClimb: row.auto_climb,
             teleopCycles: row.teleop_cycles,
-            estimatedCycleSize: row.estimated_cycle_size,
             defenseRating: row.defense_effectiveness,
             climbResult: row.climb_result,
             climbStability: row.climb_stability,
-            driverSkill: row.driver_skill,
             shootingRange: row.shooting_range as 'short' | 'medium' | 'long',
             obstacleNavigation: row.obstacle_navigation as 'none' | 'trench' | 'bump' | 'both',
             notes: row.notes,
         }));
-        res.json(entries);
+        res.json(mappedEntries);
     } catch (err) {
         console.error('Error fetching team entries:', err);
         res.status(500).json({ error: 'Failed to fetch team entries' });
@@ -82,11 +88,14 @@ router.get('/team/:teamNumber', async (req, res) => {
 // POST new entry
 router.post('/', async (req, res) => {
     try {
-        // Check entry limit (300)
-        const countResult = await pool.query('SELECT COUNT(*) FROM scouting_entries');
-        const count = parseInt(countResult.rows[0].count);
+        // Check entry limit (500)
+        const { count, error: countError } = await supabase
+            .from('scouting_entries')
+            .select('*', { count: 'exact', head: true });
 
-        if (count >= 500) {
+        if (countError) throw countError;
+
+        if (count && count >= 500) {
             return res.status(403).json({
                 error: 'Entry limit reached',
                 message: 'The website is limited to 500 entries. Please delete old entries to add more.'
@@ -94,44 +103,37 @@ router.post('/', async (req, res) => {
         }
 
         const entry = req.body;
-        await pool.query(
-            `INSERT INTO scouting_entries (
-        id, event, match_number, team_number, scout_name, timestamp,
-        auto_cycles, auto_preload, auto_preload_scored, auto_preload_count, auto_est_cycle_size, auto_climb,
-        teleop_cycles, estimated_cycle_size, defense_played, defense_effectiveness,
-        climb_result, climb_stability, driver_skill, robot_speed, 
-        shooting_range, obstacle_navigation, notes
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23)`,
-            [
-                entry.id,
-                entry.event,
-                entry.matchNumber,
-                entry.teamNumber,
-                entry.scoutName || null,
-                entry.timestamp,
-                entry.autoCycles || 0,
-                entry.autoPreload || false,
-                entry.autoPreloadScored || false,
-                entry.autoPreloadCount || 0,
-                entry.autoEstCycleSize || 0,
-                entry.autoClimb || 'none',
-                entry.teleopCycles || 0,
-                entry.estimatedCycleSize || 0,
-                entry.defenseRating > 0,
-                entry.defenseRating || 0,
-                entry.climbResult || 'none',
-                entry.climbStability || 3,
-                entry.driverSkill || 3,
-                0, // robot_speed (removed from frontend)
-                entry.shootingRange || 'short',
-                entry.obstacleNavigation || 'none',
-                entry.notes || '',
-            ]
-        );
+        const { error: insertError } = await supabase
+            .from('scouting_entries')
+            .insert({
+                id: entry.id,
+                event: entry.event,
+                match_number: entry.matchNumber,
+                team_number: entry.teamNumber,
+                scout_name: entry.scoutName || null,
+                timestamp: entry.timestamp,
+                auto_cycles: entry.autoCycles || 0,
+                auto_preload: entry.autoPreload || false,
+                auto_preload_scored: entry.autoPreloadScored || false,
+                auto_preload_count: entry.autoPreloadCount || 0,
+                auto_climb: entry.autoClimb || 'none',
+                teleop_cycles: entry.teleopCycles || 0,
+                defense_effectiveness: entry.defenseRating || 0,
+                defense_played: entry.defenseRating > 0,
+                climb_result: entry.climbResult || 'none',
+                climb_stability: entry.climbStability || 3,
+                shooting_range: entry.shootingRange || 'short',
+                obstacle_navigation: entry.obstacleNavigation || 'none',
+                notes: entry.notes || '',
+                robot_speed: 0 // removed from frontend
+            });
+
+        if (insertError) throw insertError;
+
         res.status(201).json({ success: true, id: entry.id });
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (err: any) {
         console.error('Error creating entry:', err.message);
-        console.error('Stack:', err.stack);
         res.status(500).json({ error: 'Failed to create entry', details: err.message });
     }
 });
@@ -149,19 +151,14 @@ router.post('/delete-batch', async (req, res) => {
             return res.status(400).json({ error: 'No IDs provided' });
         }
 
-        const client = await pool.connect();
-        try {
-            await client.query('BEGIN');
-            const placeholders = ids.map((_, i) => `$${i + 1}`).join(',');
-            await client.query(`DELETE FROM scouting_entries WHERE id IN (${placeholders})`, ids);
-            await client.query('COMMIT');
-            res.json({ success: true, count: ids.length });
-        } catch (e) {
-            await client.query('ROLLBACK');
-            throw e;
-        } finally {
-            client.release();
-        }
+        const { error } = await supabase
+            .from('scouting_entries')
+            .delete()
+            .in('id', ids);
+
+        if (error) throw error;
+
+        res.json({ success: true, count: ids.length });
     } catch (err) {
         console.error('Error deleting batch:', err);
         res.status(500).json({ error: 'Failed to delete entries' });
@@ -178,7 +175,13 @@ router.delete('/team/:teamNumber', async (req, res) => {
             return res.status(401).json({ error: 'Unauthorized' });
         }
 
-        await pool.query('DELETE FROM scouting_entries WHERE team_number = $1', [parseInt(teamNumber)]);
+        const { error } = await supabase
+            .from('scouting_entries')
+            .delete()
+            .eq('team_number', parseInt(teamNumber));
+
+        if (error) throw error;
+
         res.json({ success: true });
     } catch (err) {
         console.error('Error deleting team data:', err);
@@ -196,7 +199,13 @@ router.delete('/:id', async (req, res) => {
             return res.status(401).json({ error: 'Unauthorized' });
         }
 
-        await pool.query('DELETE FROM scouting_entries WHERE id = $1', [id]);
+        const { error } = await supabase
+            .from('scouting_entries')
+            .delete()
+            .eq('id', id);
+
+        if (error) throw error;
+
         res.json({ success: true });
     } catch (err) {
         console.error('Error deleting entry:', err);

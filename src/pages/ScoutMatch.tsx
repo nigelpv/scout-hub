@@ -86,6 +86,7 @@ const ScoutMatch = () => {
             autoClimb,
             teleopCycles,
             defenseRating,
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             climbResult: climbResult as any,
             climbStability,
             shootingRange,

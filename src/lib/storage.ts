@@ -1,5 +1,5 @@
 // API configuration
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
+const API_URL = import.meta.env.VITE_API_URL || '/api';
 
 import { ScoutingEntry, PicklistTeam } from './types';
 import { toast } from 'sonner';
@@ -44,7 +44,7 @@ function dispatchSyncUpdate(isSyncing: boolean) {
 export async function getEntries(): Promise<ScoutingEntry[]> {
   // Return cached data immediately if available
   const cached = localStorage.getItem(ENTRIES_CACHE_KEY);
-  let initialEntries: ScoutingEntry[] = cached ? JSON.parse(cached) : [];
+  const initialEntries: ScoutingEntry[] = cached ? JSON.parse(cached) : [];
 
   // Fetch from server in the background
   const fetchPromise = (async () => {
@@ -290,7 +290,7 @@ export async function deleteTeamData(teamNumber: number, password: string): Prom
 
 export async function getPicklist(): Promise<PicklistTeam[]> {
   const cached = localStorage.getItem(PICKLIST_CACHE_KEY);
-  let initialPicklist: PicklistTeam[] = cached ? JSON.parse(cached) : [];
+  const initialPicklist: PicklistTeam[] = cached ? JSON.parse(cached) : [];
 
   const fetchPromise = (async () => {
     try {
