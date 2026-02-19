@@ -1,39 +1,223 @@
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Button } from '@/components/ui/button';
-import { ArrowLeft, Box } from 'lucide-react';
+import { Save, CheckCircle, Box, ArrowRight } from 'lucide-react';
+import { PageHeader } from '@/components/layout/PageHeader';
+import { ToggleField } from '@/components/scouting/ToggleField';
+import { OptionSelector } from '@/components/scouting/OptionSelector';
+import { Counter } from '@/components/scouting/Counter';
+import { toast } from 'sonner';
+
+type Step = 'select-team' | 'form';
 
 const PitScout = () => {
     const navigate = useNavigate();
+    const [step, setStep] = useState<Step>('select-team');
+    const [teamNumber, setTeamNumber] = useState('');
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [submitted, setSubmitted] = useState(false);
+
+    // Form State
+    const [autoClimb, setAutoClimb] = useState<boolean>(false);
+    const [autoClimbPosition, setAutoClimbPosition] = useState<'side' | 'middle'>('side');
+
+    const [robotClimb, setRobotClimb] = useState<boolean>(false);
+    const [climbLevel, setClimbLevel] = useState<'low' | 'mid' | 'high'>('low');
+
+    const [avgBalls, setAvgBalls] = useState(0);
+    const [maxBalls, setMaxBalls] = useState(0);
+
+    const [canGoUnderTrench, setCanGoUnderTrench] = useState(false);
+    const [canGoOverBump, setCanGoOverBump] = useState(false);
+
+    const handleNext = () => {
+        if (!teamNumber || isNaN(parseInt(teamNumber))) {
+            toast.error('Please enter a valid team number');
+            return;
+        }
+        setStep('form');
+    };
+
+    const handleSubmit = async () => {
+        setIsSubmitting(true);
+
+        // Simulate saving (User said data storage later)
+        const formData = {
+            teamNumber,
+            autoClimb: autoClimb ? autoClimbPosition : 'none',
+            robotClimb: robotClimb ? climbLevel : 'none',
+            avgBalls,
+            maxBalls,
+            canGoUnderTrench,
+            canGoOverBump,
+            timestamp: Date.now()
+        };
+
+        console.log('Pit Scouting Data Ready:', formData);
+
+        // Delay for effect
+        await new Promise(resolve => setTimeout(resolve, 1000));
+
+        setIsSubmitting(false);
+        setSubmitted(true);
+        toast.success('Pit scouting form saved locally!');
+
+        setTimeout(() => {
+            navigate('/');
+        }, 2000);
+    };
+
+    if (submitted) {
+        return (
+            <div className="min-h-screen bg-background flex items-center justify-center p-4">
+                <div className="text-center animate-in zoom-in duration-300">
+                    <CheckCircle className="w-16 h-16 text-primary mx-auto mb-4" />
+                    <h2 className="text-xl font-bold mb-2">Form Submitted!</h2>
+                    <p className="text-muted-foreground">Team {teamNumber} pit data recorded.</p>
+                </div>
+            </div>
+        );
+    }
 
     return (
-        <div className="min-h-screen bg-background p-4 pb-8">
-            {/* Header */}
-            <div className="flex items-center gap-4 mb-8">
-                <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => navigate('/')}
-                    className="rounded-full"
-                >
-                    <ArrowLeft className="w-5 h-5" />
-                </Button>
-                <h1 className="text-2xl font-bold flex items-center gap-2">
-                    <Box className="w-6 h-6 text-primary" />
-                    Pit Scouting
-                </h1>
-            </div>
+        <div className="min-h-screen bg-background pb-24">
+            <PageHeader
+                title={step === 'select-team' ? 'Select Team' : `Pit Scout: ${teamNumber}`}
+                showBack={true}
+            />
 
-            <div className="glass-card p-8 text-center">
-                <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <Box className="w-8 h-8 text-primary" />
-                </div>
-                <h2 className="text-xl font-bold mb-2">Coming Soon</h2>
-                <p className="text-muted-foreground mb-6">
-                    The Pit Scouting interface is currently under construction.
-                </p>
-                <Button onClick={() => navigate('/')} className="w-full">
-                    Back to Home
-                </Button>
+            <div className="p-4 space-y-6 max-w-lg mx-auto">
+                {step === 'select-team' ? (
+                    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                        <section className="stat-card">
+                            <h2 className="section-header">Target Team</h2>
+                            <div className="py-4">
+                                <label className="text-sm text-muted-foreground block mb-2">Team Number</label>
+                                <input
+                                    type="number"
+                                    value={teamNumber}
+                                    onChange={(e) => setTeamNumber(e.target.value)}
+                                    placeholder="Enter team number..."
+                                    autoFocus
+                                    className="w-full h-16 px-6 rounded-xl bg-secondary text-foreground font-mono text-3xl font-bold text-center border-0 focus:ring-2 ring-primary transition-all shadow-inner"
+                                />
+                            </div>
+                        </section>
+
+                        <button
+                            onClick={handleNext}
+                            className="touch-button w-full bg-primary text-primary-foreground group"
+                        >
+                            Start Scouting
+                            <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                        </button>
+
+                        <div className="glass-card p-6 text-center">
+                            <Box className="w-12 h-12 text-muted-foreground/30 mx-auto mb-3" />
+                            <p className="text-sm text-muted-foreground">
+                                Enter the team number found on the robot's bumper to begin the pit questionnaire.
+                            </p>
+                        </div>
+                    </div>
+                ) : (
+                    <div className="animate-in fade-in slide-in-from-right-4 duration-500 space-y-6">
+                        {/* Auto Capabilities */}
+                        <section className="stat-card">
+                            <h2 className="section-header">Autonomous</h2>
+                            <ToggleField
+                                value={autoClimb}
+                                onChange={setAutoClimb}
+                                label="Can you climb in auto?"
+                            />
+                            {autoClimb && (
+                                <div className="pt-2">
+                                    <OptionSelector
+                                        value={autoClimbPosition}
+                                        onChange={(v) => setAutoClimbPosition(v as any)}
+                                        label="Climb Position"
+                                        options={[
+                                            { value: 'side', label: 'Side' },
+                                            { value: 'middle', label: 'Middle' },
+                                        ]}
+                                    />
+                                </div>
+                            )}
+                        </section>
+
+                        {/* Climbing */}
+                        <section className="stat-card">
+                            <h2 className="section-header">Robot Climbing</h2>
+                            <ToggleField
+                                value={robotClimb}
+                                onChange={setRobotClimb}
+                                label="Can your robot climb?"
+                            />
+                            {robotClimb && (
+                                <div className="pt-2">
+                                    <OptionSelector
+                                        value={climbLevel}
+                                        onChange={(v) => setClimbLevel(v as any)}
+                                        label="Highest Level"
+                                        options={[
+                                            { value: 'low', label: 'Low' },
+                                            { value: 'mid', label: 'Mid' },
+                                            { value: 'high', label: 'High' },
+                                        ]}
+                                    />
+                                </div>
+                            )}
+                        </section>
+
+                        {/* Scoring */}
+                        <section className="stat-card">
+                            <h2 className="section-header">Capacity & Scoring</h2>
+                            <Counter
+                                value={avgBalls}
+                                onChange={setAvgBalls}
+                                label="Avg. Balls Scored"
+                            />
+                            <Counter
+                                value={maxBalls}
+                                onChange={setMaxBalls}
+                                label="Robot Ball Capacity"
+                            />
+                        </section>
+
+                        {/* Navigation */}
+                        <section className="stat-card">
+                            <h2 className="section-header">Obstacles</h2>
+                            <ToggleField
+                                value={canGoUnderTrench}
+                                onChange={setCanGoUnderTrench}
+                                label="Can go under the trench?"
+                            />
+                            <ToggleField
+                                value={canGoOverBump}
+                                onChange={setCanGoOverBump}
+                                label="Can go over the bump?"
+                            />
+                        </section>
+
+                        {/* Submit Bar */}
+                        <div className="fixed bottom-0 left-0 right-0 p-4 bg-background/95 backdrop-blur border-t border-border z-10">
+                            <div className="max-w-lg mx-auto">
+                                <button
+                                    onClick={handleSubmit}
+                                    disabled={isSubmitting}
+                                    className="touch-button w-full bg-primary text-primary-foreground disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                    {isSubmitting ? (
+                                        'Saving...'
+                                    ) : (
+                                        <>
+                                            <Save className="w-5 h-5" />
+                                            Save Pit Data
+                                        </>
+                                    )}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
             </div>
         </div>
     );
