@@ -103,6 +103,8 @@ router.post('/', async (req, res) => {
         }
 
         const entry = req.body;
+        console.log('Backend: Attempting to insert entry for team:', entry.teamNumber, 'Match:', entry.matchNumber);
+
         const { error: insertError } = await supabase
             .from('scouting_entries')
             .insert({
@@ -119,17 +121,21 @@ router.post('/', async (req, res) => {
                 auto_climb: entry.autoClimb || 'none',
                 teleop_cycles: entry.teleopCycles || 0,
                 defense_effectiveness: entry.defenseRating || 0,
-                defense_played: entry.defenseRating > 0,
+                defense_played: (entry.defenseRating || 0) > 0,
                 climb_result: entry.climbResult || 'none',
                 climb_stability: entry.climbStability || 3,
                 shooting_range: entry.shootingRange || 'short',
                 obstacle_navigation: entry.obstacleNavigation || 'none',
                 notes: entry.notes || '',
-                robot_speed: 0 // removed from frontend
+                robot_speed: 0
             });
 
-        if (insertError) throw insertError;
+        if (insertError) {
+            console.error('Supabase Insert ERROR:', insertError);
+            throw insertError;
+        }
 
+        console.log('Backend: Successfully saved entry to Supabase:', entry.id);
         res.status(201).json({ success: true, id: entry.id });
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (err: any) {

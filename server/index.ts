@@ -14,9 +14,22 @@ app.use(express.json());
 app.use('/api/entries', entriesRouter);
 app.use('/api/picklist', picklistRouter);
 
+import { supabase } from './supabase.js';
+
 // Health check
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', timestamp: Date.now() });
+});
+
+// Database connectivity test
+app.get('/api/test-db', async (req, res) => {
+  try {
+    const { data, error } = await supabase.from('scouting_entries').select('count', { count: 'exact', head: true });
+    if (error) throw error;
+    res.json({ status: 'connected', count: data });
+  } catch (err: any) {
+    res.status(500).json({ status: 'error', error: err.message, envSet: !!process.env.SUPABASE_URL });
+  }
 });
 
 // Start server if not running as a serverless function
