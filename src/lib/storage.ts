@@ -1,7 +1,7 @@
 // API configuration
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
 
-import { ScoutingEntry, PicklistTeam } from './types';
+import { ScoutingEntry, PicklistTeam, PitScoutingEntry } from './types';
 import { toast } from 'sonner';
 
 // ============ KEYS ============
@@ -9,6 +9,8 @@ const EVENT_KEY = 'scout_current_event';
 const PENDING_ENTRIES_KEY = 'scout_pending_entries';
 const ENTRIES_CACHE_KEY = 'scout_entries_cache';
 const PICKLIST_CACHE_KEY = 'scout_picklist_cache';
+const PIT_CACHE_KEY = 'scout_pit_cache';
+const PENDING_PIT_KEY = 'scout_pending_pit';
 
 // Custom event for sync status updates
 export const SYNC_EVENT = 'scout_sync_update';
@@ -153,7 +155,9 @@ export async function syncPendingEntries(): Promise<void> {
   if (isSyncing) return;
 
   const pending = getPendingEntries();
-  if (pending.length === 0) {
+  const pendingPit = getPendingPitEntries();
+
+  if (pending.length === 0 && pendingPit.length === 0) {
     dispatchSyncUpdate(false);
     return;
   }
@@ -167,7 +171,9 @@ export async function syncPendingEntries(): Promise<void> {
   isSyncing = true;
   dispatchSyncUpdate(true);
 
-  console.log(`Attempting to sync ${pending.length} pending entries...`);
+  console.log(`Attempting to sync ${pending.length} match entries and ${pendingPit.length} pit entries...`);
+
+  // Sync Match Entries
   const remaining: ScoutingEntry[] = [];
   let successCount = 0;
 
@@ -182,25 +188,48 @@ export async function syncPendingEntries(): Promise<void> {
       if (response.ok) {
         successCount++;
       } else {
-        const errorText = await response.text();
-        console.error(`Sync failed for entry ${entry.id}: ${response.status} ${response.statusText} - ${errorText}`);
         remaining.push(entry);
       }
     } catch (error) {
-      console.error(`Sync network error for entry ${entry.id}:`, error);
       remaining.push(entry);
     }
   }
 
   localStorage.setItem(PENDING_ENTRIES_KEY, JSON.stringify(remaining));
 
+  // Sync Pit Entries
+  const remainingPit: PitScoutingEntry[] = [];
+  let pitSuccessCount = 0;
+
+  for (const entry of pendingPit) {
+    try {
+      const response = await fetch(`${API_URL}/pit`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(entry),
+      });
+
+      if (response.ok) {
+        pitSuccessCount++;
+      } else {
+        remainingPit.push(entry);
+      }
+    } catch (error) {
+      remainingPit.push(entry);
+    }
+  }
+
+  localStorage.setItem(PENDING_PIT_KEY, JSON.stringify(remainingPit));
+
   isSyncing = false;
   dispatchSyncUpdate(false);
 
-  if (successCount > 0) {
-    toast.success(`Synced ${successCount} entries!`);
+  const totalSuccess = successCount + pitSuccessCount;
+  if (totalSuccess > 0) {
+    toast.success(`Synced ${totalSuccess} items!`);
   }
 }
+
 
 export function initializeSync(): () => void {
   if (typeof window === 'undefined') return () => { };
@@ -282,6 +311,87 @@ export async function deleteTeamData(teamNumber: number, password: string): Prom
     console.error('Error deleting team data:', error);
     return false;
   }
+}
+
+// ============ PIT SCOUTING ============
+
+export async function getPitEntries(): Promise<PitScoutingEntry[]> {
+  const cached = localStorage.getItem(PIT_CACHE_KEY);
+  let initialEntries: PitScoutingEntry[] = cached ? JSON.parse(cached) : [];
+
+  const fetchPromise = (async () => {
+    try {
+      const response = await fetch(`${API_URL}/pit`);
+      if (!response.ok) throw new Error('Failed to fetch pit entries');
+      const data = await response.json();
+      localStorage.setItem(PIT_CACHE_KEY, JSON.stringify(data));
+      window.dispatchEvent(new CustomEvent('scout_pit_updated', { detail: data }));
+      return data;
+    } catch (error) {
+      console.error('Error fetching pit entries:', error);
+      return initialEntries;
+    }
+  })();
+
+  return initialEntries.length > 0 ? initialEntries : fetchPromise;
+}
+
+export async function getPitEntryForTeam(teamNumber: number): Promise<PitScoutingEntry | null> {
+  try {
+    const response = await fetch(`${API_URL}/pit/team/${teamNumber}`);
+    if (response.status === 404) return null;
+    if (!response.ok) throw new Error('Failed to fetch pit entry');
+    return await response.json();
+  } catch (error) {
+    console.error('Error fetching pit entry for team:', error);
+    const cached = await getPitEntries();
+    return cached.find(e => e.teamNumber === teamNumber) || null;
+  }
+}
+
+export async function savePitEntry(entry: PitScoutingEntry): Promise<{ success: boolean; offline?: boolean }> {
+  try {
+    const response = await fetch(`${API_URL}/pit`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(entry),
+    });
+
+    if (response.ok) {
+      const current = await getPitEntries();
+      const updated = [entry, ...current.filter(e => e.teamNumber !== entry.teamNumber)];
+      localStorage.setItem(PIT_CACHE_KEY, JSON.stringify(updated));
+      window.dispatchEvent(new CustomEvent('scout_pit_updated', { detail: updated }));
+      return { success: true };
+    }
+
+    if (response.status >= 500) {
+      queuePitEntryLocally(entry);
+      return { success: true, offline: true };
+    }
+
+    return { success: false };
+  } catch (error) {
+    console.warn('Network error, saving pit entry locally:', error);
+    queuePitEntryLocally(entry);
+    return { success: true, offline: true };
+  }
+}
+
+function queuePitEntryLocally(entry: PitScoutingEntry) {
+  const pending = getPendingPitEntries();
+  const existingIndex = pending.findIndex(e => e.teamNumber === entry.teamNumber);
+  if (existingIndex >= 0) {
+    pending[existingIndex] = entry;
+  } else {
+    pending.push(entry);
+  }
+  localStorage.setItem(PENDING_PIT_KEY, JSON.stringify(pending));
+}
+
+function getPendingPitEntries(): PitScoutingEntry[] {
+  const stored = localStorage.getItem(PENDING_PIT_KEY);
+  return stored ? JSON.parse(stored) : [];
 }
 
 // ============ PICKLIST ============

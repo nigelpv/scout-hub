@@ -61,3 +61,15 @@ export interface PicklistTeam {
     rank: number;
     manualOverride: boolean;
 }
+
+export interface PitScoutingEntry {
+    teamNumber: number;
+    autoClimb: 'none' | 'side' | 'middle';
+    robotClimb: 'none' | 'low' | 'mid' | 'high';
+    avgBalls: number;
+    maxBalls: number;
+    canGoUnderTrench: boolean;
+    canGoOverBump: boolean;
+    timestamp: number;
+}
+
