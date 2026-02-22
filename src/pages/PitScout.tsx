@@ -190,6 +190,7 @@ const PitScout = () => {
                             <Counter
                                 value={avgBalls}
                                 onChange={setAvgBalls}
+                                max={999}
                                 label="Avg. Balls Scored"
                             />
                             <Counter
