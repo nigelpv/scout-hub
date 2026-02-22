@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { pool } from '../index.js';
+import { supabase } from '../supabase.js';
 
 const router = Router();
 
@@ -8,13 +8,20 @@ const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
 // GET picklist
 router.get('/', async (req, res) => {
     try {
-        const result = await pool.query('SELECT * FROM picklist ORDER BY rank ASC');
-        const picklist = result.rows.map((row: any) => ({
+        const { data: picklist, error } = await supabase
+            .from('picklist')
+            .select('*')
+            .order('rank', { ascending: true });
+
+        if (error) throw error;
+
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const mappedPicklist = picklist.map((row: any) => ({
             teamNumber: row.team_number,
             rank: row.rank,
             manualOverride: row.manual_override,
         }));
-        res.json(picklist);
+        res.json(mappedPicklist);
     } catch (err) {
         console.error('Error fetching picklist:', err);
         res.status(500).json({ error: 'Failed to fetch picklist' });
@@ -23,28 +30,36 @@ router.get('/', async (req, res) => {
 
 // PUT update entire picklist (for reordering)
 router.put('/', async (req, res) => {
-    const client = await pool.connect();
     try {
         const picklist = req.body;
 
-        await client.query('BEGIN');
-        await client.query('DELETE FROM picklist');
+        // Note: Not atomic, but for this use case it's acceptable.
+        // First delete all then insert.
+        const { error: deleteError } = await supabase
+            .from('picklist')
+            .delete()
+            .neq('team_number', 0); // Delete all
 
-        for (const item of picklist) {
-            await client.query(
-                'INSERT INTO picklist (team_number, rank, manual_override) VALUES ($1, $2, $3)',
-                [item.teamNumber, item.rank, item.manualOverride || false]
-            );
+        if (deleteError) throw deleteError;
+
+        if (picklist.length > 0) {
+            const { error: insertError } = await supabase
+                .from('picklist')
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                .insert(picklist.map((item: any) => ({
+                    team_number: item.teamNumber,
+                    rank: item.rank,
+                    manual_override: item.manualOverride || false
+                })));
+
+            if (insertError) throw insertError;
         }
 
-        await client.query('COMMIT');
         res.json({ success: true });
-    } catch (err) {
-        await client.query('ROLLBACK');
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } catch (err: any) {
         console.error('Error updating picklist:', err);
         res.status(500).json({ error: 'Failed to update picklist' });
-    } finally {
-        client.release();
     }
 });
 
@@ -56,14 +71,26 @@ router.post('/', async (req, res) => {
         // Get current max rank if not provided
         let newRank = rank;
         if (newRank === undefined) {
-            const result = await pool.query('SELECT COALESCE(MAX(rank), 0) + 1 as next_rank FROM picklist');
-            newRank = result.rows[0].next_rank;
+            const { data, error: rankError } = await supabase
+                .from('picklist')
+                .select('rank')
+                .order('rank', { ascending: false })
+                .limit(1);
+
+            if (rankError) throw rankError;
+            newRank = data.length > 0 ? data[0].rank + 1 : 1;
         }
 
-        await pool.query(
-            'INSERT INTO picklist (team_number, rank, manual_override) VALUES ($1, $2, $3) ON CONFLICT (team_number) DO UPDATE SET rank = $2, manual_override = $3',
-            [teamNumber, newRank, manualOverride || false]
-        );
+        const { error } = await supabase
+            .from('picklist')
+            .upsert({
+                team_number: teamNumber,
+                rank: newRank,
+                manual_override: manualOverride || false
+            }, { onConflict: 'team_number' });
+
+        if (error) throw error;
+
         res.status(201).json({ success: true });
     } catch (err) {
         console.error('Error adding to picklist:', err);
@@ -81,7 +108,13 @@ router.delete('/:teamNumber', async (req, res) => {
             return res.status(401).json({ error: 'Unauthorized' });
         }
 
-        await pool.query('DELETE FROM picklist WHERE team_number = $1', [parseInt(teamNumber)]);
+        const { error } = await supabase
+            .from('picklist')
+            .delete()
+            .eq('team_number', parseInt(teamNumber));
+
+        if (error) throw error;
+
         res.json({ success: true });
     } catch (err) {
         console.error('Error removing from picklist:', err);

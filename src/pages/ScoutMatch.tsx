@@ -23,25 +23,7 @@ const ScoutMatch = () => {
     const [alliancePosition, setAlliancePosition] = useState('Red 1');
     const [loadingTBA, setLoadingTBA] = useState(false);
 
-    // Auto-fetch event for team 2473 on mount
-    useEffect(() => {
-        const loadEvent = async () => {
-            const cachedEvent = getCurrentEvent();
-            // If we have a cached event, we still check for the "best" one
-            // but we can skip if the user just set it manually? 
-            // The user said "the event code is the event next event possible"
-            setLoadingTBA(true);
-            const events = await fetchTeamEvents('frc2473', new Date().getFullYear());
-            const currentEvent = determineCurrentEvent(events);
-            if (currentEvent) {
-                setEvent(currentEvent.key);
-                setCurrentEvent(currentEvent.key);
-            }
-            setLoadingTBA(false);
-        };
-
-        loadEvent();
-    }, []);
+    // Event is configured in config.ts and storage.ts
 
     // Auto-fetch team number when match or position changes
     useEffect(() => {
@@ -68,12 +50,10 @@ const ScoutMatch = () => {
     const [autoPreload, setAutoPreload] = useState(false);
     const [autoPreloadScored, setAutoPreloadScored] = useState(false);
     const [autoPreloadCount, setAutoPreloadCount] = useState(0);
-    const [autoEstCycleSize, setAutoEstCycleSize] = useState(0);
     const [autoClimb, setAutoClimb] = useState<'none' | 'side' | 'middle'>('none');
 
     // Teleop
     const [teleopCycles, setTeleopCycles] = useState(0);
-    const [estimatedCycleSize, setEstimatedCycleSize] = useState(0);
     const [defenseRating, setDefenseRating] = useState(0);
 
     // Endgame
@@ -81,7 +61,6 @@ const ScoutMatch = () => {
     const [climbStability, setClimbStability] = useState(3);
 
     // Overall
-    const [driverSkill, setDriverSkill] = useState(3);
     const [shootingRange, setShootingRange] = useState<'short' | 'medium' | 'long'>('short');
     const [obstacleNavigation, setObstacleNavigation] = useState<'none' | 'trench' | 'bump' | 'both'>('none');
     const [notes, setNotes] = useState('');
@@ -104,14 +83,12 @@ const ScoutMatch = () => {
             autoPreload,
             autoPreloadScored: autoPreload ? autoPreloadScored : false,
             autoPreloadCount: autoPreload ? (autoPreloadScored ? 8 : autoPreloadCount) : 0,
-            autoEstCycleSize,
             autoClimb,
             teleopCycles,
-            estimatedCycleSize,
             defenseRating,
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             climbResult: climbResult as any,
             climbStability,
-            driverSkill,
             shootingRange,
             obstacleNavigation,
             notes,
@@ -146,14 +123,11 @@ const ScoutMatch = () => {
             setAutoPreload(false);
             setAutoPreloadScored(false);
             setAutoPreloadCount(0);
-            setAutoEstCycleSize(0);
             setAutoClimb('none');
             setTeleopCycles(0);
-            setEstimatedCycleSize(0);
             setDefenseRating(0);
             setClimbResult('none');
             setClimbStability(3);
-            setDriverSkill(3);
             setShootingRange('short');
             setObstacleNavigation('none');
             setNotes('');
@@ -184,33 +158,12 @@ const ScoutMatch = () => {
 
                     <div className="space-y-4">
                         <div>
-                            <div className="flex items-center justify-between mb-2">
-                                <label className="text-sm text-muted-foreground block">Event</label>
-                                <button
-                                    onClick={async () => {
-                                        setLoadingTBA(true);
-                                        const events = await fetchTeamEvents('frc2473', new Date().getFullYear());
-                                        const currentEvent = determineCurrentEvent(events);
-                                        if (currentEvent) {
-                                            setEvent(currentEvent.key);
-                                            setCurrentEvent(currentEvent.key);
-                                            toast.success(`Set event to ${currentEvent.key}`);
-                                        }
-                                        setLoadingTBA(false);
-                                    }}
-                                    className="text-xs text-primary flex items-center gap-1 hover:underline"
-                                    disabled={loadingTBA}
-                                >
-                                    <RefreshCw className={`w-3 h-3 ${loadingTBA ? 'animate-spin' : ''}`} />
-                                    Auto-refresh
-                                </button>
-                            </div>
+                            <label className="text-sm text-muted-foreground block mb-2">Event</label>
                             <input
                                 type="text"
                                 value={event}
-                                onChange={(e) => setEvent(e.target.value)}
-                                placeholder="Event name or code"
-                                className="w-full h-12 px-4 rounded-lg bg-secondary text-foreground border-0 focus:ring-2 ring-primary"
+                                readOnly
+                                className="w-full h-12 px-4 rounded-lg bg-secondary/50 text-muted-foreground border-0 cursor-not-allowed font-mono"
                             />
                         </div>
 
@@ -303,11 +256,6 @@ const ScoutMatch = () => {
                         onChange={setAutoCycles}
                         label="Auto Cycles"
                     />
-                    <Counter
-                        value={autoEstCycleSize}
-                        onChange={setAutoEstCycleSize}
-                        label="Est. Cycle Size"
-                    />
                     <OptionSelector
                         value={autoClimb}
                         onChange={(v) => setAutoClimb(v as typeof autoClimb)}
@@ -327,11 +275,6 @@ const ScoutMatch = () => {
                         value={teleopCycles}
                         onChange={setTeleopCycles}
                         label="Teleop Cycles"
-                    />
-                    <Counter
-                        value={estimatedCycleSize}
-                        onChange={setEstimatedCycleSize}
-                        label="Est. Cycle Size"
                     />
                     <RatingField
                         value={defenseRating}
@@ -376,11 +319,6 @@ const ScoutMatch = () => {
                 {/* Overall */}
                 <section className="stat-card">
                     <h2 className="section-header">Overall Impressions</h2>
-                    <RatingField
-                        value={driverSkill}
-                        onChange={setDriverSkill}
-                        label="Driver Skill"
-                    />
                     <OptionSelector
                         value={obstacleNavigation}
                         onChange={(v) => setObstacleNavigation(v as typeof obstacleNavigation)}

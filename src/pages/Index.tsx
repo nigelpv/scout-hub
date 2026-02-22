@@ -26,8 +26,8 @@ const Index = () => {
     loadStats();
 
     // Listen for background background cache updates (Stale-While-Revalidate)
-    const handleUpdate = (e: any) => {
-      const updatedEntries = e.detail;
+    const handleUpdate = (e: Event) => {
+      const updatedEntries = (e as CustomEvent).detail;
       setEntriesCount(updatedEntries.length);
       setTeamsCount(getUniqueTeamsFromEntries(updatedEntries).length);
       setLoading(false);

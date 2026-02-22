@@ -1,11 +1,13 @@
 // API configuration
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
+const API_URL = import.meta.env.VITE_API_URL || '/api';
 
 import { ScoutingEntry, PicklistTeam, PitScoutingEntry } from './types';
 import { toast } from 'sonner';
+import { EVENT_KEY } from './config';
+
+const STORAGE_KEY = 'scout_entries';
 
 // ============ KEYS ============
-const EVENT_KEY = 'scout_current_event';
 const PENDING_ENTRIES_KEY = 'scout_pending_entries';
 const ENTRIES_CACHE_KEY = 'scout_entries_cache';
 const PICKLIST_CACHE_KEY = 'scout_picklist_cache';
@@ -44,7 +46,7 @@ function dispatchSyncUpdate(isSyncing: boolean) {
 export async function getEntries(): Promise<ScoutingEntry[]> {
   // Return cached data immediately if available
   const cached = localStorage.getItem(ENTRIES_CACHE_KEY);
-  let initialEntries: ScoutingEntry[] = cached ? JSON.parse(cached) : [];
+  const initialEntries: ScoutingEntry[] = cached ? JSON.parse(cached) : [];
 
   // Fetch from server in the background
   const fetchPromise = (async () => {
@@ -398,7 +400,7 @@ function getPendingPitEntries(): PitScoutingEntry[] {
 
 export async function getPicklist(): Promise<PicklistTeam[]> {
   const cached = localStorage.getItem(PICKLIST_CACHE_KEY);
-  let initialPicklist: PicklistTeam[] = cached ? JSON.parse(cached) : [];
+  const initialPicklist: PicklistTeam[] = cached ? JSON.parse(cached) : [];
 
   const fetchPromise = (async () => {
     try {
@@ -470,11 +472,10 @@ export function generateId(): string {
 }
 
 export function getCurrentEvent(): string {
-  if (typeof window === 'undefined') return '';
-  return localStorage.getItem(EVENT_KEY) || '2025camb';
+  return EVENT_KEY;
 }
 
 export function setCurrentEvent(event: string): void {
-  if (typeof window === 'undefined') return;
-  localStorage.setItem(EVENT_KEY, event);
+  // Event is configured in config.ts, so we don't allow setting it via this function
+  console.log('setCurrentEvent called, but event is configured as:', EVENT_KEY);
 }

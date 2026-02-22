@@ -30,7 +30,6 @@ export function calculateTeamStatsFromEntries(entries: ScoutingEntry[]): TeamSta
     const medianAutoCycles = calculateMedian(autoCyclesValues);
     const stdDevAutoCycles = calculateStdDev(autoCyclesValues, avgAutoCycles);
 
-    const avgAutoCycleSize = entries.reduce((sum, e) => sum + (e.autoEstCycleSize || 0), 0) / matchesPlayed;
 
     const preloadSuccesses = entries.filter(e => e.autoPreload && e.autoPreloadScored).length;
     const preloadAttempts = entries.filter(e => e.autoPreload).length;
@@ -43,7 +42,6 @@ export function calculateTeamStatsFromEntries(entries: ScoutingEntry[]): TeamSta
     const medianTeleopCycles = calculateMedian(teleopCyclesValues);
     const stdDevTeleopCycles = calculateStdDev(teleopCyclesValues, avgTeleopCycles);
 
-    const avgCycleSize = entries.reduce((sum, e) => sum + (e.estimatedCycleSize || 0), 0) / matchesPlayed;
 
     // Climb Stats
     const successfulClimbs = entries.filter(e =>
@@ -59,7 +57,6 @@ export function calculateTeamStatsFromEntries(entries: ScoutingEntry[]): TeamSta
     // Rating Stats
     const avgDefenseRating = entries.reduce((sum, e) => sum + (e.defenseRating || 0), 0) / matchesPlayed;
 
-    const avgDriverSkill = entries.reduce((sum, e) => sum + e.driverSkill, 0) / matchesPlayed;
 
     // Score calculation (Match-by-Match)
     const teleopClimbPoints: Record<string, number> = {
@@ -75,13 +72,13 @@ export function calculateTeamStatsFromEntries(entries: ScoutingEntry[]): TeamSta
         if (e.autoPreload) {
             preloadPts = e.autoPreloadScored ? 8 : (e.autoPreloadCount || 0);
         }
-        const autoFuelPts = (e.autoCycles * (e.autoEstCycleSize || 0)) + preloadPts;
+        const autoFuelPts = e.autoCycles + preloadPts;
 
         // Auto Climb: 15 points if not 'none'
         const autoClimbPts = (e.autoClimb !== 'none') ? 15 : 0;
 
-        // Teleop Fuel: Cycles * Size
-        const teleopFuelPts = e.teleopCycles * (e.estimatedCycleSize || 0);
+        // Teleop Fuel: Cycles
+        const teleopFuelPts = e.teleopCycles;
 
         // Teleop Climb: Based on Level
         const teleopClimbPts = teleopClimbPoints[e.climbResult] || 0;
@@ -99,16 +96,13 @@ export function calculateTeamStatsFromEntries(entries: ScoutingEntry[]): TeamSta
         medianAutoCycles: Math.round(medianAutoCycles * 10) / 10,
         stdDevAutoCycles: Math.round(stdDevAutoCycles * 10) / 10,
         autoPreloadSuccessRate: Math.round(autoPreloadSuccessRate),
-        avgAutoCycleSize: Math.round(avgAutoCycleSize * 10) / 10,
         avgTeleopCycles: Math.round(avgTeleopCycles * 10) / 10,
         meanTeleopCycles: Math.round(meanTeleopCycles * 10) / 10,
         medianTeleopCycles: Math.round(medianTeleopCycles * 10) / 10,
         stdDevTeleopCycles: Math.round(stdDevTeleopCycles * 10) / 10,
-        avgCycleSize: Math.round(avgCycleSize * 10) / 10,
         climbSuccessRate: Math.round(climbSuccessRate),
         highMidClimbRate: Math.round(highMidClimbRate),
         avgDefenseRating: Math.round(avgDefenseRating * 10) / 10,
-        avgDriverSkill: Math.round(avgDriverSkill * 10) / 10,
         totalScore: Math.round(totalScore * 10) / 10,
     };
 }

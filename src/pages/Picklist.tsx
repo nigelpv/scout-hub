@@ -19,6 +19,7 @@ const Picklist = () => {
   const [password, setPassword] = useState('');
   const [adminPassword, setAdminPassword] = useState('');
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const processData = (entries: any[], savedPicklist: any[]) => {
     const stats = getAllTeamStatsFromEntries(entries);
     setAllStats(stats);
@@ -53,19 +54,23 @@ const Picklist = () => {
     };
     loadData();
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const handleEntriesUpdate = (e: any) => {
       processData(e.detail, picklist);
     };
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const handlePicklistUpdate = (e: any) => {
       processData(allStats.length > 0 ? [] : [], e.detail); // Simplified, we just need to re-run the merge logic
       // Actually simpler to just track what we have:
     };
 
     // More robust listeners
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const onEntriesUpdate = (e: any) => {
       setAllStats(getAllTeamStatsFromEntries(e.detail));
     };
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const onPicklistUpdate = (e: any) => {
       setPicklist(e.detail);
     };

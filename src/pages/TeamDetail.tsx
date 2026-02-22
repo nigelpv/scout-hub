@@ -219,7 +219,7 @@ const TeamDetail = () => {
                                 <span>Mean: {stats.meanAutoCycles}</span>
                                 <span>Median: {stats.medianAutoCycles}</span>
                                 <span>StdDev: {stats.stdDevAutoCycles}</span>
-                                <span>Size: {stats.avgAutoCycleSize}</span>
+                                <span>StdDev: {stats.stdDevAutoCycles}</span>
                             </div>
                         </div>
                     </div>
@@ -241,9 +241,6 @@ const TeamDetail = () => {
                             </div>
                         </div>
 
-                        <div>
-                            <StatBar value={stats.avgCycleSize} max={5} label="Avg Cycle Size" />
-                        </div>
                     </div>
                 </div>
 
@@ -259,20 +256,6 @@ const TeamDetail = () => {
                     </div>
                 </div>
 
-                {/* Performance */}
-                <div className="stat-card">
-                    <div className="flex items-center gap-2 mb-4">
-                        <Zap className="w-5 h-5 text-purple-500" />
-                        <h2 className="font-semibold">Performance</h2>
-                    </div>
-                    <div className="text-center">
-                        <User className="w-5 h-5 mx-auto mb-1 text-muted-foreground" />
-                        <p className={`font-mono text-2xl font-bold ${getRatingColor(stats.avgDriverSkill)}`}>
-                            {stats.avgDriverSkill}
-                        </p>
-                        <p className="text-xs text-muted-foreground">Driver Skill</p>
-                    </div>
-                </div>
             </div>
 
             {/* Defense */}
@@ -359,7 +342,7 @@ const TeamDetail = () => {
                                         <div className="text-sm space-y-1">
                                             <div className="flex justify-between border-b border-border/50 pb-0.5">
                                                 <span>Cycles</span>
-                                                <span className="font-mono font-medium text-foreground">{entry.autoCycles} ({entry.autoEstCycleSize || 0}sz)</span>
+                                                <span className="font-mono font-medium text-foreground">{entry.autoCycles}</span>
                                             </div>
                                             <div className="flex justify-between border-b border-border/50 pb-0.5">
                                                 <span>Preload</span>
@@ -382,7 +365,7 @@ const TeamDetail = () => {
                                         <div className="text-sm space-y-1">
                                             <div className="flex justify-between border-b border-border/50 pb-0.5">
                                                 <span>Cycles</span>
-                                                <span className="font-mono font-medium text-foreground">{entry.teleopCycles} ({entry.estimatedCycleSize || 0}sz)</span>
+                                                <span className="font-mono font-medium text-foreground">{entry.teleopCycles}</span>
                                             </div>
                                             <div className="flex justify-between border-b border-border/50 pb-0.5">
                                                 <span>Defense</span>
@@ -404,13 +387,6 @@ const TeamDetail = () => {
                                     </div>
                                 </div>
 
-                                {/* Ratings Row */}
-                                <div className="bg-secondary/40 rounded-lg p-2 flex justify-around items-center text-center">
-                                    <div>
-                                        <p className="text-[8px] uppercase font-bold text-muted-foreground">Driver Skill</p>
-                                        <p className={`font-mono font-bold ${getRatingColor(entry.driverSkill)}`}>{entry.driverSkill}</p>
-                                    </div>
-                                </div>
 
                                 {entry.notes && (
                                     <div className="text-sm text-muted-foreground bg-secondary/20 p-2 rounded border-l-2 border-primary/30">
