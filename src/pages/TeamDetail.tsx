@@ -323,6 +323,10 @@ const TeamDetail = () => {
                                             <span>Ball Capacity</span>
                                             <span className="font-mono font-medium">{pitData.maxBalls}</span>
                                         </div>
+                                        <div className="flex justify-between border-b border-border/50 pb-0.5">
+                                            <span>Est. Points</span>
+                                            <span className="font-mono font-medium">{pitData.estimatedPoints}</span>
+                                        </div>
                                     </div>
                                 </div>
                                 <div className="bg-primary/5 p-2 rounded-lg border border-primary/10">

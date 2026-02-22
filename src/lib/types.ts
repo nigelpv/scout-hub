@@ -58,6 +58,7 @@ export interface PicklistTeam {
 
 export interface PitScoutingEntry {
     teamNumber: number;
+    estimatedPoints: number;
     autoClimb: 'none' | 'side' | 'middle';
     robotClimb: 'none' | 'low' | 'mid' | 'high';
     avgBalls: number;

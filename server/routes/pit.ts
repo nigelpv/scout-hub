@@ -16,6 +16,7 @@ router.get('/', async (req, res) => {
         // Convert snake_case to camelCase
         const entries = data.map((row: any) => ({
             teamNumber: row.team_number,
+            estimatedPoints: row.estimated_points || 0,
             autoClimb: row.auto_climb,
             robotClimb: row.robot_climb,
             avgBalls: row.avg_balls,
@@ -51,6 +52,7 @@ router.get('/team/:teamNumber', async (req, res) => {
 
         res.json({
             teamNumber: data.team_number,
+            estimatedPoints: data.estimated_points || 0,
             autoClimb: data.auto_climb,
             robotClimb: data.robot_climb,
             avgBalls: data.avg_balls,
@@ -74,6 +76,7 @@ router.post('/', async (req, res) => {
             .from('pit_scouting')
             .upsert({
                 team_number: parseInt(entry.teamNumber),
+                estimated_points: entry.estimatedPoints,
                 auto_climb: entry.autoClimb,
                 robot_climb: entry.robotClimb,
                 avg_balls: entry.avgBalls,

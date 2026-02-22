@@ -25,6 +25,8 @@ const PitScout = () => {
     const [robotClimb, setRobotClimb] = useState<boolean>(false);
     const [climbLevel, setClimbLevel] = useState<'low' | 'mid' | 'high'>('low');
 
+    const [estimatedPoints, setEstimatedPoints] = useState(0);
+
     const [avgBalls, setAvgBalls] = useState(0);
     const [maxBalls, setMaxBalls] = useState(0);
 
@@ -44,6 +46,7 @@ const PitScout = () => {
 
         const formData = {
             teamNumber: parseInt(teamNumber),
+            estimatedPoints,
             autoClimb: autoClimb ? autoClimbPosition : 'none' as const,
             robotClimb: robotClimb ? climbLevel : 'none' as const,
             avgBalls,
@@ -178,6 +181,12 @@ const PitScout = () => {
                         {/* Scoring */}
                         <section className="stat-card">
                             <h2 className="section-header">Capacity & Scoring</h2>
+                            <Counter
+                                value={estimatedPoints}
+                                onChange={setEstimatedPoints}
+                                max={999}
+                                label="Estimated Point Total"
+                            />
                             <Counter
                                 value={avgBalls}
                                 onChange={setAvgBalls}

@@ -66,12 +66,15 @@ const ScoutMatch = () => {
     const [notes, setNotes] = useState('');
 
     const handleSubmit = async () => {
-        if (!matchNumber || isNaN(parseInt(matchNumber as any))) {
+        const parsedMatch = typeof matchNumber === 'string' ? parseInt(matchNumber) : matchNumber;
+        const parsedTeam = typeof teamNumber === 'string' ? parseInt(teamNumber) : teamNumber;
+
+        if (!parsedMatch || isNaN(parsedMatch) || parsedMatch <= 0) {
             toast.error('Please enter a valid match number');
             return;
         }
 
-        if (!teamNumber || isNaN(parseInt(teamNumber))) {
+        if (!parsedTeam || isNaN(parsedTeam) || parsedTeam <= 0) {
             toast.error('Please enter a valid team number');
             return;
         }
@@ -355,10 +358,15 @@ const ScoutMatch = () => {
             <div className="fixed bottom-0 left-0 right-0 p-4 bg-background/95 backdrop-blur border-t border-border">
                 <button
                     onClick={handleSubmit}
-                    className="touch-button w-full bg-primary text-primary-foreground"
+                    disabled={saving || !matchNumber || !teamNumber || parseInt(matchNumber as any) <= 0 || parseInt(teamNumber as any) <= 0}
+                    className="touch-button w-full bg-primary text-primary-foreground disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                    <Save className="w-5 h-5" />
-                    Save Entry
+                    {saving ? (
+                        <Loader2 className="w-5 h-5 animate-spin" />
+                    ) : (
+                        <Save className="w-5 h-5" />
+                    )}
+                    {saving ? 'Saving...' : 'Save Entry'}
                 </button>
             </div>
         </div>
