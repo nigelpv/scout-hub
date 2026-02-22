@@ -1,5 +1,6 @@
 const TBA_API_KEY = import.meta.env.VITE_TBA_API_KEY;
 const BASE_URL = 'https://www.thebluealliance.com/api/v3';
+import { getStoredMatches, storeMatches, EVENT_KEY } from './storage';
 
 export interface TBAEvent {
   key: string;
@@ -51,11 +52,30 @@ const fetchTBA = async (endpoint: string) => {
 };
 
 // Simple cache for match data to avoid redundant requests
-const matchCache: Record<string, TBAMatch> = {};
+let matchCache: Record<string, TBAMatch> = {};
+
+export const initializeTBACache = () => {
+  const stored = getStoredMatches(EVENT_KEY);
+  stored.forEach(match => {
+    matchCache[match.key] = match;
+  });
+};
+
+export const fetchAllEventMatches = async (eventKey: string): Promise<TBAMatch[]> => {
+  const data = await fetchTBA(`/event/${eventKey}/matches/simple`);
+  if (data && Array.isArray(data)) {
+    storeMatches(eventKey, data);
+    data.forEach((match: TBAMatch) => {
+      matchCache[match.key] = match;
+    });
+    return data;
+  }
+  return [];
+};
 
 export const fetchMatchData = async (eventKey: string, matchNumber: number): Promise<TBAMatch | null> => {
   const matchKey = `${eventKey}_qm${matchNumber}`;
-  
+
   if (matchCache[matchKey]) {
     return matchCache[matchKey];
   }
@@ -77,7 +97,7 @@ export const determineCurrentEvent = (events: TBAEvent[]): TBAEvent | null => {
 
   // Sort events by start date
   const sortedEvents = [...events].sort((a, b) => a.start_date.localeCompare(b.start_date));
-  
+
   const now = new Date();
   const today = now.toISOString().split('T')[0];
 
@@ -90,11 +110,11 @@ export const determineCurrentEvent = (events: TBAEvent[]): TBAEvent | null => {
 
 export const getTeamFromMatch = (match: TBAMatch, position: string): string => {
   if (!match || !position) return '';
-  
+
   const [alliance, posStr] = position.split(' ');
   const index = parseInt(posStr) - 1;
   const color = alliance.toLowerCase() as 'red' | 'blue';
-  
+
   const teamKey = match.alliances[color]?.team_keys[index];
   return teamKey ? teamKey.replace('frc', '') : '';
 };

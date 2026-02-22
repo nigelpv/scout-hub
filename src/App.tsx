@@ -11,7 +11,8 @@ import Picklist from "./pages/Picklist";
 import PitScout from "./pages/PitScout";
 import NotFound from "./pages/NotFound";
 
-import { initializeSync } from "./lib/storage";
+import { initializeSync, EVENT_KEY } from "./lib/storage";
+import { initializeTBACache, fetchAllEventMatches } from "./lib/tba";
 import { useEffect } from "react";
 import { SyncIndicator } from "./components/scouting/SyncIndicator";
 import { PwaInstallPrompt } from "./components/pwa/PwaInstallPrompt";
@@ -21,7 +22,17 @@ const queryClient = new QueryClient();
 
 const App = () => {
   useEffect(() => {
+    // Load cached matches first
+    initializeTBACache();
+
+    // Sync entries
     const cleanup = initializeSync();
+
+    // Fetch fresh matches in background if online
+    if (navigator.onLine) {
+      fetchAllEventMatches(EVENT_KEY).catch(err => console.warn('Failed to pre-fetch TBA data:', err));
+    }
+
     return cleanup;
   }, []);
 

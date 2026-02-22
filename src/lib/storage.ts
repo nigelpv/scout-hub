@@ -4,6 +4,7 @@ const API_URL = import.meta.env.VITE_API_URL || '/api';
 import { ScoutingEntry, PicklistTeam, PitScoutingEntry } from './types';
 import { toast } from 'sonner';
 import { EVENT_KEY } from './config';
+export { EVENT_KEY };
 
 const STORAGE_KEY = 'scout_entries';
 
@@ -13,6 +14,7 @@ const ENTRIES_CACHE_KEY = 'scout_entries_cache';
 const PICKLIST_CACHE_KEY = 'scout_picklist_cache';
 const PIT_CACHE_KEY = 'scout_pit_cache';
 const PENDING_PIT_KEY = 'scout_pending_pit';
+const TBA_MATCHES_CACHE_KEY = 'scout_tba_matches_cache';
 
 // Custom event for sync status updates
 export const SYNC_EVENT = 'scout_sync_update';
@@ -478,4 +480,15 @@ export function getCurrentEvent(): string {
 export function setCurrentEvent(event: string): void {
   // Event is configured in config.ts, so we don't allow setting it via this function
   console.log('setCurrentEvent called, but event is configured as:', EVENT_KEY);
+}
+
+// ============ TBA MATCH CACHE ============
+
+export function getStoredMatches(eventKey: string): any[] {
+  const cached = localStorage.getItem(`${TBA_MATCHES_CACHE_KEY}_${eventKey}`);
+  return cached ? JSON.parse(cached) : [];
+}
+
+export function storeMatches(eventKey: string, matches: any[]): void {
+  localStorage.setItem(`${TBA_MATCHES_CACHE_KEY}_${eventKey}`, JSON.stringify(matches));
 }
