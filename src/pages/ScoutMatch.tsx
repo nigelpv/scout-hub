@@ -66,6 +66,11 @@ const ScoutMatch = () => {
     const [notes, setNotes] = useState('');
 
     const handleSubmit = async () => {
+        if (!matchNumber || isNaN(parseInt(matchNumber as any))) {
+            toast.error('Please enter a valid match number');
+            return;
+        }
+
         if (!teamNumber || isNaN(parseInt(teamNumber))) {
             toast.error('Please enter a valid team number');
             return;
@@ -173,7 +178,10 @@ const ScoutMatch = () => {
                                 <input
                                     type="number"
                                     value={matchNumber}
-                                    onChange={(e) => setMatchNumber(parseInt(e.target.value) || 1)}
+                                    onChange={(e) => {
+                                        const val = e.target.value;
+                                        setMatchNumber(val === '' ? '' as any : parseInt(val));
+                                    }}
                                     min={1}
                                     className="w-full h-12 px-4 rounded-lg bg-secondary text-foreground font-mono text-lg font-bold text-center border-0 focus:ring-2 ring-primary"
                                 />
