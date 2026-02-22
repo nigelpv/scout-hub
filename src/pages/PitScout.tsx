@@ -9,6 +9,8 @@ import { toast } from 'sonner';
 
 type Step = 'select-team' | 'form';
 
+import { savePitEntry } from '@/lib/storage';
+
 const PitScout = () => {
     const navigate = useNavigate();
     const [step, setStep] = useState<Step>('select-team');
@@ -40,11 +42,10 @@ const PitScout = () => {
     const handleSubmit = async () => {
         setIsSubmitting(true);
 
-        // Simulate saving (User said data storage later)
         const formData = {
-            teamNumber,
-            autoClimb: autoClimb ? autoClimbPosition : 'none',
-            robotClimb: robotClimb ? climbLevel : 'none',
+            teamNumber: parseInt(teamNumber),
+            autoClimb: autoClimb ? autoClimbPosition : 'none' as const,
+            robotClimb: robotClimb ? climbLevel : 'none' as const,
             avgBalls,
             maxBalls,
             canGoUnderTrench,
@@ -52,19 +53,26 @@ const PitScout = () => {
             timestamp: Date.now()
         };
 
-        console.log('Pit Scouting Data Ready:', formData);
+        const result = await savePitEntry(formData);
 
-        // Delay for effect
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        if (result.success) {
+            setSubmitted(true);
+            if (result.offline) {
+                toast.success('Offline! Pit data saved locally and will sync when online.');
+            } else {
+                toast.success('Pit scouting form saved!');
+            }
+
+            setTimeout(() => {
+                navigate('/');
+            }, 2000);
+        } else {
+            toast.error('Failed to save pit data. Please try again.');
+        }
 
         setIsSubmitting(false);
-        setSubmitted(true);
-        toast.success('Pit scouting form saved locally!');
-
-        setTimeout(() => {
-            navigate('/');
-        }, 2000);
     };
+
 
     if (submitted) {
         return (

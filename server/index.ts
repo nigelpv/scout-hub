@@ -2,6 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import entriesRouter from './routes/entries.js';
 import picklistRouter from './routes/picklist.js';
+import pitRouter from './routes/pit.js';
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -13,6 +14,7 @@ app.use(express.json());
 // Routes
 app.use('/api/entries', entriesRouter);
 app.use('/api/picklist', picklistRouter);
+app.use('/api/pit', pitRouter);
 
 import { supabase } from './supabase.js';
 

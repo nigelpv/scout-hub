@@ -1,12 +1,12 @@
 import { useState, useEffect, useCallback } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, Link } from 'react-router-dom';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { StatBar } from '@/components/scouting/StatBar';
 import { calculateTeamStatsFromEntries, getRatingColor } from '@/lib/stats';
-import { getEntriesForTeam, deleteEntry, deleteEntries } from '@/lib/storage';
-import { Target, Zap, Trophy, Shield, User, Gauge, Lock, Unlock, Trash2, X, CircleDot, Loader2, CheckSquare, Square } from 'lucide-react';
+import { getEntriesForTeam, deleteEntry, deleteEntries, getPitEntryForTeam } from '@/lib/storage';
+import { Target, Zap, Trophy, Shield, User, Gauge, Lock, Unlock, Trash2, X, CircleDot, Loader2, CheckSquare, Square, Box } from 'lucide-react';
 import { toast } from 'sonner';
-import { TeamStats, ScoutingEntry } from '@/lib/types';
+import { TeamStats, ScoutingEntry, PitScoutingEntry } from '@/lib/types';
 
 const TeamDetail = () => {
     const { teamNumber } = useParams();
@@ -14,6 +14,7 @@ const TeamDetail = () => {
 
     const [stats, setStats] = useState<TeamStats | null>(null);
     const [entries, setEntries] = useState<ScoutingEntry[]>([]);
+    const [pitData, setPitData] = useState<PitScoutingEntry | null>(null);
     const [loading, setLoading] = useState(true);
 
     // Admin Mode State
@@ -25,8 +26,12 @@ const TeamDetail = () => {
 
     const loadData = useCallback(async () => {
         setLoading(true);
-        const teamEntries = await getEntriesForTeam(teamNum);
+        const [teamEntries, teamPitData] = await Promise.all([
+            getEntriesForTeam(teamNum),
+            getPitEntryForTeam(teamNum)
+        ]);
         setEntries(teamEntries);
+        setPitData(teamPitData);
         setStats(calculateTeamStatsFromEntries(teamEntries));
         setLoading(false);
         setSelectedEntries(new Set()); // Clear selection on reload
@@ -268,6 +273,74 @@ const TeamDetail = () => {
                     <StatBar value={stats.avgDefenseRating} max={5} label="Avg Defense Rating" />
                 </div>
             )}
+
+            {/* Pit Scouting */}
+            <div className="px-4 mb-4">
+                <div className="stat-card">
+                    <div className="flex items-center gap-2 mb-4">
+                        <Box className="w-5 h-5 text-primary" />
+                        <h2 className="font-semibold">Pit Scouting</h2>
+                    </div>
+                    {pitData ? (
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-3">
+                                <div>
+                                    <p className="text-[10px] uppercase font-bold text-muted-foreground tracking-tight">Capabilities</p>
+                                    <div className="text-sm space-y-1 mt-1">
+                                        <div className="flex justify-between border-b border-border/50 pb-0.5">
+                                            <span>Auto Climb</span>
+                                            <span className="font-medium capitalize">{pitData.autoClimb}</span>
+                                        </div>
+                                        <div className="flex justify-between border-b border-border/50 pb-0.5">
+                                            <span>Robot Climb</span>
+                                            <span className="font-medium uppercase">{pitData.robotClimb === 'none' ? 'None' : pitData.robotClimb}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div>
+                                    <p className="text-[10px] uppercase font-bold text-muted-foreground tracking-tight">Navigation</p>
+                                    <div className="text-sm space-y-1 mt-1">
+                                        <div className="flex justify-between border-b border-border/50 pb-0.5">
+                                            <span>Under Trench</span>
+                                            <span className="font-medium">{pitData.canGoUnderTrench ? 'Yes' : 'No'}</span>
+                                        </div>
+                                        <div className="flex justify-between border-b border-border/50 pb-0.5">
+                                            <span>Over Bump</span>
+                                            <span className="font-medium">{pitData.canGoOverBump ? 'Yes' : 'No'}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div className="space-y-3">
+                                <div>
+                                    <p className="text-[10px] uppercase font-bold text-muted-foreground tracking-tight">Scoring</p>
+                                    <div className="text-sm space-y-1 mt-1">
+                                        <div className="flex justify-between border-b border-border/50 pb-0.5">
+                                            <span>Avg. Balls</span>
+                                            <span className="font-mono font-medium">{pitData.avgBalls}</span>
+                                        </div>
+                                        <div className="flex justify-between border-b border-border/50 pb-0.5">
+                                            <span>Ball Capacity</span>
+                                            <span className="font-mono font-medium">{pitData.maxBalls}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div className="bg-primary/5 p-2 rounded-lg border border-primary/10">
+                                    <p className="text-[10px] uppercase font-bold text-primary/70 tracking-tight mb-1">Last Updated</p>
+                                    <p className="text-xs font-mono">{new Date(pitData.timestamp).toLocaleDateString()}</p>
+                                </div>
+                            </div>
+                        </div>
+                    ) : (
+                        <div className="text-center py-4 bg-secondary/20 rounded-lg">
+                            <p className="text-sm text-muted-foreground">No pit scouting data recorded</p>
+                            <Link to="/pit-scout" className="text-xs text-primary hover:underline mt-1 inline-block">
+                                Scout this team →
+                            </Link>
+                        </div>
+                    )}
+                </div>
+            </div>
 
             {/* Recent Matches */}
             <div className="stat-card">
