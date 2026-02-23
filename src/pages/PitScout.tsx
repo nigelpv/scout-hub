@@ -187,7 +187,7 @@ const PitScout = () => {
                                 max={999}
                                 label="Estimated Point Total"
                             />
-                            <Counter
+                            <Input
                                 value={avgBalls}
                                 onChange={setAvgBalls}
                                 max={999}
