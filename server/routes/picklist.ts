@@ -3,7 +3,7 @@ import { supabase } from '../supabase.js';
 
 const router = Router();
 
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
+// GET picklist
 
 // GET picklist
 router.get('/', async (req, res) => {
@@ -104,7 +104,7 @@ router.delete('/:teamNumber', async (req, res) => {
         const { teamNumber } = req.params;
         const { password } = req.body;
 
-        if (password !== ADMIN_PASSWORD) {
+        if (password !== process.env.ADMIN_PASSWORD) {
             return res.status(401).json({ error: 'Unauthorized' });
         }
 

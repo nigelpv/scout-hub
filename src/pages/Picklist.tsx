@@ -148,11 +148,15 @@ const Picklist = () => {
   // Admin Functions
   const handleAuth = (e: React.FormEvent) => {
     e.preventDefault();
-    setAdminPassword(password);
-    setIsAdmin(true);
-    setShowAuth(false);
-    setPassword('');
-    toast.success('Admin mode enabled');
+    if (password === '16782473') {
+      setAdminPassword(password);
+      setIsAdmin(true);
+      setShowAuth(false);
+      setPassword('');
+      toast.success('Admin mode enabled');
+    } else {
+      toast.error('Incorrect password');
+    }
   };
 
   const handleDeleteTeam = async (index: number) => {

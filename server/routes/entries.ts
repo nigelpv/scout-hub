@@ -2,11 +2,6 @@ import { Router } from 'express';
 import { supabase } from '../supabase.js';
 
 const router = Router();
-
-// Admin password for delete operations
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
-
-// GET all entries
 router.get('/', async (req, res) => {
     try {
         const { data: entries, error } = await supabase
@@ -149,7 +144,7 @@ router.post('/delete-batch', async (req, res) => {
     try {
         const { ids, password } = req.body;
 
-        if (password !== ADMIN_PASSWORD) {
+        if (password !== process.env.ADMIN_PASSWORD) {
             return res.status(401).json({ error: 'Unauthorized' });
         }
 
@@ -177,7 +172,7 @@ router.delete('/team/:teamNumber', async (req, res) => {
         const { teamNumber } = req.params;
         const { password } = req.body;
 
-        if (password !== ADMIN_PASSWORD) {
+        if (password !== process.env.ADMIN_PASSWORD) {
             return res.status(401).json({ error: 'Unauthorized' });
         }
 
@@ -201,7 +196,7 @@ router.delete('/:id', async (req, res) => {
         const { id } = req.params;
         const { password } = req.body;
 
-        if (password !== ADMIN_PASSWORD) {
+        if (password !== process.env.ADMIN_PASSWORD) {
             return res.status(401).json({ error: 'Unauthorized' });
         }
 
