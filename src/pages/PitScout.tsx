@@ -15,6 +15,7 @@ const PitScout = () => {
     const navigate = useNavigate();
     const [step, setStep] = useState<Step>('select-team');
     const [teamNumber, setTeamNumber] = useState('');
+    const [scoutName, setScoutName] = useState(localStorage.getItem('scout_name') || '');
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [submitted, setSubmitted] = useState(false);
 
@@ -38,6 +39,12 @@ const PitScout = () => {
             toast.error('Please enter a valid team number');
             return;
         }
+
+        if (!scoutName.trim()) {
+            toast.error('Please enter your name');
+            return;
+        }
+
         setStep('form');
     };
 
@@ -46,6 +53,7 @@ const PitScout = () => {
 
         const formData = {
             teamNumber: parseInt(teamNumber),
+            scoutName: scoutName.trim(),
             estimatedPoints,
             autoClimb: autoClimb ? autoClimbPosition : 'none' as const,
             robotClimb: robotClimb ? climbLevel : 'none' as const,
@@ -59,6 +67,7 @@ const PitScout = () => {
         const result = await savePitEntry(formData);
 
         if (result.success) {
+            localStorage.setItem('scout_name', scoutName.trim());
             setSubmitted(true);
             if (result.offline) {
                 toast.success('Offline! Pit data saved locally and will sync when online.');
@@ -113,6 +122,18 @@ const PitScout = () => {
                                 />
                             </div>
                         </section>
+
+                        <div className="space-y-2">
+                            <label className="text-sm font-medium text-muted-foreground ml-1">Scouter Name</label>
+                            <input
+                                type="text"
+                                value={scoutName}
+                                onChange={(e) => setScoutName(e.target.value)}
+                                placeholder="Enter your name"
+                                className="w-full h-12 px-4 rounded-xl bg-secondary border-2 border-transparent focus:border-primary focus:bg-background outline-none transition-all font-medium"
+                                required
+                            />
+                        </div>
 
                         <button
                             onClick={handleNext}

@@ -18,6 +18,7 @@ const ScoutMatch = () => {
 
     // Match info
     const [event, setEvent] = useState(getCurrentEvent());
+    const [scoutName, setScoutName] = useState(localStorage.getItem('scout_name') || '');
     const [matchNumber, setMatchNumber] = useState(1);
     const [teamNumber, setTeamNumber] = useState('');
     const [alliancePosition, setAlliancePosition] = useState('Red 1');
@@ -74,6 +75,11 @@ const ScoutMatch = () => {
             return;
         }
 
+        if (!scoutName.trim()) {
+            toast.error('Please enter your name');
+            return;
+        }
+
         if (!parsedTeam || isNaN(parsedTeam) || parsedTeam <= 0) {
             toast.error('Please enter a valid team number');
             return;
@@ -86,6 +92,7 @@ const ScoutMatch = () => {
             event,
             matchNumber,
             teamNumber: parseInt(teamNumber),
+            scoutName: scoutName.trim(),
             timestamp: Date.now(),
             autoCycles,
             autoPreload,
@@ -120,6 +127,7 @@ const ScoutMatch = () => {
             toast.success('Entry saved to server!');
         }
 
+        localStorage.setItem('scout_name', scoutName.trim());
         setCurrentEvent(event);
         setSaved(true);
 
@@ -172,6 +180,18 @@ const ScoutMatch = () => {
                                 value={event}
                                 readOnly
                                 className="w-full h-12 px-4 rounded-lg bg-secondary/50 text-muted-foreground border-0 cursor-not-allowed font-mono"
+                            />
+                        </div>
+
+                        <div className="space-y-2">
+                            <label className="text-sm font-medium text-muted-foreground ml-1">Scouter Name</label>
+                            <input
+                                type="text"
+                                value={scoutName}
+                                onChange={(e) => setScoutName(e.target.value)}
+                                placeholder="Enter your name"
+                                className="w-full h-12 px-4 rounded-xl bg-secondary border-2 border-transparent focus:border-primary focus:bg-background outline-none transition-all font-medium"
+                                required
                             />
                         </div>
 
