@@ -17,6 +17,8 @@ router.get('/', async (req, res) => {
         const entries = data.map((row: any) => ({
             teamNumber: row.team_number,
             scoutName: row.scout_name || 'Unknown',
+            estimatedPoints: row.estimated_points || 0,
+            isPasserBot: row.is_passer_bot,
             autoClimb: row.auto_climb,
             robotClimb: row.robot_climb,
             avgBalls: row.avg_balls,
@@ -55,6 +57,8 @@ router.get('/team/:teamNumber', async (req, res) => {
         res.json({
             teamNumber: data.team_number,
             scoutName: data.scout_name || 'Unknown',
+            estimatedPoints: data.estimated_points || 0,
+            isPasserBot: data.is_passer_bot,
             autoClimb: data.auto_climb,
             robotClimb: data.robot_climb,
             avgBalls: data.avg_balls,
@@ -81,6 +85,8 @@ router.post('/', async (req, res) => {
             .upsert({
                 team_number: parseInt(entry.teamNumber),
                 scout_name: entry.scoutName,
+                estimated_points: entry.estimatedPoints,
+                is_passer_bot: entry.isPasserBot,
                 auto_climb: entry.autoClimb,
                 robot_climb: entry.robotClimb,
                 avg_balls: entry.avgBalls,

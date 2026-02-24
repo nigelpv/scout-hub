@@ -56,6 +56,9 @@ const ScoutMatch = () => {
 
     // Teleop
     const [teleopCycles, setTeleopCycles] = useState(0);
+    const [avgBallsScoredPerCycle, setAvgBallsScoredPerCycle] = useState(0);
+    const [isPasserBot, setIsPasserBot] = useState(false);
+    const [defenseRating, setDefenseRating] = useState(0);
     const [defenseType, setDefenseType] = useState<'none' | 'pushing' | 'blocking' | 'poaching'>('none');
     const [defenseLocation, setDefenseLocation] = useState<'none' | 'neutral' | 'our_alliance' | 'their_alliance'>('none');
     const [shootingRange, setShootingRange] = useState<'alliance' | 'close_neutral' | 'far_neutral' | 'opponent' | null>(null);
@@ -107,6 +110,9 @@ const ScoutMatch = () => {
             teleopCycles,
             defenseType,
             defenseLocation,
+            avgBallsScoredPerCycle,
+            isPasserBot,
+            defenseRating,
             shootingRange,
             teleopObstacle,
             fuelBeaching,
@@ -150,6 +156,9 @@ const ScoutMatch = () => {
             setAutoClimb('none');
             setAutoObstacle('none');
             setTeleopCycles(0);
+            setAvgBallsScoredPerCycle(0);
+            setIsPasserBot(false);
+            setDefenseRating(0);
             setDefenseType('none');
             setDefenseLocation('none');
             setShootingRange(null);
@@ -319,6 +328,21 @@ const ScoutMatch = () => {
                         onChange={setTeleopCycles}
                         label="Hoppers Shot into Hub (Teleop)"
                     />
+                    <Counter
+                        value={avgBallsScoredPerCycle}
+                        onChange={setAvgBallsScoredPerCycle}
+                        label="Avg Balls Scored Per Cycle"
+                    />
+                    <ToggleField
+                        value={isPasserBot}
+                        onChange={setIsPasserBot}
+                        label="Passer Bot"
+                    />
+                    <RatingField
+                        value={defenseRating}
+                        onChange={setDefenseRating}
+                        label="Defense Rating"
+                    />
                     <OptionSelector
                         value={defenseType}
                         onChange={(v) => setDefenseType(v as typeof defenseType)}
@@ -430,7 +454,7 @@ const ScoutMatch = () => {
             <div className="fixed bottom-0 left-0 right-0 p-4 bg-background/95 backdrop-blur border-t border-border">
                 <button
                     onClick={handleSubmit}
-                    disabled={saving || !matchNumber || !teamNumber || parseInt(matchNumber as any) <= 0 || parseInt(teamNumber as any) <= 0}
+                    disabled={saving || !matchNumber || !teamNumber || Number(matchNumber) <= 0 || Number(teamNumber) <= 0}
                     className="touch-button w-full bg-primary text-primary-foreground disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                     {saving ? (

@@ -27,6 +27,9 @@ export interface ScoutingEntry {
     teleopObstacle: 'none' | 'trench' | 'bump' | 'both';
     fuelBeaching: boolean;
     fuelBeachingType: 'none' | 'off_bump' | 'random';
+    avgBallsScoredPerCycle: number;
+    isPasserBot: boolean;
+    defenseRating: number; // 0-5 (0 = none)
 
     // Endgame
     climbResult: 'none' | 'low' | 'mid' | 'high';
@@ -64,6 +67,8 @@ export interface PicklistTeam {
 export interface PitScoutingEntry {
     teamNumber: number;
     scoutName: string;
+    estimatedPoints: number;
+    isPasserBot: boolean;
     autoClimb: 'none' | 'side' | 'middle';
     robotClimb: 'none' | 'low' | 'mid' | 'high';
     avgBalls: number;
