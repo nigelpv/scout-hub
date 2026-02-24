@@ -55,6 +55,8 @@ const ScoutMatch = () => {
 
     // Teleop
     const [teleopCycles, setTeleopCycles] = useState(0);
+    const [avgBallsScoredPerCycle, setAvgBallsScoredPerCycle] = useState(0);
+    const [isPasserBot, setIsPasserBot] = useState(false);
     const [defenseRating, setDefenseRating] = useState(0);
 
     // Endgame
@@ -100,6 +102,8 @@ const ScoutMatch = () => {
             autoPreloadCount: autoPreload ? (autoPreloadScored ? 8 : autoPreloadCount) : 0,
             autoClimb,
             teleopCycles,
+            avgBallsScoredPerCycle,
+            isPasserBot,
             defenseRating,
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             climbResult: climbResult as any,
@@ -141,6 +145,8 @@ const ScoutMatch = () => {
             setAutoPreloadCount(0);
             setAutoClimb('none');
             setTeleopCycles(0);
+            setAvgBallsScoredPerCycle(0);
+            setIsPasserBot(false);
             setDefenseRating(0);
             setClimbResult('none');
             setClimbStability(3);
@@ -307,6 +313,16 @@ const ScoutMatch = () => {
                         onChange={setTeleopCycles}
                         label="Teleop Cycles"
                     />
+                    <Counter
+                        value={avgBallsScoredPerCycle}
+                        onChange={setAvgBallsScoredPerCycle}
+                        label="Avg Balls Scored Per Cycle"
+                    />
+                    <ToggleField
+                        value={isPasserBot}
+                        onChange={setIsPasserBot}
+                        label="Passer Bot"
+                    />
                     <RatingField
                         value={defenseRating}
                         onChange={setDefenseRating}
@@ -378,7 +394,7 @@ const ScoutMatch = () => {
             <div className="fixed bottom-0 left-0 right-0 p-4 bg-background/95 backdrop-blur border-t border-border">
                 <button
                     onClick={handleSubmit}
-                    disabled={saving || !matchNumber || !teamNumber || parseInt(matchNumber as any) <= 0 || parseInt(teamNumber as any) <= 0}
+                    disabled={saving || !matchNumber || !teamNumber || Number(matchNumber) <= 0 || Number(teamNumber) <= 0}
                     className="touch-button w-full bg-primary text-primary-foreground disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                     {saving ? (

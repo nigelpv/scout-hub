@@ -27,6 +27,7 @@ const PitScout = () => {
     const [climbLevel, setClimbLevel] = useState<'low' | 'mid' | 'high'>('low');
 
     const [estimatedPoints, setEstimatedPoints] = useState(0);
+    const [isPasserBot, setIsPasserBot] = useState(false);
 
     const [avgBalls, setAvgBalls] = useState(0);
     const [maxBalls, setMaxBalls] = useState(0);
@@ -55,6 +56,7 @@ const PitScout = () => {
             teamNumber: parseInt(teamNumber),
             scoutName: scoutName.trim(),
             estimatedPoints,
+            isPasserBot,
             autoClimb: autoClimb ? autoClimbPosition : 'none' as const,
             robotClimb: robotClimb ? climbLevel : 'none' as const,
             avgBalls,
@@ -199,6 +201,15 @@ const PitScout = () => {
                             )}
                         </section>
 
+                        <section className="stat-card">
+                            <h2 className="section-header">Gameplay</h2>
+                            <ToggleField
+                                value={isPasserBot}
+                                onChange={setIsPasserBot}
+                                label="Passer Bot"
+                            />
+                        </section>
+
                         {/* Scoring */}
                         <section className="stat-card">
                             <h2 className="section-header">Capacity & Scoring</h2>
@@ -208,6 +219,7 @@ const PitScout = () => {
                                 max={999}
                                 label="Estimated Point Total"
                             />
+
                             <Counter
                                 value={avgBalls}
                                 onChange={setAvgBalls}

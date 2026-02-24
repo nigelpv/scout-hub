@@ -20,6 +20,8 @@ export interface ScoutingEntry {
 
     // Teleop
     teleopCycles: number;
+    avgBallsScoredPerCycle: number;
+    isPasserBot: boolean;
     defenseRating: number; // 0-5 (0 = none)
 
     // Endgame
@@ -60,6 +62,7 @@ export interface PitScoutingEntry {
     teamNumber: number;
     scoutName: string;
     estimatedPoints: number;
+    isPasserBot: boolean;
     autoClimb: 'none' | 'side' | 'middle';
     robotClimb: 'none' | 'low' | 'mid' | 'high';
     avgBalls: number;
