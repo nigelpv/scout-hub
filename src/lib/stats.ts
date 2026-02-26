@@ -54,8 +54,9 @@ export function calculateTeamStatsFromEntries(entries: ScoutingEntry[]): TeamSta
     ).length;
     const highMidClimbRate = (highMidClimbs / matchesPlayed) * 100;
 
-    // Rating Stats
-    const avgDefenseRating = entries.reduce((sum, e) => sum + (e.defenseRating || 0), 0) / matchesPlayed;
+    // Defense Stats
+    const defenseMatches = entries.filter(e => e.defenseType && e.defenseType !== 'none').length;
+    const defensePlayRate = (defenseMatches / matchesPlayed) * 100;
 
 
     // Score calculation (Match-by-Match)
@@ -67,7 +68,7 @@ export function calculateTeamStatsFromEntries(entries: ScoutingEntry[]): TeamSta
     };
 
     const matchScores = entries.map(e => {
-        // Auto Fuel: Preload + (Cycles * Size)
+        // Auto Fuel: Preload + Cycles
         let preloadPts = 0;
         if (e.autoPreload) {
             preloadPts = e.autoPreloadScored ? 8 : (e.autoPreloadCount || 0);
@@ -77,10 +78,10 @@ export function calculateTeamStatsFromEntries(entries: ScoutingEntry[]): TeamSta
         // Auto Climb: 15 points if not 'none'
         const autoClimbPts = (e.autoClimb !== 'none') ? 15 : 0;
 
-        // Teleop Fuel: Cycles
+        // Teleop Hoppers Scored
         const teleopFuelPts = e.teleopCycles;
 
-        // Teleop Climb: Based on Level
+        // Endgame Climb
         const teleopClimbPts = teleopClimbPoints[e.climbResult] || 0;
 
         return autoFuelPts + autoClimbPts + teleopFuelPts + teleopClimbPts;
@@ -102,7 +103,7 @@ export function calculateTeamStatsFromEntries(entries: ScoutingEntry[]): TeamSta
         stdDevTeleopCycles: Math.round(stdDevTeleopCycles * 10) / 10,
         climbSuccessRate: Math.round(climbSuccessRate),
         highMidClimbRate: Math.round(highMidClimbRate),
-        avgDefenseRating: Math.round(avgDefenseRating * 10) / 10,
+        defensePlayRate: Math.round(defensePlayRate),
         totalScore: Math.round(totalScore * 10) / 10,
     };
 }

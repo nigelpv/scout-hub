@@ -25,15 +25,28 @@ const Picklist = () => {
     setAllStats(stats);
 
     if (savedPicklist.length > 0) {
-      const savedTeamNumbers = new Set(savedPicklist.map(p => p.teamNumber));
-      const newTeams = stats
-        .filter(s => !savedTeamNumbers.has(s.teamNumber))
-        .map((s, i) => ({
-          teamNumber: s.teamNumber,
-          rank: savedPicklist.length + i + 1,
-          manualOverride: false,
-        }));
-      setPicklist([...savedPicklist, ...newTeams]);
+      const savedTeamNumbers = new Set(savedPicklist.map((p: any) => p.teamNumber));
+      const allStatsTeamNumbers = new Set(stats.map(s => s.teamNumber));
+
+      // If the saved list already covers every scouted team, use it as-is
+      // (prevents re-mount from reordering a manually arranged list)
+      const allCovered = stats.every(s => savedTeamNumbers.has(s.teamNumber));
+
+      if (allCovered) {
+        // Only keep teams that still have scouting data
+        const filtered = savedPicklist.filter((p: any) => allStatsTeamNumbers.has(p.teamNumber));
+        filtered.forEach((item: any, i: number) => { item.rank = i + 1; });
+        setPicklist(filtered);
+      } else {
+        const newTeams = stats
+          .filter(s => !savedTeamNumbers.has(s.teamNumber))
+          .map((s, i) => ({
+            teamNumber: s.teamNumber,
+            rank: savedPicklist.length + i + 1,
+            manualOverride: false,
+          }));
+        setPicklist([...savedPicklist, ...newTeams]);
+      }
     } else {
       setPicklist(
         stats.map((s, i) => ({

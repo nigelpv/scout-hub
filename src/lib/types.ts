@@ -14,21 +14,25 @@ export interface ScoutingEntry {
     // Autonomous
     autoCycles: number;
     autoPreload: boolean;
-    autoPreloadScored: boolean; // "Scored ALL of Preload?"
-    autoPreloadCount?: number; // 0-8 if not Scored ALL
+    autoPreloadScored: boolean;
+    autoPreloadCount: number;
     autoClimb: 'none' | 'side' | 'middle';
+    autoObstacle: 'none' | 'trench' | 'bump' | 'both';
 
     // Teleop
     teleopCycles: number;
-    defenseRating: number; // 0-5 (0 = none)
+    defenseType: 'none' | 'pushing' | 'blocking' | 'poaching';
+    defenseLocation: 'none' | 'neutral' | 'our_alliance' | 'their_alliance';
+    shootingRange: 'alliance' | 'close_neutral' | 'far_neutral' | 'opponent' | null;
+    teleopObstacle: 'none' | 'trench' | 'bump' | 'both';
+    fuelBeaching: boolean;
+    fuelBeachingType: 'none' | 'off_bump' | 'random';
 
     // Endgame
     climbResult: 'none' | 'low' | 'mid' | 'high';
-    climbStability: number; // 1-5
+    climbPosition: 'none' | 'side' | 'center';
+    climbStability: number; // 0-5
 
-    // Overall
-    shootingRange: 'short' | 'medium' | 'long';
-    obstacleNavigation: 'none' | 'trench' | 'bump' | 'both';
     notes: string;
 }
 
@@ -46,7 +50,7 @@ export interface TeamStats {
     stdDevTeleopCycles: number;
     climbSuccessRate: number;
     highMidClimbRate: number;
-    avgDefenseRating: number;
+    defensePlayRate: number; // % of matches where defense was played
     totalScore: number; // Computed ranking score
 }
 
@@ -59,13 +63,14 @@ export interface PicklistTeam {
 export interface PitScoutingEntry {
     teamNumber: number;
     scoutName: string;
-    estimatedPoints: number;
     autoClimb: 'none' | 'side' | 'middle';
     robotClimb: 'none' | 'low' | 'mid' | 'high';
     avgBalls: number;
     maxBalls: number;
     canGoUnderTrench: boolean;
     canGoOverBump: boolean;
+    intakeType: string;
+    shooterType: 'turret' | 'variable_angle' | 'fixed' | 'other' | 'none';
     timestamp: number;
 }
 

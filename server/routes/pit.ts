@@ -17,13 +17,14 @@ router.get('/', async (req, res) => {
         const entries = data.map((row: any) => ({
             teamNumber: row.team_number,
             scoutName: row.scout_name || 'Unknown',
-            estimatedPoints: row.estimated_points || 0,
             autoClimb: row.auto_climb,
             robotClimb: row.robot_climb,
             avgBalls: row.avg_balls,
             maxBalls: row.max_balls,
             canGoUnderTrench: row.can_go_under_trench,
             canGoOverBump: row.can_go_over_bump,
+            intakeType: row.intake_type || '',
+            shooterType: row.shooter_type || 'none',
             timestamp: parseInt(row.timestamp),
         }));
 
@@ -54,13 +55,14 @@ router.get('/team/:teamNumber', async (req, res) => {
         res.json({
             teamNumber: data.team_number,
             scoutName: data.scout_name || 'Unknown',
-            estimatedPoints: data.estimated_points || 0,
             autoClimb: data.auto_climb,
             robotClimb: data.robot_climb,
             avgBalls: data.avg_balls,
             maxBalls: data.max_balls,
             canGoUnderTrench: data.can_go_under_trench,
             canGoOverBump: data.can_go_over_bump,
+            intakeType: data.intake_type || '',
+            shooterType: data.shooter_type || 'none',
             timestamp: parseInt(data.timestamp),
         });
     } catch (err) {
@@ -79,13 +81,14 @@ router.post('/', async (req, res) => {
             .upsert({
                 team_number: parseInt(entry.teamNumber),
                 scout_name: entry.scoutName,
-                estimated_points: entry.estimatedPoints,
                 auto_climb: entry.autoClimb,
                 robot_climb: entry.robotClimb,
                 avg_balls: entry.avgBalls,
                 max_balls: entry.maxBalls,
                 can_go_under_trench: entry.canGoUnderTrench,
                 can_go_over_bump: entry.canGoOverBump,
+                intake_type: entry.intakeType || '',
+                shooter_type: entry.shooterType || 'none',
                 timestamp: entry.timestamp
             }, { onConflict: 'team_number' });
 

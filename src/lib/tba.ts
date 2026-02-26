@@ -118,3 +118,19 @@ export const getTeamFromMatch = (match: TBAMatch, position: string): string => {
   const teamKey = match.alliances[color]?.team_keys[index];
   return teamKey ? teamKey.replace('frc', '') : '';
 };
+
+export interface TBAOprResult {
+  oprs: Record<string, number>;
+  dprs: Record<string, number>;
+  ccwms: Record<string, number>;
+}
+
+export const fetchEventOPRs = async (eventKey: string): Promise<TBAOprResult | null> => {
+  const data = await fetchTBA(`/event/${eventKey}/oprs`);
+  return data || null;
+};
+
+export const getTeamOPR = (oprs: TBAOprResult, teamNumber: number): number | null => {
+  const key = `frc${teamNumber}`;
+  return oprs.oprs[key] !== undefined ? Math.round(oprs.oprs[key] * 10) / 10 : null;
+};

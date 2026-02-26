@@ -4,7 +4,6 @@ import { Save, CheckCircle, Box, ArrowRight } from 'lucide-react';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { ToggleField } from '@/components/scouting/ToggleField';
 import { OptionSelector } from '@/components/scouting/OptionSelector';
-import { Counter } from '@/components/scouting/Counter';
 import { toast } from 'sonner';
 
 type Step = 'select-team' | 'form';
@@ -20,19 +19,17 @@ const PitScout = () => {
     const [submitted, setSubmitted] = useState(false);
 
     // Form State
-    const [autoClimb, setAutoClimb] = useState<boolean>(false);
-    const [autoClimbPosition, setAutoClimbPosition] = useState<'side' | 'middle'>('side');
+    const [autoClimbPosition, setAutoClimbPosition] = useState<'none' | 'side' | 'middle'>('none');
+    const [climbLevel, setClimbLevel] = useState<'none' | 'low' | 'mid' | 'high'>('none');
 
-    const [robotClimb, setRobotClimb] = useState<boolean>(false);
-    const [climbLevel, setClimbLevel] = useState<'low' | 'mid' | 'high'>('low');
-
-    const [estimatedPoints, setEstimatedPoints] = useState(0);
-
-    const [avgBalls, setAvgBalls] = useState(0);
-    const [maxBalls, setMaxBalls] = useState(0);
+    const [avgBalls, setAvgBalls] = useState<string>('');
+    const [maxBalls, setMaxBalls] = useState<string>('');
 
     const [canGoUnderTrench, setCanGoUnderTrench] = useState(false);
     const [canGoOverBump, setCanGoOverBump] = useState(false);
+
+    const [intakeType, setIntakeType] = useState('');
+    const [shooterType, setShooterType] = useState<'none' | 'turret' | 'variable_angle' | 'fixed' | 'other'>('none');
 
     const handleNext = () => {
         if (!teamNumber || isNaN(parseInt(teamNumber))) {
@@ -54,13 +51,14 @@ const PitScout = () => {
         const formData = {
             teamNumber: parseInt(teamNumber),
             scoutName: scoutName.trim(),
-            estimatedPoints,
-            autoClimb: autoClimb ? autoClimbPosition : 'none' as const,
-            robotClimb: robotClimb ? climbLevel : 'none' as const,
-            avgBalls,
-            maxBalls,
+            autoClimb: autoClimbPosition,
+            robotClimb: climbLevel,
+            avgBalls: parseFloat(avgBalls) || 0,
+            maxBalls: parseFloat(maxBalls) || 0,
             canGoUnderTrench,
             canGoOverBump,
+            intakeType,
+            shooterType,
             timestamp: Date.now()
         };
 
@@ -155,70 +153,88 @@ const PitScout = () => {
                         {/* Auto Capabilities */}
                         <section className="stat-card">
                             <h2 className="section-header">Autonomous</h2>
-                            <ToggleField
-                                value={autoClimb}
-                                onChange={setAutoClimb}
-                                label="Can you climb in auto?"
+                            <OptionSelector
+                                value={autoClimbPosition}
+                                onChange={(v) => setAutoClimbPosition(v as typeof autoClimbPosition)}
+                                label="Auto Climb Position"
+                                options={[
+                                    { value: 'none', label: 'Cannot Climb' },
+                                    { value: 'side', label: 'Side' },
+                                    { value: 'middle', label: 'Middle' },
+                                ]}
                             />
-                            {autoClimb && (
-                                <div className="pt-2">
-                                    <OptionSelector
-                                        value={autoClimbPosition}
-                                        onChange={(v) => setAutoClimbPosition(v as any)}
-                                        label="Climb Position"
-                                        options={[
-                                            { value: 'side', label: 'Side' },
-                                            { value: 'middle', label: 'Middle' },
-                                        ]}
-                                    />
-                                </div>
-                            )}
                         </section>
 
                         {/* Climbing */}
                         <section className="stat-card">
                             <h2 className="section-header">Robot Climbing</h2>
-                            <ToggleField
-                                value={robotClimb}
-                                onChange={setRobotClimb}
-                                label="Can your robot climb?"
+                            <OptionSelector
+                                value={climbLevel}
+                                onChange={(v) => setClimbLevel(v as typeof climbLevel)}
+                                label="Highest Climb Level"
+                                options={[
+                                    { value: 'none', label: 'Cannot Climb' },
+                                    { value: 'low', label: 'L1 (Low)' },
+                                    { value: 'mid', label: 'L2 (Mid)' },
+                                    { value: 'high', label: 'L3 (High)' },
+                                ]}
                             />
-                            {robotClimb && (
-                                <div className="pt-2">
-                                    <OptionSelector
-                                        value={climbLevel}
-                                        onChange={(v) => setClimbLevel(v as any)}
-                                        label="Highest Level"
-                                        options={[
-                                            { value: 'low', label: 'L1' },
-                                            { value: 'mid', label: 'L2' },
-                                            { value: 'high', label: 'L3' },
-                                        ]}
-                                    />
-                                </div>
-                            )}
                         </section>
 
                         {/* Scoring */}
                         <section className="stat-card">
                             <h2 className="section-header">Capacity & Scoring</h2>
-                            <Counter
-                                value={estimatedPoints}
-                                onChange={setEstimatedPoints}
-                                max={999}
-                                label="Estimated Point Total"
+                            <div className="py-3 space-y-4">
+                                <div>
+                                    <label className="text-foreground font-medium block mb-2">Avg. Balls Scored per Match</label>
+                                    <input
+                                        type="number"
+                                        value={avgBalls}
+                                        onChange={(e) => setAvgBalls(e.target.value)}
+                                        placeholder="e.g. 12"
+                                        min={0}
+                                        className="w-full h-11 px-4 rounded-lg bg-secondary text-foreground border-0 focus:ring-2 ring-primary font-mono"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="text-foreground font-medium block mb-2">Hopper / Ball Capacity</label>
+                                    <input
+                                        type="number"
+                                        value={maxBalls}
+                                        onChange={(e) => setMaxBalls(e.target.value)}
+                                        placeholder="e.g. 6"
+                                        min={0}
+                                        className="w-full h-11 px-4 rounded-lg bg-secondary text-foreground border-0 focus:ring-2 ring-primary font-mono"
+                                    />
+                                </div>
+                            </div>
+                        </section>
+
+                        {/* Robot Hardware */}
+                        <section className="stat-card">
+                            <h2 className="section-header">Robot Hardware</h2>
+                            <OptionSelector
+                                value={shooterType}
+                                onChange={(v) => setShooterType(v as typeof shooterType)}
+                                label="Shooter Type"
+                                options={[
+                                    { value: 'none', label: 'None / Unknown' },
+                                    { value: 'turret', label: 'Turret' },
+                                    { value: 'variable_angle', label: 'Variable Angle' },
+                                    { value: 'fixed', label: 'Fixed' },
+                                    { value: 'other', label: 'Other' },
+                                ]}
                             />
-                            <Counter
-                                value={avgBalls}
-                                onChange={setAvgBalls}
-                                max={999}
-                                label="Avg. Balls Scored"
-                            />
-                            <Counter
-                                value={maxBalls}
-                                onChange={setMaxBalls}
-                                label="Robot Ball Capacity"
-                            />
+                            <div className="py-3">
+                                <label className="text-foreground font-medium block mb-2">Intake Type</label>
+                                <input
+                                    type="text"
+                                    value={intakeType}
+                                    onChange={(e) => setIntakeType(e.target.value)}
+                                    placeholder="e.g. wide ground intake, over-bumper..."
+                                    className="w-full h-11 px-4 rounded-lg bg-secondary text-foreground border-0 focus:ring-2 ring-primary"
+                                />
+                            </div>
                         </section>
 
                         {/* Navigation */}

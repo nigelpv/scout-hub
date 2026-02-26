@@ -3,8 +3,10 @@ import { useParams, Link } from 'react-router-dom';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { StatBar } from '@/components/scouting/StatBar';
 import { calculateTeamStatsFromEntries, getRatingColor } from '@/lib/stats';
-import { getEntriesForTeam, deleteEntry, deleteEntries, getPitEntryForTeam } from '@/lib/storage';
-import { Target, Zap, Trophy, Shield, User, Gauge, Lock, Unlock, Trash2, X, CircleDot, Loader2, CheckSquare, Square, Box } from 'lucide-react';
+import { getEntriesForTeam, deleteEntry, deleteEntries, getPitEntryForTeam, EVENT_KEY } from '@/lib/storage';
+import { fetchEventOPRs, getTeamOPR, TBAOprResult } from '@/lib/tba';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { Target, Zap, Trophy, Shield, User, Gauge, Lock, Unlock, Trash2, X, CircleDot, Loader2, CheckSquare, Square, Box, HelpCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import { TeamStats, ScoutingEntry, PitScoutingEntry } from '@/lib/types';
 
@@ -16,6 +18,7 @@ const TeamDetail = () => {
     const [entries, setEntries] = useState<ScoutingEntry[]>([]);
     const [pitData, setPitData] = useState<PitScoutingEntry | null>(null);
     const [loading, setLoading] = useState(true);
+    const [opr, setOpr] = useState<number | null>(null);
 
     // Admin Mode State
     const [isAdmin, setIsAdmin] = useState(false);
@@ -40,6 +43,14 @@ const TeamDetail = () => {
     useEffect(() => {
         loadData();
     }, [loadData]);
+
+    useEffect(() => {
+        const loadOPR = async () => {
+            const oprs = await fetchEventOPRs(EVENT_KEY);
+            if (oprs) setOpr(getTeamOPR(oprs, teamNum));
+        };
+        loadOPR();
+    }, [teamNum]);
 
     // Admin Functions
     const handleAuth = (e: React.FormEvent) => {
@@ -129,14 +140,23 @@ const TeamDetail = () => {
     };
 
     const autoClimbLabels: Record<string, string> = {
+        'none': 'None',
+        'side': 'Side',
         'middle': 'Middle',
     };
 
-    const navLabels: Record<string, string> = {
+    const obstacleLabels: Record<string, string> = {
         'none': 'None',
         'trench': 'Trench',
         'bump': 'Bump',
-        'both': 'Trench & Bump',
+        'both': 'Both',
+    };
+
+    const shootingRangeLabels: Record<string, string> = {
+        'alliance': 'Alliance',
+        'close_neutral': 'Close Neutral',
+        'far_neutral': 'Far Neutral',
+        'opponent': 'Opponent',
     };
 
     return (
@@ -201,9 +221,27 @@ const TeamDetail = () => {
                 <div className="stat-card">
                     <div className="flex items-center justify-between mb-4">
                         <div>
-                            <p className="text-sm text-muted-foreground">Composite Score</p>
+                            <div className="flex items-center gap-1">
+                                <p className="text-sm text-muted-foreground">Avg Est. Score</p>
+                                <TooltipProvider>
+                                    <Tooltip>
+                                        <TooltipTrigger asChild>
+                                            <HelpCircle className="w-3.5 h-3.5 text-muted-foreground/50 cursor-help" />
+                                        </TooltipTrigger>
+                                        <TooltipContent>
+                                            <p className="text-xs max-w-[220px]">Auto hoppers + preload + auto climb (15 pts) + Teleop hoppers + Endgame climb (Low 10 / Mid 20 / High 30), averaged across matches</p>
+                                        </TooltipContent>
+                                    </Tooltip>
+                                </TooltipProvider>
+                            </div>
                             <p className="font-mono text-3xl font-bold text-primary">{stats.totalScore}</p>
                         </div>
+                        {opr !== null && (
+                            <div>
+                                <p className="text-sm text-muted-foreground">OPR</p>
+                                <p className="font-mono text-2xl font-bold text-info">{opr}</p>
+                            </div>
+                        )}
                         <div className="text-right">
                             <p className="text-sm text-muted-foreground">Matches</p>
                             <p className="font-mono text-2xl font-bold">{stats.matchesPlayed}</p>
@@ -227,7 +265,6 @@ const TeamDetail = () => {
                             <div className="flex justify-between text-xs text-muted-foreground mt-1 px-1">
                                 <span>Mean: {stats.meanAutoCycles}</span>
                                 <span>Median: {stats.medianAutoCycles}</span>
-                                <span>StdDev: {stats.stdDevAutoCycles}</span>
                                 <span>StdDev: {stats.stdDevAutoCycles}</span>
                             </div>
                         </div>
@@ -260,21 +297,41 @@ const TeamDetail = () => {
                         <h2 className="font-semibold">Climbing</h2>
                     </div>
                     <div className="space-y-4">
-                        <StatBar value={stats.climbSuccessRate} max={100} label="Endgame Success" suffix="%" />
-                        <StatBar value={stats.highMidClimbRate} max={100} label="High/Mid Rate" suffix="%" />
+                        <StatBar value={stats.climbSuccessRate} max={100} label="Climb Success Rate" suffix="%" />
+                        <StatBar value={stats.highMidClimbRate} max={100} label="High/Mid Climb Rate" suffix="%" />
                     </div>
                 </div>
 
             </div>
 
             {/* Defense */}
-            {stats.avgDefenseRating > 0 && (
-                <div className="stat-card">
-                    <div className="flex items-center gap-2 mb-4">
-                        <Shield className="w-5 h-5 text-destructive" />
-                        <h2 className="font-semibold">Defense</h2>
+            {stats.defensePlayRate > 0 && (
+                <div className="px-4 mb-4">
+                    <div className="stat-card">
+                        <div className="flex items-center gap-2 mb-4">
+                            <Shield className="w-5 h-5 text-destructive" />
+                            <h2 className="font-semibold">Defense</h2>
+                        </div>
+                        <p className="text-sm text-muted-foreground mb-3">
+                            Played defense in{' '}
+                            <span className="font-bold text-foreground">
+                                {entries.filter(e => e.defenseType && e.defenseType !== 'none').length}
+                            </span>
+                            /{entries.length} matches
+                        </p>
+                        <div className="space-y-1">
+                            {(['pushing', 'blocking', 'poaching'] as const).map(type => {
+                                const count = entries.filter(e => e.defenseType === type).length;
+                                if (count === 0) return null;
+                                return (
+                                    <div key={type} className="flex justify-between text-sm">
+                                        <span className="capitalize text-muted-foreground">{type}</span>
+                                        <span className="font-medium">{count}×</span>
+                                    </div>
+                                );
+                            })}
+                        </div>
                     </div>
-                    <StatBar value={stats.avgDefenseRating} max={5} label="Avg Defense Rating" />
                 </div>
             )}
 
@@ -299,6 +356,18 @@ const TeamDetail = () => {
                                             <span>Robot Climb</span>
                                             <span className="font-medium uppercase">{pitData.robotClimb === 'none' ? 'None' : pitData.robotClimb}</span>
                                         </div>
+                                        {pitData.intakeType && (
+                                            <div className="flex justify-between border-b border-border/50 pb-0.5">
+                                                <span>Intake</span>
+                                                <span className="font-medium">{pitData.intakeType}</span>
+                                            </div>
+                                        )}
+                                        {pitData.shooterType && pitData.shooterType !== 'none' && (
+                                            <div className="flex justify-between border-b border-border/50 pb-0.5">
+                                                <span>Shooter</span>
+                                                <span className="font-medium capitalize">{pitData.shooterType.replace('_', ' ')}</span>
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
                                 <div>
@@ -326,10 +395,6 @@ const TeamDetail = () => {
                                         <div className="flex justify-between border-b border-border/50 pb-0.5">
                                             <span>Ball Capacity</span>
                                             <span className="font-mono font-medium">{pitData.maxBalls}</span>
-                                        </div>
-                                        <div className="flex justify-between border-b border-border/50 pb-0.5">
-                                            <span>Est. Points</span>
-                                            <span className="font-mono font-medium">{pitData.estimatedPoints}</span>
                                         </div>
                                     </div>
                                 </div>
@@ -422,20 +487,24 @@ const TeamDetail = () => {
                                         <p className="text-[10px] uppercase font-bold text-muted-foreground tracking-tight">Autonomous</p>
                                         <div className="text-sm space-y-1">
                                             <div className="flex justify-between border-b border-border/50 pb-0.5">
-                                                <span>Cycles</span>
+                                                <span>Hoppers</span>
                                                 <span className="font-mono font-medium text-foreground">{entry.autoCycles}</span>
                                             </div>
                                             <div className="flex justify-between border-b border-border/50 pb-0.5">
                                                 <span>Preload</span>
                                                 <span className="font-medium text-foreground">
                                                     {entry.autoPreload
-                                                        ? (entry.autoPreloadScored ? 'Scored All' : `${entry.autoPreloadCount || 0} Scored`)
+                                                        ? (entry.autoPreloadScored ? 'Scored All' : `${entry.autoPreloadCount ?? 0} Scored`)
                                                         : 'None'}
                                                 </span>
                                             </div>
                                             <div className="flex justify-between border-b border-border/50 pb-0.5">
                                                 <span>Climb</span>
-                                                <span className="font-medium text-foreground">{autoClimbLabels[entry.autoClimb]}</span>
+                                                <span className="font-medium text-foreground">{autoClimbLabels[entry.autoClimb] ?? entry.autoClimb}</span>
+                                            </div>
+                                            <div className="flex justify-between border-b border-border/50 pb-0.5">
+                                                <span>Travel</span>
+                                                <span className="font-medium text-foreground">{obstacleLabels[entry.autoObstacle ?? 'none']}</span>
                                             </div>
                                         </div>
                                     </div>
@@ -445,24 +514,28 @@ const TeamDetail = () => {
                                         <p className="text-[10px] uppercase font-bold text-muted-foreground tracking-tight">Teleop & Endgame</p>
                                         <div className="text-sm space-y-1">
                                             <div className="flex justify-between border-b border-border/50 pb-0.5">
-                                                <span>Cycles</span>
+                                                <span>Hoppers</span>
                                                 <span className="font-mono font-medium text-foreground">{entry.teleopCycles}</span>
                                             </div>
                                             <div className="flex justify-between border-b border-border/50 pb-0.5">
                                                 <span>Defense</span>
-                                                <span className="font-medium text-foreground">
-                                                    <span className="font-medium text-foreground">
-                                                        {entry.defenseRating > 0 ? `Lvl ${entry.defenseRating}` : 'None'}
-                                                    </span>
+                                                <span className="font-medium text-foreground capitalize">
+                                                    {entry.defenseType && entry.defenseType !== 'none'
+                                                        ? `${entry.defenseType} · ${(entry.defenseLocation ?? 'none').replace('_', ' ')}`
+                                                        : 'None'}
                                                 </span>
                                             </div>
                                             <div className="flex justify-between border-b border-border/50 pb-0.5">
                                                 <span>Climb</span>
-                                                <span className="font-medium text-foreground">{climbLabels[entry.climbResult]} {entry.climbResult !== 'none' && `(${entry.climbStability}★)`}</span>
+                                                <span className="font-medium text-foreground">
+                                                    {climbLabels[entry.climbResult]}
+                                                    {entry.climbPosition && entry.climbPosition !== 'none' && ` · ${entry.climbPosition}`}
+                                                    {entry.climbResult !== 'none' && entry.climbStability > 0 && ` (${entry.climbStability}★)`}
+                                                </span>
                                             </div>
                                             <div className="flex justify-between border-b border-border/50 pb-0.5">
                                                 <span>Travel</span>
-                                                <span className="font-medium text-foreground">{navLabels[entry.obstacleNavigation || 'none']}</span>
+                                                <span className="font-medium text-foreground">{obstacleLabels[entry.teleopObstacle ?? 'none']}</span>
                                             </div>
                                         </div>
                                     </div>
@@ -472,7 +545,7 @@ const TeamDetail = () => {
                                 {entry.notes && (
                                     <div className="text-sm text-muted-foreground bg-secondary/20 p-2 rounded border-l-2 border-primary/30">
                                         <span className="font-bold text-[10px] uppercase block mb-0.5 opacity-70">Notes</span>
-                                        <p className="italic">"{entry.notes}"</p>
+                                        <p className="italic whitespace-pre-wrap">"{entry.notes}"</p>
                                     </div>
                                 )}
                             </div>

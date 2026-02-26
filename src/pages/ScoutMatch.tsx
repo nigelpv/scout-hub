@@ -52,18 +52,22 @@ const ScoutMatch = () => {
     const [autoPreloadScored, setAutoPreloadScored] = useState(false);
     const [autoPreloadCount, setAutoPreloadCount] = useState(0);
     const [autoClimb, setAutoClimb] = useState<'none' | 'side' | 'middle'>('none');
+    const [autoObstacle, setAutoObstacle] = useState<'none' | 'trench' | 'bump' | 'both'>('none');
 
     // Teleop
     const [teleopCycles, setTeleopCycles] = useState(0);
-    const [defenseRating, setDefenseRating] = useState(0);
+    const [defenseType, setDefenseType] = useState<'none' | 'pushing' | 'blocking' | 'poaching'>('none');
+    const [defenseLocation, setDefenseLocation] = useState<'none' | 'neutral' | 'our_alliance' | 'their_alliance'>('none');
+    const [shootingRange, setShootingRange] = useState<'alliance' | 'close_neutral' | 'far_neutral' | 'opponent' | null>(null);
+    const [teleopObstacle, setTeleopObstacle] = useState<'none' | 'trench' | 'bump' | 'both'>('none');
+    const [fuelBeaching, setFuelBeaching] = useState(false);
+    const [fuelBeachingType, setFuelBeachingType] = useState<'none' | 'off_bump' | 'random'>('none');
 
     // Endgame
     const [climbResult, setClimbResult] = useState<'none' | 'low' | 'mid' | 'high'>('none');
-    const [climbStability, setClimbStability] = useState(3);
+    const [climbPosition, setClimbPosition] = useState<'none' | 'side' | 'center'>('none');
+    const [climbStability, setClimbStability] = useState(0);
 
-    // Overall
-    const [shootingRange, setShootingRange] = useState<'short' | 'medium' | 'long'>('short');
-    const [obstacleNavigation, setObstacleNavigation] = useState<'none' | 'trench' | 'bump' | 'both'>('none');
     const [notes, setNotes] = useState('');
 
     const handleSubmit = async () => {
@@ -96,16 +100,20 @@ const ScoutMatch = () => {
             timestamp: Date.now(),
             autoCycles,
             autoPreload,
-            autoPreloadScored: autoPreload ? autoPreloadScored : false,
-            autoPreloadCount: autoPreload ? (autoPreloadScored ? 8 : autoPreloadCount) : 0,
+            autoPreloadScored,
+            autoPreloadCount,
             autoClimb,
+            autoObstacle,
             teleopCycles,
-            defenseRating,
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            climbResult: climbResult as any,
-            climbStability,
+            defenseType,
+            defenseLocation,
             shootingRange,
-            obstacleNavigation,
+            teleopObstacle,
+            fuelBeaching,
+            fuelBeachingType,
+            climbResult,
+            climbPosition,
+            climbStability,
             notes,
         };
 
@@ -140,12 +148,17 @@ const ScoutMatch = () => {
             setAutoPreloadScored(false);
             setAutoPreloadCount(0);
             setAutoClimb('none');
+            setAutoObstacle('none');
             setTeleopCycles(0);
-            setDefenseRating(0);
+            setDefenseType('none');
+            setDefenseLocation('none');
+            setShootingRange(null);
+            setTeleopObstacle('none');
+            setFuelBeaching(false);
+            setFuelBeachingType('none');
             setClimbResult('none');
-            setClimbStability(3);
-            setShootingRange('short');
-            setObstacleNavigation('none');
+            setClimbPosition('none');
+            setClimbStability(0);
             setNotes('');
             setSaved(false);
         }, 1500);
@@ -258,34 +271,22 @@ const ScoutMatch = () => {
                         onChange={setAutoPreload}
                         label="Preload?"
                     />
-                    {autoPreload && (
-                        <>
-                            <ToggleField
-                                value={autoPreloadScored}
-                                onChange={(checked) => {
-                                    setAutoPreloadScored(checked);
-                                    if (checked) {
-                                        // If they scored ALL, we don't need a specific count (it implies 8)
-                                        // But we'll handle the logic in stats/saving
-                                    }
-                                }}
-                                label="Scored ALL of Preload?"
-                            />
-                            {!autoPreloadScored && (
-                                <Counter
-                                    value={autoPreloadCount}
-                                    onChange={setAutoPreloadCount}
-                                    min={0}
-                                    max={8}
-                                    label="How many scored? (0-8)"
-                                />
-                            )}
-                        </>
-                    )}
+                    <ToggleField
+                        value={autoPreloadScored}
+                        onChange={setAutoPreloadScored}
+                        label="Scored ALL of Preload?"
+                    />
+                    <Counter
+                        value={autoPreloadCount}
+                        onChange={setAutoPreloadCount}
+                        min={0}
+                        max={8}
+                        label="How many preload scored? (0–8)"
+                    />
                     <Counter
                         value={autoCycles}
                         onChange={setAutoCycles}
-                        label="Auto Cycles"
+                        label="Hoppers Shot into Hub (Auto)"
                     />
                     <OptionSelector
                         value={autoClimb}
@@ -295,7 +296,18 @@ const ScoutMatch = () => {
                             { value: 'none' as const, label: 'None' },
                             { value: 'side' as const, label: 'Side' },
                             { value: 'middle' as const, label: 'Middle' },
-                        ] as const}
+                        ]}
+                    />
+                    <OptionSelector
+                        value={autoObstacle}
+                        onChange={(v) => setAutoObstacle(v as typeof autoObstacle)}
+                        label="Travel (Auto)"
+                        options={[
+                            { value: 'none' as const, label: 'None' },
+                            { value: 'trench' as const, label: 'Trench' },
+                            { value: 'bump' as const, label: 'Bump' },
+                            { value: 'both' as const, label: 'Both' },
+                        ]}
                     />
                 </section>
 
@@ -305,22 +317,66 @@ const ScoutMatch = () => {
                     <Counter
                         value={teleopCycles}
                         onChange={setTeleopCycles}
-                        label="Teleop Cycles"
-                    />
-                    <RatingField
-                        value={defenseRating}
-                        onChange={setDefenseRating}
-                        label="Defense Rating"
+                        label="Hoppers Shot into Hub (Teleop)"
                     />
                     <OptionSelector
-                        value={shootingRange}
-                        onChange={(v) => setShootingRange(v as typeof shootingRange)}
-                        label="Shooting Range"
+                        value={defenseType}
+                        onChange={(v) => setDefenseType(v as typeof defenseType)}
+                        label="Defense Type"
                         options={[
-                            { value: 'short' as const, label: 'Short' },
-                            { value: 'medium' as const, label: 'Medium' },
-                            { value: 'long' as const, label: 'Long' },
-                        ] as const}
+                            { value: 'none' as const, label: 'Did Not Play' },
+                            { value: 'pushing' as const, label: 'Pushing' },
+                            { value: 'blocking' as const, label: 'Blocking' },
+                            { value: 'poaching' as const, label: 'Poaching' },
+                        ]}
+                    />
+                    <OptionSelector
+                        value={defenseLocation}
+                        onChange={(v) => setDefenseLocation(v as typeof defenseLocation)}
+                        label="Defense Location"
+                        options={[
+                            { value: 'none' as const, label: 'N/A' },
+                            { value: 'neutral' as const, label: 'Neutral' },
+                            { value: 'our_alliance' as const, label: 'Our Alliance' },
+                            { value: 'their_alliance' as const, label: 'Their Alliance' },
+                        ]}
+                    />
+                    <OptionSelector
+                        value={shootingRange ?? 'alliance'}
+                        onChange={(v) => setShootingRange(v as typeof shootingRange)}
+                        label="Shooting Zone"
+                        options={[
+                            { value: 'alliance' as const, label: 'Alliance Zone' },
+                            { value: 'close_neutral' as const, label: 'Close Neutral' },
+                            { value: 'far_neutral' as const, label: 'Far Neutral' },
+                            { value: 'opponent' as const, label: 'Opponent Zone' },
+                        ]}
+                    />
+                    <OptionSelector
+                        value={teleopObstacle}
+                        onChange={(v) => setTeleopObstacle(v as typeof teleopObstacle)}
+                        label="Travel (Teleop)"
+                        options={[
+                            { value: 'none' as const, label: 'None' },
+                            { value: 'trench' as const, label: 'Trench' },
+                            { value: 'bump' as const, label: 'Bump' },
+                            { value: 'both' as const, label: 'Both' },
+                        ]}
+                    />
+                    <ToggleField
+                        value={fuelBeaching}
+                        onChange={setFuelBeaching}
+                        label="Fuel Beaching?"
+                    />
+                    <OptionSelector
+                        value={fuelBeachingType}
+                        onChange={(v) => setFuelBeachingType(v as typeof fuelBeachingType)}
+                        label="Beaching Type"
+                        options={[
+                            { value: 'none' as const, label: 'N/A' },
+                            { value: 'off_bump' as const, label: 'Off Bump' },
+                            { value: 'random' as const, label: 'Random' },
+                        ]}
                     />
                 </section>
 
@@ -336,33 +392,29 @@ const ScoutMatch = () => {
                             { value: 'low' as const, label: 'Low' },
                             { value: 'mid' as const, label: 'Mid' },
                             { value: 'high' as const, label: 'High' },
-                        ] as const}
+                        ]}
                     />
-                    {climbResult !== 'none' && (
-                        <RatingField
-                            value={climbStability}
-                            onChange={setClimbStability}
-                            label="Climb Stability"
-                        />
-                    )}
+                    <OptionSelector
+                        value={climbPosition}
+                        onChange={(v) => setClimbPosition(v as typeof climbPosition)}
+                        label="Climb Position"
+                        options={[
+                            { value: 'none' as const, label: 'N/A' },
+                            { value: 'side' as const, label: 'Side' },
+                            { value: 'center' as const, label: 'Center' },
+                        ]}
+                    />
+                    <RatingField
+                        value={climbStability}
+                        onChange={setClimbStability}
+                        label="Climb Stability"
+                    />
                 </section>
 
-                {/* Overall */}
+                {/* Notes */}
                 <section className="stat-card">
-                    <h2 className="section-header">Overall Impressions</h2>
-                    <OptionSelector
-                        value={obstacleNavigation}
-                        onChange={(v) => setObstacleNavigation(v as typeof obstacleNavigation)}
-                        label="Travel"
-                        options={[
-                            { value: 'none' as const, label: 'None' },
-                            { value: 'trench' as const, label: 'Go in trench' },
-                            { value: 'bump' as const, label: 'Go over bump' },
-                            { value: 'both' as const, label: 'Both' },
-                        ] as const}
-                    />
+                    <h2 className="section-header">Notes</h2>
                     <div className="py-3">
-                        <label className="text-foreground font-medium block mb-3">Notes</label>
                         <textarea
                             value={notes}
                             onChange={(e) => setNotes(e.target.value)}
