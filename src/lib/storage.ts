@@ -299,18 +299,41 @@ export async function deleteEntries(ids: string[], password: string): Promise<bo
 
 export async function deleteTeamData(teamNumber: number, password: string): Promise<boolean> {
   try {
-    const response = await fetch(`${API_URL}/entries/team/${teamNumber}`, {
+    // Delete Match Entries
+    const entriesResponse = await fetch(`${API_URL}/entries/team/${teamNumber}`, {
       method: 'DELETE',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ password }),
     });
-    if (response.ok) {
-      const current = await getEntries();
-      const updated = current.filter(e => e.teamNumber !== teamNumber);
-      localStorage.setItem(ENTRIES_CACHE_KEY, JSON.stringify(updated));
-      window.dispatchEvent(new CustomEvent('scout_entries_updated', { detail: updated }));
+
+    // Delete Pit Entries
+    const pitResponse = await fetch(`${API_URL}/pit/team/${teamNumber}`, {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ password }),
+    });
+
+    if (entriesResponse.ok || pitResponse.ok) {
+      // Update Match Cache
+      if (entriesResponse.ok) {
+        const currentEntries = await getEntries();
+        const updatedEntries = currentEntries.filter(e => e.teamNumber !== teamNumber);
+        localStorage.setItem(ENTRIES_CACHE_KEY, JSON.stringify(updatedEntries));
+        window.dispatchEvent(new CustomEvent('scout_entries_updated', { detail: updatedEntries }));
+      }
+
+      // Update Pit Cache
+      if (pitResponse.ok) {
+        const currentPit = await getPitEntries();
+        const updatedPit = currentPit.filter(e => e.teamNumber !== teamNumber);
+        localStorage.setItem(PIT_CACHE_KEY, JSON.stringify(updatedPit));
+        window.dispatchEvent(new CustomEvent('scout_pit_updated', { detail: updatedPit }));
+      }
+
+      return true;
     }
-    return response.ok;
+
+    return false;
   } catch (error) {
     console.error('Error deleting team data:', error);
     return false;

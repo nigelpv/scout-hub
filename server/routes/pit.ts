@@ -101,4 +101,28 @@ router.post('/', async (req, res) => {
     }
 });
 
+// DELETE pit data for a team (requires admin password)
+router.delete('/team/:teamNumber', async (req, res) => {
+    try {
+        const { teamNumber } = req.params;
+        const { password } = req.body;
+
+        if (password !== process.env.ADMIN_PASSWORD) {
+            return res.status(401).json({ error: 'Unauthorized' });
+        }
+
+        const { error } = await supabase
+            .from('pit_scouting')
+            .delete()
+            .eq('team_number', parseInt(teamNumber));
+
+        if (error) throw error;
+
+        res.json({ success: true });
+    } catch (err) {
+        console.error('Error deleting team pit data:', err);
+        res.status(500).json({ error: 'Failed to delete team pit data' });
+    }
+});
+
 export default router;
