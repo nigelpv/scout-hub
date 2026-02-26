@@ -1,6 +1,6 @@
 const TBA_API_KEY = import.meta.env.VITE_TBA_API_KEY;
 const BASE_URL = 'https://www.thebluealliance.com/api/v3';
-import { getStoredMatches, storeMatches, EVENT_KEY } from './storage';
+import { getStoredMatches, storeMatches, getStoredOPRs, storeOPRs, EVENT_KEY } from './storage';
 
 export interface TBAEvent {
   key: string;
@@ -126,8 +126,18 @@ export interface TBAOprResult {
 }
 
 export const fetchEventOPRs = async (eventKey: string): Promise<TBAOprResult | null> => {
-  const data = await fetchTBA(`/event/${eventKey}/oprs`);
-  return data || null;
+  try {
+    const data = await fetchTBA(`/event/${eventKey}/oprs`);
+    if (data) {
+      storeOPRs(eventKey, data);
+      return data;
+    }
+  } catch (error) {
+    console.error('Error fetching OPRs:', error);
+  }
+
+  // Fallback to cache
+  return getStoredOPRs(eventKey);
 };
 
 export const getTeamOPR = (oprs: TBAOprResult, teamNumber: number): number | null => {

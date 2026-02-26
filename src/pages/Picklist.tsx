@@ -70,6 +70,10 @@ const Picklist = () => {
   };
 
   useEffect(() => {
+    let currentEntries: any[] = [];
+    let currentSaved: PicklistTeam[] = [];
+    let currentOprs: any = null;
+
     const loadData = async () => {
       setLoading(true);
       const [entries, saved, oprs] = await Promise.all([
@@ -77,29 +81,23 @@ const Picklist = () => {
         getPicklist(),
         fetchEventOPRs(EVENT_KEY)
       ]);
+      currentEntries = entries;
+      currentSaved = saved;
+      currentOprs = oprs;
       processData(entries, saved, oprs);
     };
     loadData();
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const handleEntriesUpdate = (e: any) => {
-      processData(e.detail, picklist);
-    };
-
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const handlePicklistUpdate = (e: any) => {
-      processData(allStats.length > 0 ? [] : [], e.detail); // Simplified, we just need to re-run the merge logic
-      // Actually simpler to just track what we have:
-    };
-
-    // More robust listeners
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const onEntriesUpdate = (e: any) => {
-      setAllStats(getAllTeamStatsFromEntries(e.detail));
+      currentEntries = e.detail;
+      processData(currentEntries, currentSaved, currentOprs);
     };
+
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const onPicklistUpdate = (e: any) => {
-      setPicklist(e.detail);
+      currentSaved = e.detail;
+      processData(currentEntries, currentSaved, currentOprs);
     };
 
     window.addEventListener('scout_entries_updated', onEntriesUpdate);

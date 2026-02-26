@@ -27,17 +27,14 @@ const Teams = () => {
 
     if (!isBackground) setLoading(true);
     try {
-      // Fetch OPR only if forced or if we don't have it yet and it's not a background sync
-      const shouldFetchOPR = forceOPR || (!isBackground && !oprData);
-
       const [entries, pitEntries, newOprData] = await Promise.all([
         getEntries(),
         getPitEntries(),
-        shouldFetchOPR ? fetchEventOPRs(EVENT_KEY) : Promise.resolve(oprData)
+        fetchEventOPRs(EVENT_KEY)
       ]);
 
-      const effectiveOprData = shouldFetchOPR ? newOprData : oprData;
-      if (shouldFetchOPR) setOprData(newOprData);
+      if (newOprData) setOprData(newOprData);
+      const effectiveOprData = newOprData || oprData;
 
       const pitTeamNumbers = pitEntries.map(e => e.teamNumber);
       const stats = getAllTeamStatsFromEntries(entries, pitTeamNumbers);

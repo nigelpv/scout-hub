@@ -15,6 +15,7 @@ const PICKLIST_CACHE_KEY = 'scout_picklist_cache';
 const PIT_CACHE_KEY = 'scout_pit_cache';
 const PENDING_PIT_KEY = 'scout_pending_pit';
 const TBA_MATCHES_CACHE_KEY = 'scout_tba_matches_cache';
+const TBA_OPR_CACHE_KEY = 'tba_opr_cache';
 
 // Custom event for sync status updates
 export const SYNC_EVENT = 'scout_sync_update';
@@ -529,4 +530,15 @@ export function getStoredMatches(eventKey: string): any[] {
 
 export function storeMatches(eventKey: string, matches: any[]): void {
   localStorage.setItem(`${TBA_MATCHES_CACHE_KEY}_${eventKey}`, JSON.stringify(matches));
+}
+
+// ============ TBA OPR CACHE ============
+
+export function getStoredOPRs(eventKey: string): any | null {
+  const cached = localStorage.getItem(`${TBA_OPR_CACHE_KEY}_${eventKey}`);
+  return cached ? JSON.parse(cached) : null;
+}
+
+export function storeOPRs(eventKey: string, oprs: any): void {
+  localStorage.setItem(`${TBA_OPR_CACHE_KEY}_${eventKey}`, JSON.stringify(oprs));
 }
