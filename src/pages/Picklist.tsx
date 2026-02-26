@@ -25,39 +25,46 @@ const Picklist = () => {
     const stats = getAllTeamStatsFromEntries(entries);
 
     // Merge OPR if available
-    if (oprData) {
+    if (oprData || allStats.length > 0) {
+      const currentOprs = oprData || allStats.reduce((acc: any, s) => {
+        if (s.opr !== undefined) acc[s.teamNumber] = s.opr;
+        return acc;
+      }, {});
+
       stats.forEach(s => {
-        const opr = getTeamOPR(oprData, s.teamNumber);
-        if (opr !== null) s.opr = opr;
+        const opr = oprData ? getTeamOPR(oprData, s.teamNumber) : currentOprs[s.teamNumber];
+        if (opr !== undefined && opr !== null) s.opr = opr;
       });
     }
 
     setAllStats(stats);
 
+    // If we have a saved picklist, merge it with the new stats
     if (savedPicklist.length > 0) {
       const savedTeamNumbers = new Set(savedPicklist.map((p: any) => p.teamNumber));
-      const allStatsTeamNumbers = new Set(stats.map(s => s.teamNumber));
+      const statsTeamNumbers = new Set(stats.map(s => s.teamNumber));
 
-      // If the saved list already covers every scouted team, use it as-is
-      // (prevents re-mount from reordering a manually arranged list)
-      const allCovered = stats.every(s => savedTeamNumbers.has(s.teamNumber));
+      // ONLY add teams that aren't in the saved list yet
+      const newTeamsFromStats = stats
+        .filter(s => !savedTeamNumbers.has(s.teamNumber))
+        .map((s, i) => ({
+          teamNumber: s.teamNumber,
+          rank: savedPicklist.length + i + 1,
+          manualOverride: false,
+        }));
 
-      if (allCovered) {
-        // Only keep teams that still have scouting data
-        const filtered = savedPicklist.filter((p: any) => allStatsTeamNumbers.has(p.teamNumber));
-        filtered.forEach((item: any, i: number) => { item.rank = i + 1; });
-        setPicklist(filtered);
-      } else {
-        const newTeams = stats
-          .filter(s => !savedTeamNumbers.has(s.teamNumber))
-          .map((s, i) => ({
-            teamNumber: s.teamNumber,
-            rank: savedPicklist.length + i + 1,
-            manualOverride: false,
-          }));
-        setPicklist([...savedPicklist, ...newTeams]);
-      }
+      // Important: We DON'T filter out teams from the saved list just because they 
+      // aren't in the current stats (match data might be loading or missing for some)
+      const mergedList = [...savedPicklist, ...newTeamsFromStats];
+
+      // Update ranks to ensure they are sequential
+      mergedList.forEach((item, i) => {
+        item.rank = i + 1;
+      });
+
+      setPicklist(mergedList);
     } else {
+      // First time loading - build list from stats
       setPicklist(
         stats.map((s, i) => ({
           teamNumber: s.teamNumber,
@@ -70,6 +77,10 @@ const Picklist = () => {
   };
 
   useEffect(() => {
+    let currentEntries: any[] = [];
+    let currentSaved: PicklistTeam[] = [];
+    let currentOprs: any = null;
+
     const loadData = async () => {
       setLoading(true);
       const [entries, saved, oprs] = await Promise.all([
@@ -77,29 +88,23 @@ const Picklist = () => {
         getPicklist(),
         fetchEventOPRs(EVENT_KEY)
       ]);
+      currentEntries = entries;
+      currentSaved = saved;
+      currentOprs = oprs;
       processData(entries, saved, oprs);
     };
     loadData();
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const handleEntriesUpdate = (e: any) => {
-      processData(e.detail, picklist);
-    };
-
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const handlePicklistUpdate = (e: any) => {
-      processData(allStats.length > 0 ? [] : [], e.detail); // Simplified, we just need to re-run the merge logic
-      // Actually simpler to just track what we have:
-    };
-
-    // More robust listeners
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const onEntriesUpdate = (e: any) => {
-      setAllStats(getAllTeamStatsFromEntries(e.detail));
+      currentEntries = e.detail;
+      processData(currentEntries, currentSaved, currentOprs);
     };
+
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const onPicklistUpdate = (e: any) => {
-      setPicklist(e.detail);
+      currentSaved = e.detail;
+      processData(currentEntries, currentSaved, currentOprs);
     };
 
     window.addEventListener('scout_entries_updated', onEntriesUpdate);
