@@ -3,7 +3,8 @@ import { Link } from 'react-router-dom';
 import { GripVertical, RotateCcw, Star, Lock, Unlock, Trash2, X, Loader2 } from 'lucide-react';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { getAllTeamStatsFromEntries, getRatingColor } from '@/lib/stats';
-import { getPicklist, savePicklist, removeFromPicklist, getEntries } from '@/lib/storage';
+import { getPicklist, savePicklist, removeFromPicklist, getEntries, EVENT_KEY } from '@/lib/storage';
+import { fetchEventOPRs, getTeamOPR } from '@/lib/tba';
 import { PicklistTeam, TeamStats } from '@/lib/types';
 import { toast } from 'sonner';
 
@@ -20,8 +21,17 @@ const Picklist = () => {
   const [adminPassword, setAdminPassword] = useState('');
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const processData = (entries: any[], savedPicklist: any[]) => {
+  const processData = (entries: any[], savedPicklist: any[], oprData?: any) => {
     const stats = getAllTeamStatsFromEntries(entries);
+
+    // Merge OPR if available
+    if (oprData) {
+      stats.forEach(s => {
+        const opr = getTeamOPR(oprData, s.teamNumber);
+        if (opr !== null) s.opr = opr;
+      });
+    }
+
     setAllStats(stats);
 
     if (savedPicklist.length > 0) {
@@ -62,8 +72,12 @@ const Picklist = () => {
   useEffect(() => {
     const loadData = async () => {
       setLoading(true);
-      const [entries, saved] = await Promise.all([getEntries(), getPicklist()]);
-      processData(entries, saved);
+      const [entries, saved, oprs] = await Promise.all([
+        getEntries(),
+        getPicklist(),
+        fetchEventOPRs(EVENT_KEY)
+      ]);
+      processData(entries, saved, oprs);
     };
     loadData();
 
@@ -325,7 +339,7 @@ const Picklist = () => {
                         Matches: {stats.matchesPlayed}
                       </span>
                       <span className="text-muted-foreground font-medium">
-                        Score: {stats.totalScore}
+                        {stats.opr !== undefined ? `OPR: ${stats.opr}` : `Score: ${stats.totalScore}`}
                       </span>
                     </div>
                   </Link>

@@ -52,6 +52,7 @@ export interface TeamStats {
     highMidClimbRate: number;
     defensePlayRate: number; // % of matches where defense was played
     totalScore: number; // Computed ranking score
+    opr?: number;
 }
 
 export interface PicklistTeam {
