@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { ChevronRight, TrendingUp, Loader2, Lock, Unlock, Trash2, X, CheckSquare, Square } from 'lucide-react';
 import { PageHeader } from '@/components/layout/PageHeader';
@@ -21,7 +21,7 @@ const Teams = () => {
   const [oprData, setOprData] = useState<any>(null);
   const isFetching = useRef(false);
 
-  const loadTeams = async (isBackground = false, forceOPR = false) => {
+  const loadTeams = useCallback(async (isBackground = false, forceOPR = false) => {
     if (isFetching.current) return;
     isFetching.current = true;
 
@@ -34,6 +34,8 @@ const Teams = () => {
       ]);
 
       if (newOprData) setOprData(newOprData);
+
+      // Critical: use result directly or fallback to current state
       const effectiveOprData = newOprData || oprData;
 
       const pitTeamNumbers = pitEntries.map(e => e.teamNumber);
@@ -57,7 +59,7 @@ const Teams = () => {
       }
       isFetching.current = false;
     }
-  };
+  }, [oprData]);
 
   useEffect(() => {
     loadTeams();
@@ -307,18 +309,19 @@ const Teams = () => {
                 </div>
 
                 {/* Score/OPR */}
-                <div className="text-right">
+                <div className="text-right flex flex-col items-end gap-1">
                   <div className="flex items-center gap-1 text-primary">
-                    <TrendingUp className="w-4 h-4" />
+                    <span className="text-[10px] text-muted-foreground uppercase tracking-wider mr-1">Score:</span>
                     <span className="font-mono font-bold">
-                      {team.opr !== undefined ? team.opr : team.totalScore}
+                      {team.totalScore}
                     </span>
                   </div>
-                  {team.opr !== undefined && (
-                    <div className="text-[10px] text-muted-foreground font-medium uppercase tracking-tighter">
-                      OPR
-                    </div>
-                  )}
+                  <div className="flex items-center gap-1 text-info">
+                    <span className="text-[10px] text-muted-foreground uppercase tracking-wider mr-1">OPR:</span>
+                    <span className="font-mono font-bold">
+                      {team.opr !== undefined ? team.opr : 'N/A'}
+                    </span>
+                  </div>
                 </div>
 
                 {!isAdmin && <ChevronRight className="w-5 h-5 text-muted-foreground" />}

@@ -240,12 +240,10 @@ const TeamDetail = () => {
                             </div>
                             <p className="font-mono text-3xl font-bold text-primary">{stats?.totalScore ?? 0}</p>
                         </div>
-                        {opr !== null && (
-                            <div>
-                                <p className="text-sm text-muted-foreground">OPR</p>
-                                <p className="font-mono text-2xl font-bold text-info">{opr}</p>
-                            </div>
-                        )}
+                        <div>
+                            <p className="text-sm text-muted-foreground uppercase tracking-wider">OPR</p>
+                            <p className="font-mono text-2xl font-bold text-info">{opr !== null ? opr : 'N/A'}</p>
+                        </div>
                         <div className="text-right">
                             <p className="text-sm text-muted-foreground">Matches</p>
                             <p className="font-mono text-2xl font-bold">{stats?.matchesPlayed ?? 0}</p>

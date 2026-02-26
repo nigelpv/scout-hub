@@ -141,6 +141,15 @@ export const fetchEventOPRs = async (eventKey: string): Promise<TBAOprResult | n
 };
 
 export const getTeamOPR = (oprs: TBAOprResult, teamNumber: number): number | null => {
+  if (!oprs || !oprs.oprs) return null;
+
   const key = `frc${teamNumber}`;
-  return oprs.oprs[key] !== undefined ? Math.round(oprs.oprs[key] * 10) / 10 : null;
+  const value = oprs.oprs[key];
+
+  if (value === undefined) {
+    // Some events might use different key formats or the team isn't in the list
+    return null;
+  }
+
+  return Math.round(value * 10) / 10;
 };
