@@ -206,6 +206,33 @@ router.delete('/team/:teamNumber', async (req, res) => {
     }
 });
 
+// DELETE all entries for multiple teams (requires admin password)
+router.post('/delete-batch-teams', async (req, res) => {
+    try {
+        const { teamNumbers, password } = req.body;
+
+        if (password !== process.env.ADMIN_PASSWORD) {
+            return res.status(401).json({ error: 'Unauthorized' });
+        }
+
+        if (!Array.isArray(teamNumbers) || teamNumbers.length === 0) {
+            return res.status(400).json({ error: 'No team numbers provided' });
+        }
+
+        const { error } = await supabase
+            .from('scouting_entries')
+            .delete()
+            .in('team_number', teamNumbers.map((n: any) => parseInt(n)));
+
+        if (error) throw error;
+
+        res.json({ success: true, count: teamNumbers.length });
+    } catch (err) {
+        console.error('Error deleting batch team data:', err);
+        res.status(500).json({ error: 'Failed to delete multi-team data' });
+    }
+});
+
 // DELETE entry (requires admin password)
 router.delete('/:id', async (req, res) => {
     try {

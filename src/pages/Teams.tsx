@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { ChevronRight, TrendingUp, Loader2, Lock, Unlock, Trash2, X, CheckSquare, Square } from 'lucide-react';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { getAllTeamStatsFromEntries, getRatingColor } from '@/lib/stats';
-import { getEntries, deleteTeamData, getPitEntries, EVENT_KEY } from '@/lib/storage';
+import { getEntries, deleteTeamData, deleteTeamsBatch, getPitEntries, EVENT_KEY } from '@/lib/storage';
 import { fetchEventOPRs, getTeamOPR } from '@/lib/tba';
 import { TeamStats } from '@/lib/types';
 import { toast } from 'sonner';
@@ -128,18 +128,16 @@ const Teams = () => {
     if (selectedTeams.size === 0) return;
 
     if (window.confirm(`Are you sure you want to delete ALL data for ${selectedTeams.size} teams? This cannot be undone.`)) {
-      let successCount = 0;
-      // Iterate and delete each team
-      for (const teamNumber of selectedTeams) {
-        const success = await deleteTeamData(teamNumber, adminPassword);
-        if (success) successCount++;
-      }
+      setLoading(true);
+      const teamNumbers = Array.from(selectedTeams);
+      const success = await deleteTeamsBatch(teamNumbers, adminPassword);
 
-      if (successCount > 0) {
-        toast.success(`Deleted data for ${successCount} teams`);
-        loadTeams();
+      if (success) {
+        toast.success(`Deleted data for ${teamNumbers.length} teams`);
+        await loadTeams();
       } else {
         toast.error('Failed to delete teams');
+        setLoading(false);
       }
     }
   };
