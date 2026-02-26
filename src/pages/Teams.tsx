@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { ChevronRight, TrendingUp, Loader2, Lock, Unlock, Trash2, X, CheckSquare, Square } from 'lucide-react';
 import { PageHeader } from '@/components/layout/PageHeader';
@@ -18,36 +18,46 @@ const Teams = () => {
   const [password, setPassword] = useState('');
   const [adminPassword, setAdminPassword] = useState('');
   const [selectedTeams, setSelectedTeams] = useState<Set<number>>(new Set());
+  const isFetching = useRef(false);
 
-  const loadTeams = async () => {
-    setLoading(true);
-    const [entries, pitEntries, oprData] = await Promise.all([
-      getEntries(),
-      getPitEntries(),
-      fetchEventOPRs(EVENT_KEY)
-    ]);
-    const pitTeamNumbers = pitEntries.map(e => e.teamNumber);
-    const stats = getAllTeamStatsFromEntries(entries, pitTeamNumbers);
+  const loadTeams = async (isBackground = false) => {
+    if (isFetching.current) return;
+    isFetching.current = true;
 
-    // Merge OPR if available
-    if (oprData) {
-      stats.forEach(s => {
-        const teamOpr = getTeamOPR(oprData, s.teamNumber);
-        if (teamOpr !== null) s.opr = teamOpr;
-      });
+    if (!isBackground) setLoading(true);
+    try {
+      const [entries, pitEntries, oprData] = await Promise.all([
+        getEntries(),
+        getPitEntries(),
+        fetchEventOPRs(EVENT_KEY)
+      ]);
+      const pitTeamNumbers = pitEntries.map(e => e.teamNumber);
+      const stats = getAllTeamStatsFromEntries(entries, pitTeamNumbers);
+
+      // Merge OPR if available
+      if (oprData) {
+        stats.forEach(s => {
+          const teamOpr = getTeamOPR(oprData, s.teamNumber);
+          if (teamOpr !== null) s.opr = teamOpr;
+        });
+      }
+
+      setTeams(stats);
+    } catch (error) {
+      console.error('Error loading team data:', error);
+    } finally {
+      setLoading(false);
+      setSelectedTeams(new Set());
+      isFetching.current = false;
     }
-
-    setTeams(stats);
-    setLoading(false);
-    setSelectedTeams(new Set());
   };
 
   useEffect(() => {
     loadTeams();
 
-    const handleUpdate = async () => {
-      // Re-load everything to ensure consistency
-      loadTeams();
+    const handleUpdate = () => {
+      // Background refresh only
+      loadTeams(true);
     };
 
     window.addEventListener('scout_entries_updated', handleUpdate);
