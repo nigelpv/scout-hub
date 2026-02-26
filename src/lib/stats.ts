@@ -108,6 +108,26 @@ export function calculateTeamStatsFromEntries(entries: ScoutingEntry[]): TeamSta
     };
 }
 
+export function createEmptyStats(teamNumber: number): TeamStats {
+    return {
+        teamNumber: teamNumber,
+        matchesPlayed: 0,
+        avgAutoCycles: 0,
+        meanAutoCycles: 0,
+        medianAutoCycles: 0,
+        stdDevAutoCycles: 0,
+        autoPreloadSuccessRate: 0,
+        avgTeleopCycles: 0,
+        meanTeleopCycles: 0,
+        medianTeleopCycles: 0,
+        stdDevTeleopCycles: 0,
+        climbSuccessRate: 0,
+        highMidClimbRate: 0,
+        defensePlayRate: 0,
+        totalScore: 0,
+    };
+}
+
 // Calculate all team stats from an array of all entries
 export function getAllTeamStatsFromEntries(entries: ScoutingEntry[], allTeamNumbers?: number[]): TeamStats[] {
     const identifiedTeamNumbers = [...new Set(entries.map(e => e.teamNumber))];
@@ -119,24 +139,7 @@ export function getAllTeamStatsFromEntries(entries: ScoutingEntry[], allTeamNumb
         .map(num => {
             const teamEntries = entries.filter(e => e.teamNumber === num);
             if (teamEntries.length === 0) {
-                // Return "empty" stats for teams with no match data (e.g. only pit data)
-                return {
-                    teamNumber: num,
-                    matchesPlayed: 0,
-                    avgAutoCycles: 0,
-                    meanAutoCycles: 0,
-                    medianAutoCycles: 0,
-                    stdDevAutoCycles: 0,
-                    autoPreloadSuccessRate: 0,
-                    avgTeleopCycles: 0,
-                    meanTeleopCycles: 0,
-                    medianTeleopCycles: 0,
-                    stdDevTeleopCycles: 0,
-                    climbSuccessRate: 0,
-                    highMidClimbRate: 0,
-                    defensePlayRate: 0,
-                    totalScore: 0,
-                };
+                return createEmptyStats(num);
             }
             return calculateTeamStatsFromEntries(teamEntries);
         })

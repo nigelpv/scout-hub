@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { StatBar } from '@/components/scouting/StatBar';
-import { calculateTeamStatsFromEntries, getRatingColor } from '@/lib/stats';
+import { calculateTeamStatsFromEntries, getRatingColor, createEmptyStats } from '@/lib/stats';
 import { getEntriesForTeam, deleteEntry, deleteEntries, getPitEntryForTeam, EVENT_KEY } from '@/lib/storage';
 import { fetchEventOPRs, getTeamOPR, TBAOprResult } from '@/lib/tba';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
@@ -35,7 +35,10 @@ const TeamDetail = () => {
         ]);
         setEntries(teamEntries);
         setPitData(teamPitData);
-        setStats(calculateTeamStatsFromEntries(teamEntries));
+
+        const calculatedStats = calculateTeamStatsFromEntries(teamEntries);
+        setStats(calculatedStats || createEmptyStats(teamNum));
+
         setLoading(false);
         setSelectedEntries(new Set()); // Clear selection on reload
     }, [teamNum]);
@@ -121,7 +124,7 @@ const TeamDetail = () => {
         );
     }
 
-    if (!stats) {
+    if (!stats && !pitData) {
         return (
             <div className="min-h-screen bg-background">
                 <PageHeader title={`Team ${teamNum}`} />
@@ -234,7 +237,7 @@ const TeamDetail = () => {
                                     </Tooltip>
                                 </TooltipProvider>
                             </div>
-                            <p className="font-mono text-3xl font-bold text-primary">{stats.totalScore}</p>
+                            <p className="font-mono text-3xl font-bold text-primary">{stats?.totalScore ?? 0}</p>
                         </div>
                         {opr !== null && (
                             <div>
@@ -244,7 +247,7 @@ const TeamDetail = () => {
                         )}
                         <div className="text-right">
                             <p className="text-sm text-muted-foreground">Matches</p>
-                            <p className="font-mono text-2xl font-bold">{stats.matchesPlayed}</p>
+                            <p className="font-mono text-2xl font-bold">{stats?.matchesPlayed ?? 0}</p>
                         </div>
                     </div>
                 </div>
@@ -416,143 +419,145 @@ const TeamDetail = () => {
             </div>
 
             {/* Recent Matches */}
-            <div className="stat-card">
-                <div className="flex items-center justify-between mb-4">
-                    <div className="flex items-center gap-4">
-                        <h2 className="font-semibold">Match History</h2>
+            {entries.length > 0 && (
+                <div className="stat-card">
+                    <div className="flex items-center justify-between mb-4">
+                        <div className="flex items-center gap-4">
+                            <h2 className="font-semibold">Match History</h2>
+                            {isAdmin && (
+                                <div className="flex gap-2 text-xs">
+                                    <button
+                                        onClick={() => setSelectedEntries(new Set(entries.map(e => e.id)))}
+                                        className="text-primary hover:underline font-medium"
+                                    >
+                                        Select All
+                                    </button>
+                                    <span className="text-muted-foreground">|</span>
+                                    <button
+                                        onClick={() => setSelectedEntries(new Set())}
+                                        className="text-muted-foreground hover:text-foreground hover:underline font-medium"
+                                    >
+                                        Deselect
+                                    </button>
+                                </div>
+                            )}
+                        </div>
                         {isAdmin && (
-                            <div className="flex gap-2 text-xs">
-                                <button
-                                    onClick={() => setSelectedEntries(new Set(entries.map(e => e.id)))}
-                                    className="text-primary hover:underline font-medium"
-                                >
-                                    Select All
-                                </button>
-                                <span className="text-muted-foreground">|</span>
-                                <button
-                                    onClick={() => setSelectedEntries(new Set())}
-                                    className="text-muted-foreground hover:text-foreground hover:underline font-medium"
-                                >
-                                    Deselect
-                                </button>
-                            </div>
+                            <span className="text-xs text-muted-foreground">
+                                {selectedEntries.size} select
+                            </span>
                         )}
                     </div>
-                    {isAdmin && (
-                        <span className="text-xs text-muted-foreground">
-                            {selectedEntries.size} select
-                        </span>
-                    )}
-                </div>
-                <div className="space-y-3">
-                    {entries.slice().reverse().map((entry) => (
-                        <div key={entry.id} className="border-b border-border pb-3 last:border-0 last:pb-0">
-                            <div className="flex justify-between items-center mb-2">
-                                <div className="flex items-center gap-3">
-                                    {isAdmin ? (
-                                        <button
-                                            onClick={() => toggleSelection(entry.id)}
-                                            className={`p-1 -ml-1 rounded transition-colors ${selectedEntries.has(entry.id) ? 'text-primary' : 'text-muted-foreground'}`}
-                                        >
-                                            {selectedEntries.has(entry.id) ? (
-                                                <CheckSquare className="w-5 h-5" />
-                                            ) : (
-                                                <Square className="w-5 h-5" />
-                                            )}
-                                        </button>
-                                    ) : null}
-                                    <span className="font-mono font-bold text-base">Match {entry.matchNumber}</span>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                    <div className="bg-secondary px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
-                                        {entry.shootingRange}
+                    <div className="space-y-3">
+                        {entries.slice().reverse().map((entry) => (
+                            <div key={entry.id} className="border-b border-border pb-3 last:border-0 last:pb-0">
+                                <div className="flex justify-between items-center mb-2">
+                                    <div className="flex items-center gap-3">
+                                        {isAdmin ? (
+                                            <button
+                                                onClick={() => toggleSelection(entry.id)}
+                                                className={`p-1 -ml-1 rounded transition-colors ${selectedEntries.has(entry.id) ? 'text-primary' : 'text-muted-foreground'}`}
+                                            >
+                                                {selectedEntries.has(entry.id) ? (
+                                                    <CheckSquare className="w-5 h-5" />
+                                                ) : (
+                                                    <Square className="w-5 h-5" />
+                                                )}
+                                            </button>
+                                        ) : null}
+                                        <span className="font-mono font-bold text-base">Match {entry.matchNumber}</span>
                                     </div>
-                                    {isAdmin && !selectedEntries.has(entry.id) && (
-                                        <button
-                                            onClick={() => handleDeleteMatch(entry.id)}
-                                            className="p-1 text-muted-foreground hover:text-destructive transition-colors ml-2"
-                                            title="Delete Single Match"
-                                        >
-                                            <Trash2 className="w-4 h-4" />
-                                        </button>
+                                    <div className="flex items-center gap-2">
+                                        <div className="bg-secondary px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                                            {entry.shootingRange}
+                                        </div>
+                                        {isAdmin && !selectedEntries.has(entry.id) && (
+                                            <button
+                                                onClick={() => handleDeleteMatch(entry.id)}
+                                                className="p-1 text-muted-foreground hover:text-destructive transition-colors ml-2"
+                                                title="Delete Single Match"
+                                            >
+                                                <Trash2 className="w-4 h-4" />
+                                            </button>
+                                        )}
+                                    </div>
+                                </div>
+
+                                <div className={`space-y-3 ${isAdmin ? 'pl-7' : ''}`}>
+                                    {/* Stats Grid */}
+                                    <div className="grid grid-cols-2 gap-3">
+                                        {/* Auto Column */}
+                                        <div className="space-y-1">
+                                            <p className="text-[10px] uppercase font-bold text-muted-foreground tracking-tight">Autonomous</p>
+                                            <div className="text-sm space-y-1">
+                                                <div className="flex justify-between border-b border-border/50 pb-0.5">
+                                                    <span>Hoppers</span>
+                                                    <span className="font-mono font-medium text-foreground">{entry.autoCycles}</span>
+                                                </div>
+                                                <div className="flex justify-between border-b border-border/50 pb-0.5">
+                                                    <span>Preload</span>
+                                                    <span className="font-medium text-foreground">
+                                                        {entry.autoPreload
+                                                            ? (entry.autoPreloadScored ? 'Scored All' : `${entry.autoPreloadCount ?? 0} Scored`)
+                                                            : 'None'}
+                                                    </span>
+                                                </div>
+                                                <div className="flex justify-between border-b border-border/50 pb-0.5">
+                                                    <span>Climb</span>
+                                                    <span className="font-medium text-foreground">{autoClimbLabels[entry.autoClimb] ?? entry.autoClimb}</span>
+                                                </div>
+                                                <div className="flex justify-between border-b border-border/50 pb-0.5">
+                                                    <span>Travel</span>
+                                                    <span className="font-medium text-foreground">{obstacleLabels[entry.autoObstacle ?? 'none']}</span>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* Teleop Column */}
+                                        <div className="space-y-1">
+                                            <p className="text-[10px] uppercase font-bold text-muted-foreground tracking-tight">Teleop & Endgame</p>
+                                            <div className="text-sm space-y-1">
+                                                <div className="flex justify-between border-b border-border/50 pb-0.5">
+                                                    <span>Hoppers</span>
+                                                    <span className="font-mono font-medium text-foreground">{entry.teleopCycles}</span>
+                                                </div>
+                                                <div className="flex justify-between border-b border-border/50 pb-0.5">
+                                                    <span>Defense</span>
+                                                    <span className="font-medium text-foreground capitalize">
+                                                        {entry.defenseType && entry.defenseType !== 'none'
+                                                            ? `${entry.defenseType} · ${(entry.defenseLocation ?? 'none').replace('_', ' ')}`
+                                                            : 'None'}
+                                                    </span>
+                                                </div>
+                                                <div className="flex justify-between border-b border-border/50 pb-0.5">
+                                                    <span>Climb</span>
+                                                    <span className="font-medium text-foreground">
+                                                        {climbLabels[entry.climbResult]}
+                                                        {entry.climbPosition && entry.climbPosition !== 'none' && ` · ${entry.climbPosition}`}
+                                                        {entry.climbResult !== 'none' && entry.climbStability > 0 && ` (${entry.climbStability}★)`}
+                                                    </span>
+                                                </div>
+                                                <div className="flex justify-between border-b border-border/50 pb-0.5">
+                                                    <span>Travel</span>
+                                                    <span className="font-medium text-foreground">{obstacleLabels[entry.teleopObstacle ?? 'none']}</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+
+                                    {entry.notes && (
+                                        <div className="text-sm text-muted-foreground bg-secondary/20 p-2 rounded border-l-2 border-primary/30">
+                                            <span className="font-bold text-[10px] uppercase block mb-0.5 opacity-70">Notes</span>
+                                            <p className="italic whitespace-pre-wrap">"{entry.notes}"</p>
+                                        </div>
                                     )}
                                 </div>
                             </div>
-
-                            <div className={`space-y-3 ${isAdmin ? 'pl-7' : ''}`}>
-                                {/* Stats Grid */}
-                                <div className="grid grid-cols-2 gap-3">
-                                    {/* Auto Column */}
-                                    <div className="space-y-1">
-                                        <p className="text-[10px] uppercase font-bold text-muted-foreground tracking-tight">Autonomous</p>
-                                        <div className="text-sm space-y-1">
-                                            <div className="flex justify-between border-b border-border/50 pb-0.5">
-                                                <span>Hoppers</span>
-                                                <span className="font-mono font-medium text-foreground">{entry.autoCycles}</span>
-                                            </div>
-                                            <div className="flex justify-between border-b border-border/50 pb-0.5">
-                                                <span>Preload</span>
-                                                <span className="font-medium text-foreground">
-                                                    {entry.autoPreload
-                                                        ? (entry.autoPreloadScored ? 'Scored All' : `${entry.autoPreloadCount ?? 0} Scored`)
-                                                        : 'None'}
-                                                </span>
-                                            </div>
-                                            <div className="flex justify-between border-b border-border/50 pb-0.5">
-                                                <span>Climb</span>
-                                                <span className="font-medium text-foreground">{autoClimbLabels[entry.autoClimb] ?? entry.autoClimb}</span>
-                                            </div>
-                                            <div className="flex justify-between border-b border-border/50 pb-0.5">
-                                                <span>Travel</span>
-                                                <span className="font-medium text-foreground">{obstacleLabels[entry.autoObstacle ?? 'none']}</span>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    {/* Teleop Column */}
-                                    <div className="space-y-1">
-                                        <p className="text-[10px] uppercase font-bold text-muted-foreground tracking-tight">Teleop & Endgame</p>
-                                        <div className="text-sm space-y-1">
-                                            <div className="flex justify-between border-b border-border/50 pb-0.5">
-                                                <span>Hoppers</span>
-                                                <span className="font-mono font-medium text-foreground">{entry.teleopCycles}</span>
-                                            </div>
-                                            <div className="flex justify-between border-b border-border/50 pb-0.5">
-                                                <span>Defense</span>
-                                                <span className="font-medium text-foreground capitalize">
-                                                    {entry.defenseType && entry.defenseType !== 'none'
-                                                        ? `${entry.defenseType} · ${(entry.defenseLocation ?? 'none').replace('_', ' ')}`
-                                                        : 'None'}
-                                                </span>
-                                            </div>
-                                            <div className="flex justify-between border-b border-border/50 pb-0.5">
-                                                <span>Climb</span>
-                                                <span className="font-medium text-foreground">
-                                                    {climbLabels[entry.climbResult]}
-                                                    {entry.climbPosition && entry.climbPosition !== 'none' && ` · ${entry.climbPosition}`}
-                                                    {entry.climbResult !== 'none' && entry.climbStability > 0 && ` (${entry.climbStability}★)`}
-                                                </span>
-                                            </div>
-                                            <div className="flex justify-between border-b border-border/50 pb-0.5">
-                                                <span>Travel</span>
-                                                <span className="font-medium text-foreground">{obstacleLabels[entry.teleopObstacle ?? 'none']}</span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-
-
-                                {entry.notes && (
-                                    <div className="text-sm text-muted-foreground bg-secondary/20 p-2 rounded border-l-2 border-primary/30">
-                                        <span className="font-bold text-[10px] uppercase block mb-0.5 opacity-70">Notes</span>
-                                        <p className="italic whitespace-pre-wrap">"{entry.notes}"</p>
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-                    ))}
+                        ))}
+                    </div>
                 </div>
-            </div>
+            )}
         </div>
     );
 };
