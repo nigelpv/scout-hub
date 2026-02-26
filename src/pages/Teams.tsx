@@ -47,7 +47,9 @@ const Teams = () => {
       console.error('Error loading team data:', error);
     } finally {
       setLoading(false);
-      setSelectedTeams(new Set());
+      if (!isBackground) {
+        setSelectedTeams(new Set());
+      }
       isFetching.current = false;
     }
   };
