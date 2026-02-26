@@ -18,26 +18,34 @@ const Teams = () => {
   const [password, setPassword] = useState('');
   const [adminPassword, setAdminPassword] = useState('');
   const [selectedTeams, setSelectedTeams] = useState<Set<number>>(new Set());
+  const [oprData, setOprData] = useState<any>(null);
   const isFetching = useRef(false);
 
-  const loadTeams = async (isBackground = false) => {
+  const loadTeams = async (isBackground = false, forceOPR = false) => {
     if (isFetching.current) return;
     isFetching.current = true;
 
     if (!isBackground) setLoading(true);
     try {
-      const [entries, pitEntries, oprData] = await Promise.all([
+      // Fetch OPR only if forced or if we don't have it yet and it's not a background sync
+      const shouldFetchOPR = forceOPR || (!isBackground && !oprData);
+
+      const [entries, pitEntries, newOprData] = await Promise.all([
         getEntries(),
         getPitEntries(),
-        fetchEventOPRs(EVENT_KEY)
+        shouldFetchOPR ? fetchEventOPRs(EVENT_KEY) : Promise.resolve(oprData)
       ]);
+
+      const effectiveOprData = shouldFetchOPR ? newOprData : oprData;
+      if (shouldFetchOPR) setOprData(newOprData);
+
       const pitTeamNumbers = pitEntries.map(e => e.teamNumber);
       const stats = getAllTeamStatsFromEntries(entries, pitTeamNumbers);
 
       // Merge OPR if available
-      if (oprData) {
+      if (effectiveOprData) {
         stats.forEach(s => {
-          const teamOpr = getTeamOPR(oprData, s.teamNumber);
+          const teamOpr = getTeamOPR(effectiveOprData, s.teamNumber);
           if (teamOpr !== null) s.opr = teamOpr;
         });
       }
@@ -158,13 +166,22 @@ const Teams = () => {
       <PageHeader
         title={isAdmin ? "Teams (Admin)" : "Teams"}
         rightContent={
-          <button
-            onClick={() => isAdmin ? exitAdmin() : setShowAuth(true)}
-            className={`p-2 rounded-lg transition-colors ${isAdmin ? 'bg-destructive/10 text-destructive' : 'hover:bg-secondary'}`}
-            title={isAdmin ? "Lock" : "Unlock Admin"}
-          >
-            {isAdmin ? <Unlock className="w-5 h-5" /> : <Lock className="w-5 h-5" />}
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => loadTeams(false, true)}
+              className="p-2 rounded-lg hover:bg-secondary text-muted-foreground transition-colors"
+              title="Refresh OPRs"
+            >
+              <TrendingUp className="w-5 h-5" />
+            </button>
+            <button
+              onClick={() => isAdmin ? exitAdmin() : setShowAuth(true)}
+              className={`p-2 rounded-lg transition-colors ${isAdmin ? 'bg-destructive/10 text-destructive' : 'hover:bg-secondary'}`}
+              title={isAdmin ? "Lock" : "Unlock Admin"}
+            >
+              {isAdmin ? <Unlock className="w-5 h-5" /> : <Lock className="w-5 h-5" />}
+            </button>
+          </div>
         }
       />
 
