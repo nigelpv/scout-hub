@@ -3,7 +3,8 @@ import { Link } from 'react-router-dom';
 import { ChevronRight, TrendingUp, Loader2, Lock, Unlock, Trash2, X, CheckSquare, Square } from 'lucide-react';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { getAllTeamStatsFromEntries, getRatingColor } from '@/lib/stats';
-import { getEntries, deleteTeamData } from '@/lib/storage';
+import { getEntries, deleteTeamData, getPitEntries, EVENT_KEY } from '@/lib/storage';
+import { fetchEventOPRs, getTeamOPR } from '@/lib/tba';
 import { TeamStats } from '@/lib/types';
 import { toast } from 'sonner';
 
@@ -20,8 +21,22 @@ const Teams = () => {
 
   const loadTeams = async () => {
     setLoading(true);
-    const entries = await getEntries();
-    const stats = getAllTeamStatsFromEntries(entries);
+    const [entries, pitEntries, oprData] = await Promise.all([
+      getEntries(),
+      getPitEntries(),
+      fetchEventOPRs(EVENT_KEY)
+    ]);
+    const pitTeamNumbers = pitEntries.map(e => e.teamNumber);
+    const stats = getAllTeamStatsFromEntries(entries, pitTeamNumbers);
+
+    // Merge OPR if available
+    if (oprData) {
+      stats.forEach(s => {
+        const teamOpr = getTeamOPR(oprData, s.teamNumber);
+        if (teamOpr !== null) s.opr = teamOpr;
+      });
+    }
+
     setTeams(stats);
     setLoading(false);
     setSelectedTeams(new Set());
@@ -30,15 +45,17 @@ const Teams = () => {
   useEffect(() => {
     loadTeams();
 
-    const handleUpdate = (e: Event) => {
-      const updatedEntries = (e as CustomEvent).detail;
-      const stats = getAllTeamStatsFromEntries(updatedEntries);
-      setTeams(stats);
-      setLoading(false);
+    const handleUpdate = async () => {
+      // Re-load everything to ensure consistency
+      loadTeams();
     };
 
     window.addEventListener('scout_entries_updated', handleUpdate);
-    return () => window.removeEventListener('scout_entries_updated', handleUpdate);
+    window.addEventListener('scout_pit_updated', handleUpdate);
+    return () => {
+      window.removeEventListener('scout_entries_updated', handleUpdate);
+      window.removeEventListener('scout_pit_updated', handleUpdate);
+    };
   }, []);
 
   // Admin Functions
@@ -265,12 +282,19 @@ const Teams = () => {
                   </div>
                 </div>
 
-                {/* Score */}
+                {/* Score/OPR */}
                 <div className="text-right">
                   <div className="flex items-center gap-1 text-primary">
                     <TrendingUp className="w-4 h-4" />
-                    <span className="font-mono font-bold">{team.totalScore}</span>
+                    <span className="font-mono font-bold">
+                      {team.opr !== undefined ? team.opr : team.totalScore}
+                    </span>
                   </div>
+                  {team.opr !== undefined && (
+                    <div className="text-[10px] text-muted-foreground font-medium uppercase tracking-tighter">
+                      OPR
+                    </div>
+                  )}
                 </div>
 
                 {!isAdmin && <ChevronRight className="w-5 h-5 text-muted-foreground" />}
