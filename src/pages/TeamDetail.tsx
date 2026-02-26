@@ -37,7 +37,8 @@ const TeamDetail = () => {
         setPitData(teamPitData);
 
         const calculatedStats = calculateTeamStatsFromEntries(teamEntries);
-        setStats(calculatedStats || createEmptyStats(teamNum));
+        const finalStats = calculatedStats || createEmptyStats(teamNum);
+        setStats(finalStats);
 
         setLoading(false);
         setSelectedEntries(new Set()); // Clear selection on reload
@@ -252,58 +253,69 @@ const TeamDetail = () => {
                     </div>
                 </div>
 
-                {/* Autonomous */}
-                <div className="stat-card">
-                    <div className="flex items-center gap-2 mb-4">
-                        <CircleDot className="w-5 h-5 text-primary" />
-                        <h2 className="font-semibold">Autonomous</h2>
-                    </div>
-                    <div className="space-y-6">
-                        <div>
-                            <strong className="block text-sm mb-1">Preload Success</strong>
-                            <StatBar value={stats.autoPreloadSuccessRate} max={100} label="Success Rate" suffix="%" />
-                        </div>
-                        <div>
-                            <StatBar value={stats.avgAutoCycles} max={15} label="Avg Auto Cycles" />
-                            <div className="flex justify-between text-xs text-muted-foreground mt-1 px-1">
-                                <span>Mean: {stats.meanAutoCycles}</span>
-                                <span>Median: {stats.medianAutoCycles}</span>
-                                <span>StdDev: {stats.stdDevAutoCycles}</span>
+                {/* Match Stats - Only show if matches have been played */}
+                {stats && stats.matchesPlayed > 0 ? (
+                    <>
+                        {/* Autonomous */}
+                        <div className="stat-card">
+                            <div className="flex items-center gap-2 mb-4">
+                                <CircleDot className="w-5 h-5 text-primary" />
+                                <h2 className="font-semibold">Autonomous</h2>
                             </div>
-                        </div>
-                    </div>
-                </div>
-
-                {/* Teleop */}
-                <div className="stat-card">
-                    <div className="flex items-center gap-2 mb-4">
-                        <Target className="w-5 h-5 text-info" />
-                        <h2 className="font-semibold">Teleop</h2>
-                    </div>
-                    <div className="space-y-6">
-                        <div>
-                            <StatBar value={stats.avgTeleopCycles} max={30} label="Avg Teleop Cycles" />
-                            <div className="flex justify-between text-xs text-muted-foreground mt-1 px-1">
-                                <span>Mean: {stats.meanTeleopCycles}</span>
-                                <span>Median: {stats.medianTeleopCycles}</span>
-                                <span>StdDev: {stats.stdDevTeleopCycles}</span>
+                            <div className="space-y-6">
+                                <div>
+                                    <strong className="block text-sm mb-1">Preload Success</strong>
+                                    <StatBar value={stats.autoPreloadSuccessRate} max={100} label="Success Rate" suffix="%" />
+                                </div>
+                                <div>
+                                    <StatBar value={stats.avgAutoCycles} max={15} label="Avg Auto Cycles" />
+                                    <div className="flex justify-between text-xs text-muted-foreground mt-1 px-1">
+                                        <span>Mean: {stats.meanAutoCycles}</span>
+                                        <span>Median: {stats.medianAutoCycles}</span>
+                                        <span>StdDev: {stats.stdDevAutoCycles}</span>
+                                    </div>
+                                </div>
                             </div>
                         </div>
 
-                    </div>
-                </div>
+                        {/* Teleop */}
+                        <div className="stat-card">
+                            <div className="flex items-center gap-2 mb-4">
+                                <Target className="w-5 h-5 text-info" />
+                                <h2 className="font-semibold">Teleop</h2>
+                            </div>
+                            <div className="space-y-6">
+                                <div>
+                                    <StatBar value={stats.avgTeleopCycles} max={30} label="Avg Teleop Cycles" />
+                                    <div className="flex justify-between text-xs text-muted-foreground mt-1 px-1">
+                                        <span>Mean: {stats.meanTeleopCycles}</span>
+                                        <span>Median: {stats.medianTeleopCycles}</span>
+                                        <span>StdDev: {stats.stdDevTeleopCycles}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
 
-                {/* Climbing */}
-                <div className="stat-card">
-                    <div className="flex items-center gap-2 mb-4">
-                        <Trophy className="w-5 h-5 text-warning" />
-                        <h2 className="font-semibold">Climbing</h2>
+                        {/* Climbing */}
+                        <div className="stat-card">
+                            <div className="flex items-center gap-2 mb-4">
+                                <Trophy className="w-5 h-5 text-warning" />
+                                <h2 className="font-semibold">Climbing</h2>
+                            </div>
+                            <div className="space-y-4">
+                                <StatBar value={stats.climbSuccessRate} max={100} label="Climb Success Rate" suffix="%" />
+                                <StatBar value={stats.highMidClimbRate} max={100} label="High/Mid Climb Rate" suffix="%" />
+                            </div>
+                        </div>
+                    </>
+                ) : (
+                    <div className="stat-card text-center py-6">
+                        <p className="text-sm text-muted-foreground">No match scouting data available yet</p>
+                        <Link to="/scout" className="text-xs text-primary hover:underline mt-2 inline-block">
+                            Scout a match →
+                        </Link>
                     </div>
-                    <div className="space-y-4">
-                        <StatBar value={stats.climbSuccessRate} max={100} label="Climb Success Rate" suffix="%" />
-                        <StatBar value={stats.highMidClimbRate} max={100} label="High/Mid Climb Rate" suffix="%" />
-                    </div>
-                </div>
+                )}
 
             </div>
 

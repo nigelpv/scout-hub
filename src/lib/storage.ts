@@ -366,11 +366,26 @@ export async function getPitEntries(): Promise<PitScoutingEntry[]> {
 export async function getPitEntryForTeam(teamNumber: number): Promise<PitScoutingEntry | null> {
   try {
     const response = await fetch(`${API_URL}/pit/team/${teamNumber}`);
-    if (response.status === 404) return null;
-    if (!response.ok) throw new Error('Failed to fetch pit entry');
-    return await response.json();
+
+    if (response.ok) {
+      return await response.json();
+    }
+
+    // If server says 404, we check local storage before giving up
+    // This handles teams that were scouted offline or haven't synced yet
+    const pending = getPendingPitEntries();
+    const pendingEntry = pending.find(e => e.teamNumber === teamNumber);
+    if (pendingEntry) return pendingEntry;
+
+    const cached = await getPitEntries();
+    return cached.find(e => e.teamNumber === teamNumber) || null;
   } catch (error) {
     console.error('Error fetching pit entry for team:', error);
+
+    const pending = getPendingPitEntries();
+    const pendingEntry = pending.find(e => e.teamNumber === teamNumber);
+    if (pendingEntry) return pendingEntry;
+
     const cached = await getPitEntries();
     return cached.find(e => e.teamNumber === teamNumber) || null;
   }
