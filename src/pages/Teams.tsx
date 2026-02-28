@@ -5,6 +5,7 @@ import { PageHeader } from '@/components/layout/PageHeader';
 import { getAllTeamStatsFromEntries, getRatingColor } from '@/lib/stats';
 import { getEntries, deleteTeamData, deleteTeamsBatch, getPitEntries, EVENT_KEY } from '@/lib/storage';
 import { fetchEventOPRs, getTeamOPR } from '@/lib/tba';
+import { exportMatchEntriesToCSV, exportPitEntriesToCSV } from '@/lib/csv';
 import { TeamStats } from '@/lib/types';
 import { toast } from 'sonner';
 
@@ -141,6 +142,24 @@ const Teams = () => {
     }
   };
 
+  const handleExportMatchCSV = async () => {
+    const result = await exportMatchEntriesToCSV();
+    if (result.success) {
+      toast.success('Match data exported successfully');
+    } else {
+      toast.error(result.message || 'Export failed');
+    }
+  };
+
+  const handleExportPitCSV = async () => {
+    const result = await exportPitEntriesToCSV();
+    if (result.success) {
+      toast.success('Pit data exported successfully');
+    } else {
+      toast.error(result.message || 'Export failed');
+    }
+  };
+
   const exitAdmin = () => {
     setIsAdmin(false);
     setSelectedTeams(new Set());
@@ -225,6 +244,21 @@ const Teams = () => {
               className="text-xs font-medium text-muted-foreground hover:text-foreground hover:underline"
             >
               Deselect
+            </button>
+          </div>
+          <div className="flex gap-2">
+            <button
+              onClick={handleExportMatchCSV}
+              className="text-xs font-medium text-emerald-600 hover:text-emerald-700 hover:underline"
+            >
+              Export Match (CSV)
+            </button>
+            <span className="text-xs text-muted-foreground">|</span>
+            <button
+              onClick={handleExportPitCSV}
+              className="text-xs font-medium text-emerald-600 hover:text-emerald-700 hover:underline"
+            >
+              Export Pit (CSV)
             </button>
           </div>
           <span className="text-xs text-muted-foreground">
