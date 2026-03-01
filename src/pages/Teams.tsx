@@ -4,7 +4,7 @@ import { ChevronRight, TrendingUp, Loader2, Lock, Unlock, Trash2, X, CheckSquare
 import { PageHeader } from '@/components/layout/PageHeader';
 import { getAllTeamStatsFromEntries, getRatingColor } from '@/lib/stats';
 import { getEntries, deleteTeamData, deleteTeamsBatch, getPitEntries, EVENT_KEY } from '@/lib/storage';
-import { fetchEventOPRs, getTeamOPR } from '@/lib/tba';
+import { fetchEventOPRs, getTeamOPR, TBAOprResult } from '@/lib/tba';
 import { exportMatchEntriesToCSV, exportPitEntriesToCSV } from '@/lib/csv';
 import { TeamStats } from '@/lib/types';
 import { toast } from 'sonner';
@@ -19,7 +19,7 @@ const Teams = () => {
   const [password, setPassword] = useState('');
   const [adminPassword, setAdminPassword] = useState('');
   const [selectedTeams, setSelectedTeams] = useState<Set<number>>(new Set());
-  const [oprData, setOprData] = useState<any>(null);
+  const [oprData, setOprData] = useState<TBAOprResult | null>(null);
   const isFetching = useRef(false);
 
   const loadTeams = useCallback(async (isBackground = false, forceOPR = false) => {
@@ -76,6 +76,7 @@ const Teams = () => {
       window.removeEventListener('scout_entries_updated', handleUpdate);
       window.removeEventListener('scout_pit_updated', handleUpdate);
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Admin Functions

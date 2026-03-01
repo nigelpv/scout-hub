@@ -14,6 +14,7 @@ router.get('/', async (req, res) => {
         if (error) throw error;
 
         // Convert snake_case to camelCase
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const entries = data.map((row: any) => ({
             teamNumber: row.team_number,
             scoutName: row.scout_name || 'Unknown',
@@ -147,7 +148,7 @@ router.post('/delete-batch-teams', async (req, res) => {
         const { error } = await supabase
             .from('pit_scouting')
             .delete()
-            .in('team_number', teamNumbers.map((n: any) => parseInt(n)));
+            .in('team_number', teamNumbers.map((n: string | number) => parseInt(String(n))));
 
         if (error) throw error;
 
