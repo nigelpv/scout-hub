@@ -185,14 +185,6 @@ const PitScout = () => {
                             />
                         </section>
 
-                        <section className="stat-card">
-                            <h2 className="section-header">Gameplay</h2>
-                            <ToggleField
-                                value={isPasserBot}
-                                onChange={setIsPasserBot}
-                                label="Passer Bot"
-                            />
-                        </section>
 
                         {/* Scoring */}
                         <section className="stat-card">

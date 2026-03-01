@@ -1,1 +1,1 @@
-export const EVENT_KEY = '2026hmb';
+export const EVENT_KEY = '2026cahal';

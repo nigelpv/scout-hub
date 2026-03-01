@@ -97,8 +97,8 @@ const ScoutMatch = () => {
         const entry: ScoutingEntry = {
             id: generateId(),
             event,
-            matchNumber,
-            teamNumber: parseInt(teamNumber),
+            matchNumber: parsedMatch,
+            teamNumber: parsedTeam,
             scoutName: scoutName.trim(),
             timestamp: Date.now(),
             autoCycles,
