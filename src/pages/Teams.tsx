@@ -4,7 +4,8 @@ import { ChevronRight, TrendingUp, Loader2, Lock, Unlock, Trash2, X, CheckSquare
 import { PageHeader } from '@/components/layout/PageHeader';
 import { getAllTeamStatsFromEntries, getRatingColor } from '@/lib/stats';
 import { getEntries, deleteTeamData, deleteTeamsBatch, getPitEntries, EVENT_KEY } from '@/lib/storage';
-import { fetchEventOPRs, getTeamOPR } from '@/lib/tba';
+import { fetchEventOPRs, getTeamOPR, TBAOprResult } from '@/lib/tba';
+import { exportMatchEntriesToCSV, exportPitEntriesToCSV } from '@/lib/csv';
 import { TeamStats } from '@/lib/types';
 import { toast } from 'sonner';
 
@@ -18,7 +19,7 @@ const Teams = () => {
   const [password, setPassword] = useState('');
   const [adminPassword, setAdminPassword] = useState('');
   const [selectedTeams, setSelectedTeams] = useState<Set<number>>(new Set());
-  const [oprData, setOprData] = useState<any>(null);
+  const [oprData, setOprData] = useState<TBAOprResult | null>(null);
   const isFetching = useRef(false);
 
   const loadTeams = useCallback(async (isBackground = false, forceOPR = false) => {
@@ -75,6 +76,7 @@ const Teams = () => {
       window.removeEventListener('scout_entries_updated', handleUpdate);
       window.removeEventListener('scout_pit_updated', handleUpdate);
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Admin Functions
@@ -138,6 +140,24 @@ const Teams = () => {
         toast.error('Failed to delete teams');
         setLoading(false);
       }
+    }
+  };
+
+  const handleExportMatchCSV = async () => {
+    const result = await exportMatchEntriesToCSV();
+    if (result.success) {
+      toast.success('Match data exported successfully');
+    } else {
+      toast.error(result.message || 'Export failed');
+    }
+  };
+
+  const handleExportPitCSV = async () => {
+    const result = await exportPitEntriesToCSV();
+    if (result.success) {
+      toast.success('Pit data exported successfully');
+    } else {
+      toast.error(result.message || 'Export failed');
     }
   };
 
@@ -225,6 +245,21 @@ const Teams = () => {
               className="text-xs font-medium text-muted-foreground hover:text-foreground hover:underline"
             >
               Deselect
+            </button>
+          </div>
+          <div className="flex gap-2">
+            <button
+              onClick={handleExportMatchCSV}
+              className="text-xs font-medium text-emerald-600 hover:text-emerald-700 hover:underline"
+            >
+              Export Match (CSV)
+            </button>
+            <span className="text-xs text-muted-foreground">|</span>
+            <button
+              onClick={handleExportPitCSV}
+              className="text-xs font-medium text-emerald-600 hover:text-emerald-700 hover:underline"
+            >
+              Export Pit (CSV)
             </button>
           </div>
           <span className="text-xs text-muted-foreground">

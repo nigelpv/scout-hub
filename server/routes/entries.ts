@@ -33,6 +33,9 @@ router.get('/', async (req, res) => {
             teleopObstacle: (row.teleop_obstacle || 'none') as 'none' | 'trench' | 'bump' | 'both',
             fuelBeaching: row.fuel_beaching || false,
             fuelBeachingType: (row.fuel_beaching_type || 'none') as 'none' | 'off_bump' | 'random',
+            avgBallsScoredPerCycle: row.avg_balls_scored_per_cycle || 0,
+            isPasserBot: row.is_passer_bot || false,
+            defenseRating: row.defense_effectiveness || 0,
             climbResult: row.climb_result,
             climbPosition: (row.climb_position || 'none') as 'none' | 'side' | 'center',
             climbStability: row.climb_stability || 0,
@@ -78,6 +81,9 @@ router.get('/team/:teamNumber', async (req, res) => {
             teleopObstacle: (row.teleop_obstacle || 'none') as 'none' | 'trench' | 'bump' | 'both',
             fuelBeaching: row.fuel_beaching || false,
             fuelBeachingType: (row.fuel_beaching_type || 'none') as 'none' | 'off_bump' | 'random',
+            avgBallsScoredPerCycle: row.avg_balls_scored_per_cycle || 0,
+            isPasserBot: row.is_passer_bot || false,
+            defenseRating: row.defense_effectiveness || 0,
             climbResult: row.climb_result,
             climbPosition: (row.climb_position || 'none') as 'none' | 'side' | 'center',
             climbStability: row.climb_stability || 0,
@@ -128,12 +134,14 @@ router.post('/', async (req, res) => {
                 teleop_cycles: entry.teleopCycles || 0,
                 defense_type: entry.defenseType || 'none',
                 defense_location: entry.defenseLocation || 'none',
-                defense_effectiveness: 0,
-                defense_played: entry.defenseType !== 'none',
+                defense_effectiveness: entry.defenseRating || 0,
+                defense_played: entry.defenseType !== 'none' || (entry.defenseRating || 0) > 0,
                 shooting_range: entry.shootingRange || null,
                 teleop_obstacle: entry.teleopObstacle || 'none',
                 fuel_beaching: entry.fuelBeaching || false,
                 fuel_beaching_type: entry.fuelBeachingType || 'none',
+                avg_balls_scored_per_cycle: entry.avgBallsScoredPerCycle || 0,
+                is_passer_bot: entry.isPasserBot || false,
                 climb_result: entry.climbResult || 'none',
                 climb_position: entry.climbPosition || 'none',
                 climb_stability: entry.climbStability || 0,
@@ -222,7 +230,7 @@ router.post('/delete-batch-teams', async (req, res) => {
         const { error } = await supabase
             .from('scouting_entries')
             .delete()
-            .in('team_number', teamNumbers.map((n: any) => parseInt(n)));
+            .in('team_number', teamNumbers.map((n: string | number) => parseInt(String(n))));
 
         if (error) throw error;
 

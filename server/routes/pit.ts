@@ -14,9 +14,12 @@ router.get('/', async (req, res) => {
         if (error) throw error;
 
         // Convert snake_case to camelCase
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const entries = data.map((row: any) => ({
             teamNumber: row.team_number,
             scoutName: row.scout_name || 'Unknown',
+            estimatedPoints: row.estimated_points || 0,
+            isPasserBot: row.is_passer_bot,
             autoClimb: row.auto_climb,
             robotClimb: row.robot_climb,
             avgBalls: row.avg_balls,
@@ -55,6 +58,8 @@ router.get('/team/:teamNumber', async (req, res) => {
         res.json({
             teamNumber: data.team_number,
             scoutName: data.scout_name || 'Unknown',
+            estimatedPoints: data.estimated_points || 0,
+            isPasserBot: data.is_passer_bot,
             autoClimb: data.auto_climb,
             robotClimb: data.robot_climb,
             avgBalls: data.avg_balls,
@@ -81,6 +86,8 @@ router.post('/', async (req, res) => {
             .upsert({
                 team_number: parseInt(entry.teamNumber),
                 scout_name: entry.scoutName,
+                estimated_points: entry.estimatedPoints,
+                is_passer_bot: entry.isPasserBot,
                 auto_climb: entry.autoClimb,
                 robot_climb: entry.robotClimb,
                 avg_balls: entry.avgBalls,
@@ -141,7 +148,7 @@ router.post('/delete-batch-teams', async (req, res) => {
         const { error } = await supabase
             .from('pit_scouting')
             .delete()
-            .in('team_number', teamNumbers.map((n: any) => parseInt(n)));
+            .in('team_number', teamNumbers.map((n: string | number) => parseInt(String(n))));
 
         if (error) throw error;
 

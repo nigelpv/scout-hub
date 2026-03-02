@@ -22,6 +22,8 @@ const PitScout = () => {
     const [autoClimbPosition, setAutoClimbPosition] = useState<'none' | 'side' | 'middle'>('none');
     const [climbLevel, setClimbLevel] = useState<'none' | 'low' | 'mid' | 'high'>('none');
 
+    const [estimatedPoints, setEstimatedPoints] = useState(0);
+    const [isPasserBot, setIsPasserBot] = useState(false);
     const [avgBalls, setAvgBalls] = useState<string>('');
     const [maxBalls, setMaxBalls] = useState<string>('');
 
@@ -51,6 +53,8 @@ const PitScout = () => {
         const formData = {
             teamNumber: parseInt(teamNumber),
             scoutName: scoutName.trim(),
+            estimatedPoints,
+            isPasserBot,
             autoClimb: autoClimbPosition,
             robotClimb: climbLevel,
             avgBalls: parseFloat(avgBalls) || 0,
@@ -181,10 +185,27 @@ const PitScout = () => {
                             />
                         </section>
 
+
                         {/* Scoring */}
                         <section className="stat-card">
                             <h2 className="section-header">Capacity & Scoring</h2>
                             <div className="py-3 space-y-4">
+                                <div>
+                                    <label className="text-foreground font-medium block mb-2">Estimated Point Total</label>
+                                    <input
+                                        type="number"
+                                        value={estimatedPoints}
+                                        onChange={(e) => setEstimatedPoints(parseInt(e.target.value) || 0)}
+                                        placeholder="e.g. 50"
+                                        min={0}
+                                        className="w-full h-11 px-4 rounded-lg bg-secondary text-foreground border-0 focus:ring-2 ring-primary font-mono"
+                                    />
+                                </div>
+                                <ToggleField
+                                    value={isPasserBot}
+                                    onChange={setIsPasserBot}
+                                    label="Passer Bot?"
+                                />
                                 <div>
                                     <label className="text-foreground font-medium block mb-2">Avg. Balls Scored per Match</label>
                                     <input
@@ -237,7 +258,6 @@ const PitScout = () => {
                             </div>
                         </section>
 
-                        {/* Navigation */}
                         <section className="stat-card">
                             <h2 className="section-header">Obstacles</h2>
                             <ToggleField
@@ -252,7 +272,6 @@ const PitScout = () => {
                             />
                         </section>
 
-                        {/* Submit Bar */}
                         <div className="fixed bottom-0 left-0 right-0 p-4 bg-background/95 backdrop-blur border-t border-border z-10">
                             <div className="max-w-lg mx-auto">
                                 <button
@@ -271,10 +290,10 @@ const PitScout = () => {
                                 </button>
                             </div>
                         </div>
-                    </div>
+                    </div >
                 )}
-            </div>
-        </div>
+            </div >
+        </div >
     );
 };
 

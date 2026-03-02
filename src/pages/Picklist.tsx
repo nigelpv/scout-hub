@@ -5,7 +5,8 @@ import { PageHeader } from '@/components/layout/PageHeader';
 import { getAllTeamStatsFromEntries, getRatingColor } from '@/lib/stats';
 import { getPicklist, savePicklist, removeFromPicklist, getEntries, EVENT_KEY } from '@/lib/storage';
 import { fetchEventOPRs, getTeamOPR } from '@/lib/tba';
-import { PicklistTeam, TeamStats } from '@/lib/types';
+import { PicklistTeam, TeamStats, ScoutingEntry } from '@/lib/types';
+import { TBAOprResult } from '@/lib/tba';
 import { toast } from 'sonner';
 
 const Picklist = () => {
@@ -20,8 +21,7 @@ const Picklist = () => {
   const [password, setPassword] = useState('');
   const [adminPassword, setAdminPassword] = useState('');
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const processData = (entries: any[], savedPicklist: any[], oprData?: any) => {
+  const processData = (entries: ScoutingEntry[], savedPicklist: PicklistTeam[], oprData?: TBAOprResult | null) => {
     const stats = getAllTeamStatsFromEntries(entries);
 
     // Merge OPR if available
@@ -35,7 +35,7 @@ const Picklist = () => {
     setAllStats(stats);
 
     if (savedPicklist.length > 0) {
-      const savedTeamNumbers = new Set(savedPicklist.map((p: any) => p.teamNumber));
+      const savedTeamNumbers = new Set(savedPicklist.map((p) => p.teamNumber));
       const allStatsTeamNumbers = new Set(stats.map(s => s.teamNumber));
 
       // If the saved list already covers every scouted team, use it as-is
@@ -44,8 +44,8 @@ const Picklist = () => {
 
       if (allCovered) {
         // Only keep teams that still have scouting data
-        const filtered = savedPicklist.filter((p: any) => allStatsTeamNumbers.has(p.teamNumber));
-        filtered.forEach((item: any, i: number) => { item.rank = i + 1; });
+        const filtered = savedPicklist.filter((p) => allStatsTeamNumbers.has(p.teamNumber));
+        filtered.forEach((item, i) => { item.rank = i + 1; });
         setPicklist(filtered);
       } else {
         const newTeams = stats
@@ -70,9 +70,9 @@ const Picklist = () => {
   };
 
   useEffect(() => {
-    let currentEntries: any[] = [];
+    let currentEntries: ScoutingEntry[] = [];
     let currentSaved: PicklistTeam[] = [];
-    let currentOprs: any = null;
+    let currentOprs: TBAOprResult | null = null;
 
     const loadData = async () => {
       setLoading(true);
@@ -88,15 +88,15 @@ const Picklist = () => {
     };
     loadData();
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const onEntriesUpdate = (e: any) => {
-      currentEntries = e.detail;
+    const onEntriesUpdate = (e: Event) => {
+      const customEvent = e as CustomEvent<ScoutingEntry[]>;
+      currentEntries = customEvent.detail;
       processData(currentEntries, currentSaved, currentOprs);
     };
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const onPicklistUpdate = (e: any) => {
-      currentSaved = e.detail;
+    const onPicklistUpdate = (e: Event) => {
+      const customEvent = e as CustomEvent<PicklistTeam[]>;
+      currentSaved = customEvent.detail;
       processData(currentEntries, currentSaved, currentOprs);
     };
 
@@ -107,6 +107,7 @@ const Picklist = () => {
       window.removeEventListener('scout_entries_updated', onEntriesUpdate);
       window.removeEventListener('scout_picklist_updated', onPicklistUpdate);
     };
+     
   }, []);
 
   const getStatsForTeam = (teamNumber: number): TeamStats | undefined => {

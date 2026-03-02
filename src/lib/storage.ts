@@ -345,7 +345,7 @@ export async function deleteTeamsBatch(teamNumbers: number[], password: string):
 
 export async function getPitEntries(): Promise<PitScoutingEntry[]> {
   const cached = localStorage.getItem(PIT_CACHE_KEY);
-  let initialEntries: PitScoutingEntry[] = cached ? JSON.parse(cached) : [];
+  const initialEntries: PitScoutingEntry[] = cached ? JSON.parse(cached) : [];
 
   const fetchPromise = (async () => {
     try {
@@ -523,22 +523,24 @@ export function setCurrentEvent(event: string): void {
 
 // ============ TBA MATCH CACHE ============
 
-export function getStoredMatches(eventKey: string): any[] {
+import { TBAMatch, TBAOprResult } from './tba';
+
+export function getStoredMatches(eventKey: string): TBAMatch[] {
   const cached = localStorage.getItem(`${TBA_MATCHES_CACHE_KEY}_${eventKey}`);
   return cached ? JSON.parse(cached) : [];
 }
 
-export function storeMatches(eventKey: string, matches: any[]): void {
+export function storeMatches(eventKey: string, matches: TBAMatch[]): void {
   localStorage.setItem(`${TBA_MATCHES_CACHE_KEY}_${eventKey}`, JSON.stringify(matches));
 }
 
 // ============ TBA OPR CACHE ============
 
-export function getStoredOPRs(eventKey: string): any | null {
+export function getStoredOPRs(eventKey: string): TBAOprResult | null {
   const cached = localStorage.getItem(`${TBA_OPR_CACHE_KEY}_${eventKey}`);
   return cached ? JSON.parse(cached) : null;
 }
 
-export function storeOPRs(eventKey: string, oprs: any): void {
+export function storeOPRs(eventKey: string, oprs: TBAOprResult): void {
   localStorage.setItem(`${TBA_OPR_CACHE_KEY}_${eventKey}`, JSON.stringify(oprs));
 }
