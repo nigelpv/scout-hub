@@ -230,7 +230,7 @@ router.post('/delete-batch-teams', async (req, res) => {
         const { error } = await supabase
             .from('scouting_entries')
             .delete()
-            .in('team_number', teamNumbers.map((n: any) => parseInt(n)));
+            .in('team_number', teamNumbers.map((n: string | number) => parseInt(String(n))));
 
         if (error) throw error;
 

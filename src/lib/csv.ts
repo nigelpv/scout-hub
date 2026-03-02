@@ -4,6 +4,7 @@ import { getEntries, getPitEntries } from './storage';
 /**
  * Converts an array of objects to a CSV string
  */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function convertToCSV(data: any[]): string {
     if (data.length === 0) return '';
 

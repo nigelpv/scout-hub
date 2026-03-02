@@ -97,8 +97,8 @@ const ScoutMatch = () => {
         const entry: ScoutingEntry = {
             id: generateId(),
             event,
-            matchNumber,
-            teamNumber: parseInt(teamNumber),
+            matchNumber: parsedMatch,
+            teamNumber: parsedTeam,
             scoutName: scoutName.trim(),
             timestamp: Date.now(),
             autoCycles,
@@ -225,7 +225,7 @@ const ScoutMatch = () => {
                                     value={matchNumber}
                                     onChange={(e) => {
                                         const val = e.target.value;
-                                        setMatchNumber(val === '' ? '' as any : parseInt(val));
+                                        setMatchNumber(val === '' ? '' as unknown as number : parseInt(val));
                                     }}
                                     min={1}
                                     className="w-full h-12 px-4 rounded-lg bg-secondary text-foreground font-mono text-lg font-bold text-center border-0 focus:ring-2 ring-primary"
