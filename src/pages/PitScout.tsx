@@ -8,7 +8,7 @@ import { toast } from 'sonner';
 
 type Step = 'select-team' | 'form';
 
-import { savePitEntry } from '@/lib/storage';
+import { savePitEntry, getCurrentEvent } from '@/lib/storage';
 
 const PitScout = () => {
     const navigate = useNavigate();
@@ -50,6 +50,7 @@ const PitScout = () => {
         setIsSubmitting(true);
 
         const formData = {
+            event: getCurrentEvent(),
             teamNumber: parseInt(teamNumber),
             scoutName: scoutName.trim(),
             estimatedPoints,

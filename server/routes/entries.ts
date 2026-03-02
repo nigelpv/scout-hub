@@ -4,10 +4,16 @@ import { supabase } from '../supabase.js';
 const router = Router();
 router.get('/', async (req, res) => {
     try {
-        const { data: entries, error } = await supabase
+        const { event } = req.query;
+        let query = supabase
             .from('scouting_entries')
-            .select('*')
-            .order('timestamp', { ascending: false });
+            .select('*');
+
+        if (event) {
+            query = query.eq('event', event);
+        }
+
+        const { data: entries, error } = await query.order('timestamp', { ascending: false });
 
         if (error) throw error;
 
