@@ -79,7 +79,7 @@ const Picklist = () => {
       const [entries, saved, oprs] = await Promise.all([
         getEntries(),
         getPicklist(),
-        fetchEventOPRs(EVENT_KEY)
+        fetchEventOPRs(EVENT_KEY())
       ]);
       currentEntries = entries;
       currentSaved = saved;
@@ -107,7 +107,7 @@ const Picklist = () => {
       window.removeEventListener('scout_entries_updated', onEntriesUpdate);
       window.removeEventListener('scout_picklist_updated', onPicklistUpdate);
     };
-     
+
   }, []);
 
   const getStatsForTeam = (teamNumber: number): TeamStats | undefined => {

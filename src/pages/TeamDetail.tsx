@@ -50,7 +50,7 @@ const TeamDetail = () => {
 
     useEffect(() => {
         const loadOPR = async () => {
-            const oprs = await fetchEventOPRs(EVENT_KEY);
+            const oprs = await fetchEventOPRs(EVENT_KEY());
             if (oprs) setOpr(getTeamOPR(oprs, teamNum));
         };
         loadOPR();

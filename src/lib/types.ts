@@ -65,6 +65,7 @@ export interface PicklistTeam {
 }
 
 export interface PitScoutingEntry {
+    event: string;
     teamNumber: number;
     scoutName: string;
     estimatedPoints: number;

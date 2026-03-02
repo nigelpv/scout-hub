@@ -6,16 +6,23 @@ const router = Router();
 // GET all pit entries
 router.get('/', async (req, res) => {
     try {
-        const { data, error } = await supabase
+        const { event } = req.query;
+        let query = supabase
             .from('pit_scouting')
-            .select('*')
-            .order('created_at', { ascending: false });
+            .select('*');
+
+        if (event) {
+            query = query.eq('event', event);
+        }
+
+        const { data, error } = await query.order('created_at', { ascending: false });
 
         if (error) throw error;
 
         // Convert snake_case to camelCase
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const entries = data.map((row: any) => ({
+            event: row.event || '2026cahal',
             teamNumber: row.team_number,
             scoutName: row.scout_name || 'Unknown',
             estimatedPoints: row.estimated_points || 0,
@@ -55,6 +62,7 @@ router.get('/team/:teamNumber', async (req, res) => {
         }
 
         res.json({
+            event: data.event || '2026cahal',
             teamNumber: data.team_number,
             scoutName: data.scout_name || 'Unknown',
             estimatedPoints: data.estimated_points || 0,
@@ -82,6 +90,7 @@ router.post('/', async (req, res) => {
         const { error } = await supabase
             .from('pit_scouting')
             .upsert({
+                event: entry.event || '2026cahal',
                 team_number: parseInt(entry.teamNumber),
                 scout_name: entry.scoutName,
                 estimated_points: entry.estimatedPoints,
@@ -94,7 +103,7 @@ router.post('/', async (req, res) => {
                 intake_type: entry.intakeType || '',
                 shooter_type: entry.shooterType || 'none',
                 timestamp: entry.timestamp
-            }, { onConflict: 'team_number' });
+            }, { onConflict: 'team_number, event' });
 
         if (error) throw error;
 
