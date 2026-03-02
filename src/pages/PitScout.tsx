@@ -167,9 +167,9 @@ const PitScout = () => {
                             />
                         </section>
 
-                        {/* Climbing */}
+                        {/* Endgame Climb */}
                         <section className="stat-card">
-                            <h2 className="section-header">Robot Climbing</h2>
+                            <h2 className="section-header">Endgame Climb</h2>
                             <OptionSelector
                                 value={climbLevel}
                                 onChange={(v) => setClimbLevel(v as typeof climbLevel)}
