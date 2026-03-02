@@ -402,8 +402,8 @@ const TeamDetail = () => {
                                     <p className="text-[10px] uppercase font-bold text-muted-foreground tracking-tight">Scoring</p>
                                     <div className="text-sm space-y-1 mt-1">
                                         <div className="flex justify-between border-b border-border/50 pb-0.5">
-                                            <span>Avg. Balls</span>
-                                            <span className="font-mono font-medium">{pitData.avgBalls}</span>
+                                            <span>Passer Bot</span>
+                                            <span className="font-medium">{pitData.isPasserBot ? 'Yes' : 'No'}</span>
                                         </div>
                                         <div className="flex justify-between border-b border-border/50 pb-0.5">
                                             <span>Ball Capacity</span>

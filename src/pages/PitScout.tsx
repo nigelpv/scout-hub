@@ -24,7 +24,6 @@ const PitScout = () => {
 
     const [estimatedPoints, setEstimatedPoints] = useState(0);
     const [isPasserBot, setIsPasserBot] = useState(false);
-    const [avgBalls, setAvgBalls] = useState<string>('');
     const [maxBalls, setMaxBalls] = useState<string>('');
 
     const [canGoUnderTrench, setCanGoUnderTrench] = useState(false);
@@ -57,7 +56,6 @@ const PitScout = () => {
             isPasserBot,
             autoClimb: autoClimbPosition,
             robotClimb: climbLevel,
-            avgBalls: parseFloat(avgBalls) || 0,
             maxBalls: parseFloat(maxBalls) || 0,
             canGoUnderTrench,
             canGoOverBump,
@@ -175,7 +173,7 @@ const PitScout = () => {
                             <OptionSelector
                                 value={climbLevel}
                                 onChange={(v) => setClimbLevel(v as typeof climbLevel)}
-                                label="Highest Climb Level"
+                                label="Endgame Climb"
                                 options={[
                                     { value: 'none', label: 'Cannot Climb' },
                                     { value: 'low', label: 'L1 (Low)' },
@@ -185,14 +183,6 @@ const PitScout = () => {
                             />
                         </section>
 
-                        <section className="stat-card">
-                            <h2 className="section-header">Gameplay</h2>
-                            <ToggleField
-                                value={isPasserBot}
-                                onChange={setIsPasserBot}
-                                label="Passer Bot"
-                            />
-                        </section>
 
                         {/* Scoring */}
                         <section className="stat-card">
@@ -214,17 +204,6 @@ const PitScout = () => {
                                     onChange={setIsPasserBot}
                                     label="Passer Bot?"
                                 />
-                                <div>
-                                    <label className="text-foreground font-medium block mb-2">Avg. Balls Scored per Match</label>
-                                    <input
-                                        type="number"
-                                        value={avgBalls}
-                                        onChange={(e) => setAvgBalls(e.target.value)}
-                                        placeholder="e.g. 12"
-                                        min={0}
-                                        className="w-full h-11 px-4 rounded-lg bg-secondary text-foreground border-0 focus:ring-2 ring-primary font-mono"
-                                    />
-                                </div>
                                 <div>
                                     <label className="text-foreground font-medium block mb-2">Hopper / Ball Capacity</label>
                                     <input

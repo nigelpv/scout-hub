@@ -71,7 +71,6 @@ export interface PitScoutingEntry {
     isPasserBot: boolean;
     autoClimb: 'none' | 'side' | 'middle';
     robotClimb: 'none' | 'low' | 'mid' | 'high';
-    avgBalls: number;
     maxBalls: number;
     canGoUnderTrench: boolean;
     canGoOverBump: boolean;
