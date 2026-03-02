@@ -366,7 +366,7 @@ const TeamDetail = () => {
                                             <span className="font-medium capitalize">{pitData.autoClimb}</span>
                                         </div>
                                         <div className="flex justify-between border-b border-border/50 pb-0.5">
-                                            <span>Robot Climb</span>
+                                            <span>Endgame Climb</span>
                                             <span className="font-medium uppercase">{pitData.robotClimb === 'none' ? 'None' : pitData.robotClimb}</span>
                                         </div>
                                         {pitData.intakeType && (
@@ -402,8 +402,8 @@ const TeamDetail = () => {
                                     <p className="text-[10px] uppercase font-bold text-muted-foreground tracking-tight">Scoring</p>
                                     <div className="text-sm space-y-1 mt-1">
                                         <div className="flex justify-between border-b border-border/50 pb-0.5">
-                                            <span>Avg. Balls</span>
-                                            <span className="font-mono font-medium">{pitData.avgBalls}</span>
+                                            <span>Passer Bot</span>
+                                            <span className="font-medium">{pitData.isPasserBot ? 'Yes' : 'No'}</span>
                                         </div>
                                         <div className="flex justify-between border-b border-border/50 pb-0.5">
                                             <span>Ball Capacity</span>
@@ -525,7 +525,7 @@ const TeamDetail = () => {
 
                                         {/* Teleop Column */}
                                         <div className="space-y-1">
-                                            <p className="text-[10px] uppercase font-bold text-muted-foreground tracking-tight">Teleop & Endgame</p>
+                                            <p className="text-[10px] uppercase font-bold text-muted-foreground tracking-tight">Teleop & Endgame Climb</p>
                                             <div className="text-sm space-y-1">
                                                 <div className="flex justify-between border-b border-border/50 pb-0.5">
                                                     <span>Hoppers</span>

@@ -404,9 +404,9 @@ const ScoutMatch = () => {
                     />
                 </section>
 
-                {/* Endgame */}
+                {/* Endgame Climb */}
                 <section className="stat-card">
-                    <h2 className="section-header">Endgame</h2>
+                    <h2 className="section-header">Endgame Climb</h2>
                     <OptionSelector
                         value={climbResult}
                         onChange={(v) => setClimbResult(v as typeof climbResult)}
