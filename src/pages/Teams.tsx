@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { ChevronRight, TrendingUp, Loader2, Lock, Unlock, Trash2, X, CheckSquare, Square } from 'lucide-react';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { getAllTeamStatsFromEntries, getRatingColor } from '@/lib/stats';
-import { getEntries, deleteTeamData, deleteTeamsBatch, getPitEntries, EVENT_KEY } from '@/lib/storage';
+import { getEntries, deleteTeamData, deleteTeamsBatch, getPitEntries, EVENT_KEY, updateEventKey } from '@/lib/storage';
 import { fetchEventOPRs, getTeamOPR, TBAOprResult } from '@/lib/tba';
 import { exportMatchEntriesToCSV, exportPitEntriesToCSV } from '@/lib/csv';
 import { TeamStats } from '@/lib/types';
@@ -20,6 +20,8 @@ const Teams = () => {
   const [adminPassword, setAdminPassword] = useState('');
   const [selectedTeams, setSelectedTeams] = useState<Set<number>>(new Set());
   const [oprData, setOprData] = useState<TBAOprResult | null>(null);
+  const [newEventKey, setNewEventKey] = useState(EVENT_KEY());
+  const [isUpdatingKey, setIsUpdatingKey] = useState(false);
   const isFetching = useRef(false);
 
   const loadTeams = useCallback(async (isBackground = false, forceOPR = false) => {
@@ -31,7 +33,7 @@ const Teams = () => {
       const [entries, pitEntries, newOprData] = await Promise.all([
         getEntries(),
         getPitEntries(),
-        fetchEventOPRs(EVENT_KEY)
+        fetchEventOPRs(EVENT_KEY())
       ]);
 
       if (newOprData) setOprData(newOprData);
@@ -72,9 +74,11 @@ const Teams = () => {
 
     window.addEventListener('scout_entries_updated', handleUpdate);
     window.addEventListener('scout_pit_updated', handleUpdate);
+    window.addEventListener('scout_event_key_changed', handleUpdate);
     return () => {
       window.removeEventListener('scout_entries_updated', handleUpdate);
       window.removeEventListener('scout_pit_updated', handleUpdate);
+      window.removeEventListener('scout_event_key_changed', handleUpdate);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -159,6 +163,24 @@ const Teams = () => {
     } else {
       toast.error(result.message || 'Export failed');
     }
+  };
+
+  const handleUpdateEventKey = async () => {
+    if (!newEventKey.trim()) return;
+    if (newEventKey.trim() === EVENT_KEY()) {
+      toast.info('Event key is already set to ' + newEventKey);
+      return;
+    }
+
+    setIsUpdatingKey(true);
+    const success = await updateEventKey(newEventKey.trim(), adminPassword);
+    if (success) {
+      toast.success(`Switched to event: ${newEventKey}`);
+      // The event listener will trigger loadTeams(true) via 'scout_event_key_changed'
+    } else {
+      toast.error('Failed to update event key');
+    }
+    setIsUpdatingKey(false);
   };
 
   const exitAdmin = () => {
@@ -265,6 +287,42 @@ const Teams = () => {
           <span className="text-xs text-muted-foreground">
             {selectedTeams.size} selected
           </span>
+        </div>
+      )}
+
+      {/* Competition Settings */}
+      {isAdmin && (
+        <div className="px-4 py-4 bg-secondary/10 border-b border-border">
+          <div className="flex flex-col gap-2">
+            <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Competition Settings</h4>
+            <div className="flex gap-2">
+              <div className="relative flex-1">
+                <input
+                  type="text"
+                  value={newEventKey}
+                  onChange={(e) => setNewEventKey(e.target.value)}
+                  placeholder="e.g. 2026cahal"
+                  className="w-full h-10 px-3 rounded-md bg-background border border-border focus:border-primary outline-none font-mono"
+                  disabled={isUpdatingKey || !navigator.onLine}
+                />
+                {!navigator.onLine && (
+                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] text-warning font-medium">Offline</span>
+                )}
+              </div>
+              <button
+                type="button"
+                onClick={handleUpdateEventKey}
+                disabled={isUpdatingKey || !navigator.onLine || !newEventKey.trim()}
+                className="h-10 px-4 bg-primary text-primary-foreground rounded-md font-medium disabled:opacity-50 flex items-center gap-2"
+              >
+                {isUpdatingKey && <Loader2 className="w-4 h-4 animate-spin" />}
+                Switch Event
+              </button>
+            </div>
+            <p className="text-[10px] text-muted-foreground">
+              Changing the event key will instantly switch the entire app to the new competition.
+            </p>
+          </div>
         </div>
       )}
 

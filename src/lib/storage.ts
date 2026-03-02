@@ -3,8 +3,8 @@ const API_URL = import.meta.env.VITE_API_URL || '/api';
 
 import { ScoutingEntry, PicklistTeam, PitScoutingEntry } from './types';
 import { toast } from 'sonner';
-import { EVENT_KEY } from './config';
-export { EVENT_KEY };
+import { getEventKey, setEventKey } from './config';
+export const EVENT_KEY = getEventKey;
 
 const STORAGE_KEY = 'scout_entries';
 
@@ -239,6 +239,9 @@ export async function syncPendingEntries(): Promise<void> {
 export function initializeSync(): () => void {
   if (typeof window === 'undefined') return () => { };
 
+  // Initial event key fetch
+  getLatestEventKey();
+
   // Initial sync attempt
   syncPendingEntries();
 
@@ -246,12 +249,48 @@ export function initializeSync(): () => void {
     console.log('App is online, triggering sync in 3s...');
     // Add delay to let connection stabilize
     setTimeout(() => {
+      getLatestEventKey();
       syncPendingEntries();
     }, 3000);
   };
 
   window.addEventListener('online', handleOnline);
   return () => window.removeEventListener('online', handleOnline);
+}
+
+export async function getLatestEventKey(): Promise<string> {
+  try {
+    const response = await fetch(`${API_URL}/config/event-key`);
+    if (response.ok) {
+      const data = await response.json();
+      if (data.eventKey) {
+        setEventKey(data.eventKey);
+        return data.eventKey;
+      }
+    }
+  } catch (error) {
+    console.warn('Failed to fetch event key, using cached:', getEventKey());
+  }
+  return getEventKey();
+}
+
+export async function updateEventKey(newKey: string, password: string): Promise<boolean> {
+  try {
+    const response = await fetch(`${API_URL}/config/event-key`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ eventKey: newKey, password }),
+    });
+
+    if (response.ok) {
+      setEventKey(newKey);
+      return true;
+    }
+    return false;
+  } catch (error) {
+    console.error('Error updating event key:', error);
+    return false;
+  }
 }
 
 export function getPendingCount(): number {
@@ -513,12 +552,12 @@ export function generateId(): string {
 }
 
 export function getCurrentEvent(): string {
-  return EVENT_KEY;
+  return getEventKey();
 }
 
 export function setCurrentEvent(event: string): void {
-  // Event is configured in config.ts, so we don't allow setting it via this function
-  console.log('setCurrentEvent called, but event is configured as:', EVENT_KEY);
+  // Now allows setting via config hook/logic
+  setEventKey(event);
 }
 
 // ============ TBA MATCH CACHE ============

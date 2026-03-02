@@ -30,7 +30,7 @@ const App = () => {
 
     // Fetch fresh matches in background if online
     if (navigator.onLine) {
-      fetchAllEventMatches(EVENT_KEY).catch(err => console.warn('Failed to pre-fetch TBA data:', err));
+      fetchAllEventMatches(EVENT_KEY()).catch(err => console.warn('Failed to pre-fetch TBA data:', err));
     }
 
     return cleanup;

@@ -55,7 +55,7 @@ const fetchTBA = async (endpoint: string) => {
 const matchCache: Record<string, TBAMatch> = {};
 
 export const initializeTBACache = () => {
-  const stored = getStoredMatches(EVENT_KEY);
+  const stored = getStoredMatches(EVENT_KEY());
   stored.forEach(match => {
     matchCache[match.key] = match;
   });
