@@ -394,7 +394,7 @@ const ScoutMatch = () => {
                     <ToggleField
                         value={herdsFuelThroughTrench}
                         onChange={setHerdsFuelThroughTrench}
-                        label="Herds Fuel Through Trench?"
+                        label="Pushes Fuel Through Trench?"
                     />
                 </section>
 
