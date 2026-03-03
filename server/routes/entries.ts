@@ -151,8 +151,7 @@ router.post('/', async (req, res) => {
                 climb_result: entry.climbResult || 'none',
                 climb_position: entry.climbPosition || 'none',
                 climb_stability: entry.climbStability || 0,
-                notes: entry.notes || '',
-                robot_speed: 0
+                notes: entry.notes || ''
             });
 
         if (insertError) {
