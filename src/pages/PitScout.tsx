@@ -20,17 +20,22 @@ const PitScout = () => {
 
     // Form State
     const [autoClimbPosition, setAutoClimbPosition] = useState<'none' | 'side' | 'middle'>('none');
-    const [climbLevel, setClimbLevel] = useState<'none' | 'low' | 'mid' | 'high'>('none');
+    const [climbLevel, setClimbLevel] = useState<'none' | 'L1' | 'L2' | 'L3'>('none');
 
-    const [estimatedPoints, setEstimatedPoints] = useState(0);
-    const [isPasserBot, setIsPasserBot] = useState(false);
-    const [maxBalls, setMaxBalls] = useState<string>('');
+    const [ballsPerSecond, setBallsPerSecond] = useState<string>('');
 
     const [canGoUnderTrench, setCanGoUnderTrench] = useState(false);
     const [canGoOverBump, setCanGoOverBump] = useState(false);
 
+    const [canPassFuel, setCanPassFuel] = useState<string[]>([]);
+    const [canBulldozeFuel, setCanBulldozeFuel] = useState(false);
+
     const [intakeType, setIntakeType] = useState('');
     const [shooterType, setShooterType] = useState<'none' | 'turret' | 'variable_angle' | 'fixed' | 'other'>('none');
+
+    const [frontPhoto, setFrontPhoto] = useState(false);
+    const [backPhoto, setBackPhoto] = useState(false);
+    const [pitNotes, setPitNotes] = useState('');
 
     const handleNext = () => {
         if (!teamNumber || isNaN(parseInt(teamNumber))) {
@@ -53,15 +58,18 @@ const PitScout = () => {
             event: getCurrentEvent(),
             teamNumber: parseInt(teamNumber),
             scoutName: scoutName.trim(),
-            estimatedPoints,
-            isPasserBot,
             autoClimb: autoClimbPosition,
             robotClimb: climbLevel,
-            maxBalls: parseFloat(maxBalls) || 0,
+            ballsPerSecond: parseFloat(ballsPerSecond) || 0,
             canGoUnderTrench,
             canGoOverBump,
+            canPassFuel,
+            canBulldozeFuel,
             intakeType,
             shooterType,
+            frontPhoto,
+            backPhoto,
+            notes: pitNotes,
             timestamp: Date.now()
         };
 
@@ -177,46 +185,60 @@ const PitScout = () => {
                                 label="Endgame Climb"
                                 options={[
                                     { value: 'none', label: 'Cannot Climb' },
-                                    { value: 'low', label: 'L1 (Low)' },
-                                    { value: 'mid', label: 'L2 (Mid)' },
-                                    { value: 'high', label: 'L3 (High)' },
+                                    { value: 'L1', label: 'L1' },
+                                    { value: 'L2', label: 'L2' },
+                                    { value: 'L3', label: 'L3' },
                                 ]}
                             />
                         </section>
 
-
-                        {/* Scoring */}
+                        {/* Capacity & Scoring */}
                         <section className="stat-card">
                             <h2 className="section-header">Capacity & Scoring</h2>
                             <div className="py-3 space-y-4">
                                 <div>
-                                    <label className="text-foreground font-medium block mb-2">Estimated Point Total</label>
+                                    <label className="text-foreground font-medium block mb-2">Balls Per Second</label>
                                     <input
                                         type="number"
-                                        value={estimatedPoints}
-                                        onChange={(e) => setEstimatedPoints(parseInt(e.target.value) || 0)}
-                                        placeholder="e.g. 50"
+                                        value={ballsPerSecond}
+                                        onChange={(e) => setBallsPerSecond(e.target.value)}
+                                        placeholder="e.g. 3"
                                         min={0}
-                                        className="w-full h-11 px-4 rounded-lg bg-secondary text-foreground border-0 focus:ring-2 ring-primary font-mono"
-                                    />
-                                </div>
-                                <ToggleField
-                                    value={isPasserBot}
-                                    onChange={setIsPasserBot}
-                                    label="Passer Bot?"
-                                />
-                                <div>
-                                    <label className="text-foreground font-medium block mb-2">Hopper / Ball Capacity</label>
-                                    <input
-                                        type="number"
-                                        value={maxBalls}
-                                        onChange={(e) => setMaxBalls(e.target.value)}
-                                        placeholder="e.g. 6"
-                                        min={0}
+                                        step={0.1}
                                         className="w-full h-11 px-4 rounded-lg bg-secondary text-foreground border-0 focus:ring-2 ring-primary font-mono"
                                     />
                                 </div>
                             </div>
+                            <OptionSelector
+                                multiSelect={true}
+                                value={canPassFuel}
+                                onChange={setCanPassFuel}
+                                label="Can Pass Fuel"
+                                options={[
+                                    { value: 'middle', label: 'Middle' },
+                                    { value: 'opponent_zone', label: 'Opponent Zone' },
+                                ]}
+                            />
+                            <ToggleField
+                                value={canBulldozeFuel}
+                                onChange={setCanBulldozeFuel}
+                                label="Can Bulldoze Fuel?"
+                            />
+                        </section>
+
+                        {/* Obstacles */}
+                        <section className="stat-card">
+                            <h2 className="section-header">Obstacles</h2>
+                            <ToggleField
+                                value={canGoUnderTrench}
+                                onChange={setCanGoUnderTrench}
+                                label="Can go under the trench?"
+                            />
+                            <ToggleField
+                                value={canGoOverBump}
+                                onChange={setCanGoOverBump}
+                                label="Can go over the bump?"
+                            />
                         </section>
 
                         {/* Robot Hardware */}
@@ -246,18 +268,39 @@ const PitScout = () => {
                             </div>
                         </section>
 
+                        {/* Photos & Notes */}
                         <section className="stat-card">
-                            <h2 className="section-header">Obstacles</h2>
-                            <ToggleField
-                                value={canGoUnderTrench}
-                                onChange={setCanGoUnderTrench}
-                                label="Can go under the trench?"
-                            />
-                            <ToggleField
-                                value={canGoOverBump}
-                                onChange={setCanGoOverBump}
-                                label="Can go over the bump?"
-                            />
+                            <h2 className="section-header">Photos & Notes</h2>
+                            <div className="py-3 space-y-4">
+                                <label className="flex items-center gap-3 cursor-pointer">
+                                    <input
+                                        type="checkbox"
+                                        checked={frontPhoto}
+                                        onChange={(e) => setFrontPhoto(e.target.checked)}
+                                        className="w-5 h-5 rounded accent-primary"
+                                    />
+                                    <span className="text-foreground font-medium">Front Photo Taken</span>
+                                </label>
+                                <label className="flex items-center gap-3 cursor-pointer">
+                                    <input
+                                        type="checkbox"
+                                        checked={backPhoto}
+                                        onChange={(e) => setBackPhoto(e.target.checked)}
+                                        className="w-5 h-5 rounded accent-primary"
+                                    />
+                                    <span className="text-foreground font-medium">Back Photo Taken</span>
+                                </label>
+                                <div>
+                                    <label className="text-foreground font-medium block mb-2">Notes</label>
+                                    <textarea
+                                        value={pitNotes}
+                                        onChange={(e) => setPitNotes(e.target.value)}
+                                        placeholder="Additional observations..."
+                                        rows={4}
+                                        className="w-full px-4 py-3 rounded-lg bg-secondary text-foreground border-0 focus:ring-2 ring-primary resize-none"
+                                    />
+                                </div>
+                            </div>
                         </section>
 
                         <div className="fixed bottom-0 left-0 right-0 p-4 bg-background/95 backdrop-blur border-t border-border z-10">

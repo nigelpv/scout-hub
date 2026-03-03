@@ -11,30 +11,31 @@ export interface ScoutingEntry {
     scoutName?: string;
     timestamp: number;
 
+    // Match Info
+    startingPosition: 'left_trench' | 'left_bump' | 'hub' | 'right_trench' | 'right_bump';
+
     // Autonomous
     autoCycles: number;
-    autoPreload: boolean;
-    autoPreloadScored: boolean;
-    autoPreloadCount: number;
+    hoppersPassedAuto: number;
     autoClimb: 'none' | 'side' | 'middle';
     autoObstacle: 'none' | 'trench' | 'bump' | 'both';
 
     // Teleop
     teleopCycles: number;
-    defenseType: 'none' | 'pushing' | 'blocking' | 'poaching';
+    hoppersPassed: number;
+    defenseType: string[]; // multi-select: 'pushing', 'blocking', 'poaching'
     defenseLocation: 'none' | 'neutral' | 'our_alliance' | 'their_alliance';
     shootingRange: 'alliance' | 'close_neutral' | 'far_neutral' | 'opponent' | null;
     teleopObstacle: 'none' | 'trench' | 'bump' | 'both';
-    fuelBeaching: boolean;
-    fuelBeachingType: 'none' | 'off_bump' | 'random';
-    avgBallsScoredPerCycle: number;
-    isPasserBot: boolean;
+    beachingType: string[]; // multi-select: 'off_bump', 'random'
     defenseRating: number; // 0-5 (0 = none)
+    herdsFuelThroughTrench: boolean;
 
     // Endgame
-    climbResult: 'none' | 'low' | 'mid' | 'high';
+    climbResult: 'none' | 'L1' | 'L2' | 'L3';
     climbPosition: 'none' | 'side' | 'center';
-    climbStability: number; // 0-5
+    driverSkill: number; // 1-5
+    disabledOrShutDown: boolean;
 
     notes: string;
 }
@@ -46,14 +47,16 @@ export interface TeamStats {
     meanAutoCycles: number;
     medianAutoCycles: number;
     stdDevAutoCycles: number;
-    autoPreloadSuccessRate: number;
+    avgHoppersPassedAuto: number;
     avgTeleopCycles: number;
     meanTeleopCycles: number;
     medianTeleopCycles: number;
     stdDevTeleopCycles: number;
+    avgHoppersPassed: number;
     climbSuccessRate: number;
-    highMidClimbRate: number;
+    l3ClimbRate: number;
     defensePlayRate: number; // % of matches where defense was played
+    avgDriverSkill: number;
     totalScore: number; // Computed ranking score
     opr?: number;
 }
@@ -68,15 +71,18 @@ export interface PitScoutingEntry {
     event: string;
     teamNumber: number;
     scoutName: string;
-    estimatedPoints: number;
-    isPasserBot: boolean;
     autoClimb: 'none' | 'side' | 'middle';
-    robotClimb: 'none' | 'low' | 'mid' | 'high';
-    maxBalls: number;
+    robotClimb: 'none' | 'L1' | 'L2' | 'L3';
+    ballsPerSecond: number;
     canGoUnderTrench: boolean;
     canGoOverBump: boolean;
+    canPassFuel: string[]; // multi-select: 'middle', 'opponent_zone'
+    canBulldozeFuel: boolean;
     intakeType: string;
     shooterType: 'turret' | 'variable_angle' | 'fixed' | 'other' | 'none';
+    frontPhoto: boolean;
+    backPhoto: boolean;
+    notes: string;
     timestamp: number;
 }
 

@@ -138,9 +138,17 @@ const TeamDetail = () => {
 
     const climbLabels: Record<string, string> = {
         'none': 'None',
-        'low': 'Low',
-        'mid': 'Mid',
-        'high': 'High',
+        'L1': 'L1',
+        'L2': 'L2',
+        'L3': 'L3',
+    };
+
+    const startingPositionLabels: Record<string, string> = {
+        'left_trench': 'Left Trench',
+        'left_bump': 'Left Bump',
+        'hub': 'Hub',
+        'right_trench': 'Right Trench',
+        'right_bump': 'Right Bump',
     };
 
     const autoClimbLabels: Record<string, string> = {
@@ -225,19 +233,17 @@ const TeamDetail = () => {
                 <div className="stat-card">
                     <div className="flex items-center justify-between mb-4">
                         <div>
-                            <div className="flex items-center gap-1">
-                                <p className="text-sm text-muted-foreground">Avg Est. Score</p>
-                                <TooltipProvider>
+                                    <p className="text-sm text-muted-foreground">Avg Est. Score</p>
+                                    <TooltipProvider>
                                     <Tooltip>
                                         <TooltipTrigger asChild>
                                             <HelpCircle className="w-3.5 h-3.5 text-muted-foreground/50 cursor-help" />
                                         </TooltipTrigger>
                                         <TooltipContent>
-                                            <p className="text-xs max-w-[220px]">Auto hoppers + preload + auto climb (15 pts) + Teleop hoppers + Endgame climb (Low 10 / Mid 20 / High 30), averaged across matches</p>
+                                            <p className="text-xs max-w-[220px]">Auto hoppers + hoppers passed (auto) + auto climb (15 pts) + Teleop hoppers + hoppers passed (teleop) + Endgame climb (L1 10 / L2 20 / L3 30), averaged across matches</p>
                                         </TooltipContent>
                                     </Tooltip>
                                 </TooltipProvider>
-                            </div>
                             <p className="font-mono text-3xl font-bold text-primary">{stats?.totalScore ?? 0}</p>
                         </div>
                         <div>
@@ -262,16 +268,15 @@ const TeamDetail = () => {
                             </div>
                             <div className="space-y-6">
                                 <div>
-                                    <strong className="block text-sm mb-1">Preload Success</strong>
-                                    <StatBar value={stats.autoPreloadSuccessRate} max={100} label="Success Rate" suffix="%" />
-                                </div>
-                                <div>
                                     <StatBar value={stats.avgAutoCycles} max={15} label="Avg Auto Cycles" />
                                     <div className="flex justify-between text-xs text-muted-foreground mt-1 px-1">
                                         <span>Mean: {stats.meanAutoCycles}</span>
                                         <span>Median: {stats.medianAutoCycles}</span>
                                         <span>StdDev: {stats.stdDevAutoCycles}</span>
                                     </div>
+                                </div>
+                                <div>
+                                    <StatBar value={stats.avgHoppersPassedAuto} max={15} label="Avg Hoppers Passed (Auto)" />
                                 </div>
                             </div>
                         </div>
@@ -291,6 +296,9 @@ const TeamDetail = () => {
                                         <span>StdDev: {stats.stdDevTeleopCycles}</span>
                                     </div>
                                 </div>
+                                <div>
+                                    <StatBar value={stats.avgHoppersPassed} max={30} label="Avg Hoppers Passed (Teleop)" />
+                                </div>
                             </div>
                         </div>
 
@@ -302,7 +310,7 @@ const TeamDetail = () => {
                             </div>
                             <div className="space-y-4">
                                 <StatBar value={stats.climbSuccessRate} max={100} label="Climb Success Rate" suffix="%" />
-                                <StatBar value={stats.highMidClimbRate} max={100} label="High/Mid Climb Rate" suffix="%" />
+                                <StatBar value={stats.l3ClimbRate} max={100} label="L3 Climb Rate" suffix="%" />
                             </div>
                         </div>
                     </>
@@ -318,7 +326,7 @@ const TeamDetail = () => {
             </div>
 
             {/* Defense */}
-            {stats.defensePlayRate > 0 && (
+            {stats && stats.defensePlayRate > 0 && (
                 <div className="px-4 mb-4">
                     <div className="stat-card">
                         <div className="flex items-center gap-2 mb-4">
@@ -328,13 +336,13 @@ const TeamDetail = () => {
                         <p className="text-sm text-muted-foreground mb-3">
                             Played defense in{' '}
                             <span className="font-bold text-foreground">
-                                {entries.filter(e => e.defenseType && e.defenseType !== 'none').length}
+                                {entries.filter(e => Array.isArray(e.defenseType) && e.defenseType.length > 0).length}
                             </span>
                             /{entries.length} matches
                         </p>
                         <div className="space-y-1">
                             {(['pushing', 'blocking', 'poaching'] as const).map(type => {
-                                const count = entries.filter(e => e.defenseType === type).length;
+                                const count = entries.filter(e => Array.isArray(e.defenseType) && e.defenseType.includes(type)).length;
                                 if (count === 0) return null;
                                 return (
                                     <div key={type} className="flex justify-between text-sm">
@@ -399,15 +407,32 @@ const TeamDetail = () => {
                             </div>
                             <div className="space-y-3">
                                 <div>
-                                    <p className="text-[10px] uppercase font-bold text-muted-foreground tracking-tight">Scoring</p>
+                                    <p className="text-[10px] uppercase font-bold text-muted-foreground tracking-tight">Fuel</p>
                                     <div className="text-sm space-y-1 mt-1">
                                         <div className="flex justify-between border-b border-border/50 pb-0.5">
-                                            <span>Passer Bot</span>
-                                            <span className="font-medium">{pitData.isPasserBot ? 'Yes' : 'No'}</span>
+                                            <span>Balls / Second</span>
+                                            <span className="font-mono font-medium">{pitData.ballsPerSecond}</span>
                                         </div>
                                         <div className="flex justify-between border-b border-border/50 pb-0.5">
-                                            <span>Ball Capacity</span>
-                                            <span className="font-mono font-medium">{pitData.maxBalls}</span>
+                                            <span>Pass Fuel</span>
+                                            <span className="font-medium">{pitData.canPassFuel && pitData.canPassFuel.length > 0 ? pitData.canPassFuel.join(', ') : 'No'}</span>
+                                        </div>
+                                        <div className="flex justify-between border-b border-border/50 pb-0.5">
+                                            <span>Bulldoze Fuel</span>
+                                            <span className="font-medium">{pitData.canBulldozeFuel ? 'Yes' : 'No'}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div>
+                                    <p className="text-[10px] uppercase font-bold text-muted-foreground tracking-tight">Photos</p>
+                                    <div className="text-sm space-y-1 mt-1">
+                                        <div className="flex justify-between border-b border-border/50 pb-0.5">
+                                            <span>Front Photo</span>
+                                            <span className="font-medium">{pitData.frontPhoto ? '✓' : '—'}</span>
+                                        </div>
+                                        <div className="flex justify-between border-b border-border/50 pb-0.5">
+                                            <span>Back Photo</span>
+                                            <span className="font-medium">{pitData.backPhoto ? '✓' : '—'}</span>
                                         </div>
                                     </div>
                                 </div>
@@ -501,16 +526,16 @@ const TeamDetail = () => {
                                             <p className="text-[10px] uppercase font-bold text-muted-foreground tracking-tight">Autonomous</p>
                                             <div className="text-sm space-y-1">
                                                 <div className="flex justify-between border-b border-border/50 pb-0.5">
-                                                    <span>Hoppers</span>
+                                                    <span>Start</span>
+                                                    <span className="font-medium text-foreground">{startingPositionLabels[entry.startingPosition] ?? entry.startingPosition}</span>
+                                                </div>
+                                                <div className="flex justify-between border-b border-border/50 pb-0.5">
+                                                    <span>Hoppers (Hub)</span>
                                                     <span className="font-mono font-medium text-foreground">{entry.autoCycles}</span>
                                                 </div>
                                                 <div className="flex justify-between border-b border-border/50 pb-0.5">
-                                                    <span>Preload</span>
-                                                    <span className="font-medium text-foreground">
-                                                        {entry.autoPreload
-                                                            ? (entry.autoPreloadScored ? 'Scored All' : `${entry.autoPreloadCount ?? 0} Scored`)
-                                                            : 'None'}
-                                                    </span>
+                                                    <span>Hoppers Passed</span>
+                                                    <span className="font-mono font-medium text-foreground">{entry.hoppersPassedAuto ?? 0}</span>
                                                 </div>
                                                 <div className="flex justify-between border-b border-border/50 pb-0.5">
                                                     <span>Climb</span>
@@ -525,17 +550,21 @@ const TeamDetail = () => {
 
                                         {/* Teleop Column */}
                                         <div className="space-y-1">
-                                            <p className="text-[10px] uppercase font-bold text-muted-foreground tracking-tight">Teleop & Endgame Climb</p>
+                                            <p className="text-[10px] uppercase font-bold text-muted-foreground tracking-tight">Teleop & Endgame</p>
                                             <div className="text-sm space-y-1">
                                                 <div className="flex justify-between border-b border-border/50 pb-0.5">
-                                                    <span>Hoppers</span>
+                                                    <span>Hoppers (Hub)</span>
                                                     <span className="font-mono font-medium text-foreground">{entry.teleopCycles}</span>
+                                                </div>
+                                                <div className="flex justify-between border-b border-border/50 pb-0.5">
+                                                    <span>Hoppers Passed</span>
+                                                    <span className="font-mono font-medium text-foreground">{entry.hoppersPassed ?? 0}</span>
                                                 </div>
                                                 <div className="flex justify-between border-b border-border/50 pb-0.5">
                                                     <span>Defense</span>
                                                     <span className="font-medium text-foreground capitalize">
-                                                        {entry.defenseType && entry.defenseType !== 'none'
-                                                            ? `${entry.defenseType} · ${(entry.defenseLocation ?? 'none').replace('_', ' ')}`
+                                                        {Array.isArray(entry.defenseType) && entry.defenseType.length > 0
+                                                            ? `${entry.defenseType.join(', ')} · ${(entry.defenseLocation ?? 'none').replace('_', ' ')}`
                                                             : 'None'}
                                                     </span>
                                                 </div>
@@ -544,9 +573,18 @@ const TeamDetail = () => {
                                                     <span className="font-medium text-foreground">
                                                         {climbLabels[entry.climbResult]}
                                                         {entry.climbPosition && entry.climbPosition !== 'none' && ` · ${entry.climbPosition}`}
-                                                        {entry.climbResult !== 'none' && entry.climbStability > 0 && ` (${entry.climbStability}★)`}
                                                     </span>
                                                 </div>
+                                                <div className="flex justify-between border-b border-border/50 pb-0.5">
+                                                    <span>Driver Skill</span>
+                                                    <span className="font-medium text-foreground">{entry.driverSkill ?? '—'}/5</span>
+                                                </div>
+                                                {entry.disabledOrShutDown && (
+                                                    <div className="flex justify-between border-b border-border/50 pb-0.5 text-destructive">
+                                                        <span>Disabled/Shutdown</span>
+                                                        <span className="font-medium">Yes</span>
+                                                    </div>
+                                                )}
                                                 <div className="flex justify-between border-b border-border/50 pb-0.5">
                                                     <span>Travel</span>
                                                     <span className="font-medium text-foreground">{obstacleLabels[entry.teleopObstacle ?? 'none']}</span>

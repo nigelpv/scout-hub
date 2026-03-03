@@ -1,18 +1,41 @@
-interface OptionSelectorProps<T extends string> {
+interface SingleSelectProps<T extends string> {
+  multiSelect?: false;
   value: T;
   onChange: (value: T) => void;
   options: readonly { value: T; label: string }[];
   label: string;
 }
 
-export function OptionSelector<T extends string>({ 
-  value, 
-  onChange, 
-  options, 
-  label 
-}: OptionSelectorProps<T>) {
+interface MultiSelectProps<T extends string> {
+  multiSelect: true;
+  value: T[];
+  onChange: (value: T[]) => void;
+  options: readonly { value: T; label: string }[];
+  label: string;
+}
+
+type OptionSelectorProps<T extends string> = SingleSelectProps<T> | MultiSelectProps<T>;
+
+export function OptionSelector<T extends string>(props: OptionSelectorProps<T>) {
+  const { value, onChange, options, label, multiSelect } = props;
+
   const handleClick = (optionValue: T) => {
-    onChange(optionValue);
+    if (multiSelect) {
+      const arr = value as T[];
+      const newArr = arr.includes(optionValue)
+        ? arr.filter((v) => v !== optionValue)
+        : [...arr, optionValue];
+      (onChange as (v: T[]) => void)(newArr);
+    } else {
+      (onChange as (v: T) => void)(optionValue);
+    }
+  };
+
+  const isSelected = (optionValue: T): boolean => {
+    if (multiSelect) {
+      return (value as T[]).includes(optionValue);
+    }
+    return value === optionValue;
   };
 
   return (
@@ -25,7 +48,7 @@ export function OptionSelector<T extends string>({
             type="button"
             onClick={() => handleClick(option.value)}
             className={`px-4 py-3 rounded-lg font-medium text-sm transition-all ${
-              value === option.value
+              isSelected(option.value)
                 ? 'bg-primary text-primary-foreground'
                 : 'bg-secondary text-secondary-foreground'
             }`}

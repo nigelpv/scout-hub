@@ -5,9 +5,9 @@ import { ScoutingEntry } from "../lib/types";
 describe("stats calculation", () => {
     it("should calculate mean correctly", () => {
         const mockEntries: Partial<ScoutingEntry>[] = [
-            { teamNumber: 2473, autoCycles: 2, teleopCycles: 10 },
-            { teamNumber: 2473, autoCycles: 4, teleopCycles: 20 },
-            { teamNumber: 2473, autoCycles: 6, teleopCycles: 30 },
+            { teamNumber: 2473, autoCycles: 2, teleopCycles: 10, hoppersPassedAuto: 0, hoppersPassed: 0, defenseType: [], climbResult: 'none' },
+            { teamNumber: 2473, autoCycles: 4, teleopCycles: 20, hoppersPassedAuto: 0, hoppersPassed: 0, defenseType: [], climbResult: 'none' },
+            { teamNumber: 2473, autoCycles: 6, teleopCycles: 30, hoppersPassedAuto: 0, hoppersPassed: 0, defenseType: [], climbResult: 'none' },
         ];
 
         const stats = calculateTeamStatsFromEntries(mockEntries as ScoutingEntry[]);
@@ -26,8 +26,8 @@ describe("stats calculation", () => {
 
     it("should round mean to one decimal place", () => {
         const mockEntries: Partial<ScoutingEntry>[] = [
-            { teamNumber: 2473, autoCycles: 1, teleopCycles: 1 },
-            { teamNumber: 2473, autoCycles: 2, teleopCycles: 2 },
+            { teamNumber: 2473, autoCycles: 1, teleopCycles: 1, hoppersPassedAuto: 0, hoppersPassed: 0, defenseType: [], climbResult: 'none' },
+            { teamNumber: 2473, autoCycles: 2, teleopCycles: 2, hoppersPassedAuto: 0, hoppersPassed: 0, defenseType: [], climbResult: 'none' },
         ];
 
         const stats = calculateTeamStatsFromEntries(mockEntries as ScoutingEntry[]);

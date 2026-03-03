@@ -18,6 +18,11 @@ function convertToCSV(data: any[]): string {
     for (const row of data) {
         const values = headers.map(header => {
             const val = row[header];
+            // Handle arrays (multi-select fields) — join with pipe separator
+            if (Array.isArray(val)) {
+                const joined = val.join('|');
+                return `"${joined}"`;
+            }
             // Handle strings with commas, quotes, or newlines
             if (typeof val === 'string') {
                 const escaped = val.replace(/"/g, '""');
