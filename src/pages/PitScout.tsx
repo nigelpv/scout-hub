@@ -213,7 +213,7 @@ const PitScout = () => {
                                 multiSelect={true}
                                 value={canPassFuel}
                                 onChange={setCanPassFuel}
-                                label="Can Pass Fuel"
+                                label="Can Pass Fuel (Multi-select)"
                                 options={[
                                     { value: 'middle', label: 'Middle' },
                                     { value: 'opponent_zone', label: 'Opponent Zone' },
