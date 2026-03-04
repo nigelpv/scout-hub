@@ -2,6 +2,20 @@ import { Router } from 'express';
 import { supabase } from '../supabase.js';
 
 const router = Router();
+
+// Safely parses a field that may be a JSON array string, a plain old string, or already an array.
+// Returns an empty array for old plain-text values like 'none', 'short', null, etc.
+function safeParseArray(val: unknown): string[] {
+    if (Array.isArray(val)) return val;
+    if (typeof val !== 'string' || !val) return [];
+    try {
+        const parsed = JSON.parse(val);
+        return Array.isArray(parsed) ? parsed : [];
+    } catch {
+        // Legacy plain string value (e.g. 'none', 'short') — treat as empty
+        return [];
+    }
+}
 router.get('/', async (req, res) => {
     try {
         const { event } = req.query;
@@ -33,11 +47,11 @@ router.get('/', async (req, res) => {
             autoObstacle: (row.auto_obstacle || 'none') as 'none' | 'trench' | 'bump' | 'both',
             teleopCycles: row.teleop_cycles || 0,
             hoppersPassed: row.hoppers_passed || 0,
-            defenseType: Array.isArray(row.defense_type) ? row.defense_type : (row.defense_type ? JSON.parse(row.defense_type) : []),
-            defenseLocation: Array.isArray(row.defense_location) ? row.defense_location : (row.defense_location ? JSON.parse(row.defense_location) : []),
-            shootingRange: Array.isArray(row.shooting_range) ? row.shooting_range : (row.shooting_range ? JSON.parse(row.shooting_range) : []),
+            defenseType: safeParseArray(row.defense_type),
+            defenseLocation: safeParseArray(row.defense_location),
+            shootingRange: safeParseArray(row.shooting_range),
             teleopObstacle: (row.teleop_obstacle || 'none') as 'none' | 'trench' | 'bump' | 'both',
-            beachingType: Array.isArray(row.beaching_type) ? row.beaching_type : (row.beaching_type ? JSON.parse(row.beaching_type) : []),
+            beachingType: safeParseArray(row.beaching_type),
             defenseRating: row.defense_effectiveness || 0,
             herdsFuelThroughTrench: row.herds_fuel_through_trench || false,
             climbResult: (row.climb_result || 'none') as 'none' | 'L1' | 'L2' | 'L3',
@@ -80,11 +94,11 @@ router.get('/team/:teamNumber', async (req, res) => {
             autoObstacle: (row.auto_obstacle || 'none') as 'none' | 'trench' | 'bump' | 'both',
             teleopCycles: row.teleop_cycles || 0,
             hoppersPassed: row.hoppers_passed || 0,
-            defenseType: Array.isArray(row.defense_type) ? row.defense_type : (row.defense_type ? JSON.parse(row.defense_type) : []),
-            defenseLocation: Array.isArray(row.defense_location) ? row.defense_location : (row.defense_location ? JSON.parse(row.defense_location) : []),
-            shootingRange: Array.isArray(row.shooting_range) ? row.shooting_range : (row.shooting_range ? JSON.parse(row.shooting_range) : []),
+            defenseType: safeParseArray(row.defense_type),
+            defenseLocation: safeParseArray(row.defense_location),
+            shootingRange: safeParseArray(row.shooting_range),
             teleopObstacle: (row.teleop_obstacle || 'none') as 'none' | 'trench' | 'bump' | 'both',
-            beachingType: Array.isArray(row.beaching_type) ? row.beaching_type : (row.beaching_type ? JSON.parse(row.beaching_type) : []),
+            beachingType: safeParseArray(row.beaching_type),
             defenseRating: row.defense_effectiveness || 0,
             herdsFuelThroughTrench: row.herds_fuel_through_trench || false,
             climbResult: (row.climb_result || 'none') as 'none' | 'L1' | 'L2' | 'L3',
