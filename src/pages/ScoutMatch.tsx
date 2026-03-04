@@ -46,30 +46,32 @@ const ScoutMatch = () => {
         return () => clearTimeout(timer);
     }, [event, matchNumber, alliancePosition]);
 
+    // Match Info
+    const [startingPosition, setStartingPosition] = useState<'left_trench' | 'left_bump' | 'hub' | 'right_trench' | 'right_bump'>('hub');
+
     // Autonomous
     const [autoCycles, setAutoCycles] = useState(0);
-    const [autoPreload, setAutoPreload] = useState(false);
-    const [autoPreloadScored, setAutoPreloadScored] = useState(false);
-    const [autoPreloadCount, setAutoPreloadCount] = useState(0);
+    const [hoppersPassedAuto, setHoppersPassedAuto] = useState(0);
     const [autoClimb, setAutoClimb] = useState<'none' | 'side' | 'middle'>('none');
     const [autoObstacle, setAutoObstacle] = useState<'none' | 'trench' | 'bump' | 'both'>('none');
 
     // Teleop
     const [teleopCycles, setTeleopCycles] = useState(0);
-    const [avgBallsScoredPerCycle, setAvgBallsScoredPerCycle] = useState(0);
-    const [isPasserBot, setIsPasserBot] = useState(false);
+    const [hoppersPassed, setHoppersPassed] = useState(0);
     const [defenseRating, setDefenseRating] = useState(0);
-    const [defenseType, setDefenseType] = useState<'none' | 'pushing' | 'blocking' | 'poaching'>('none');
-    const [defenseLocation, setDefenseLocation] = useState<'none' | 'neutral' | 'our_alliance' | 'their_alliance'>('none');
-    const [shootingRange, setShootingRange] = useState<'alliance' | 'close_neutral' | 'far_neutral' | 'opponent' | null>(null);
+    const [defenseType, setDefenseType] = useState<string[]>([]);
+    const [otherDefenseText, setOtherDefenseText] = useState('');
+    const [defenseLocation, setDefenseLocation] = useState<string[]>([]);
+    const [shootingRange, setShootingRange] = useState<string[]>([]);
     const [teleopObstacle, setTeleopObstacle] = useState<'none' | 'trench' | 'bump' | 'both'>('none');
-    const [fuelBeaching, setFuelBeaching] = useState(false);
-    const [fuelBeachingType, setFuelBeachingType] = useState<'none' | 'off_bump' | 'random'>('none');
+    const [beachingType, setBeachingType] = useState<string[]>([]);
+    const [herdsFuelThroughTrench, setHerdsFuelThroughTrench] = useState(false);
 
     // Endgame
-    const [climbResult, setClimbResult] = useState<'none' | 'low' | 'mid' | 'high'>('none');
+    const [climbResult, setClimbResult] = useState<'none' | 'L1' | 'L2' | 'L3'>('none');
     const [climbPosition, setClimbPosition] = useState<'none' | 'side' | 'center'>('none');
-    const [climbStability, setClimbStability] = useState(0);
+    const [driverSkill, setDriverSkill] = useState(3);
+    const [disabledOrShutDown, setDisabledOrShutDown] = useState(false);
 
     const [notes, setNotes] = useState('');
 
@@ -101,25 +103,26 @@ const ScoutMatch = () => {
             teamNumber: parsedTeam,
             scoutName: scoutName.trim(),
             timestamp: Date.now(),
+            startingPosition,
             autoCycles,
-            autoPreload,
-            autoPreloadScored,
-            autoPreloadCount,
+            hoppersPassedAuto,
             autoClimb,
             autoObstacle,
             teleopCycles,
-            defenseType,
+            hoppersPassed,
+            defenseType: defenseType.includes('other') && otherDefenseText.trim()
+                ? [...defenseType.filter(t => t !== 'other'), otherDefenseText.trim()]
+                : defenseType,
             defenseLocation,
-            avgBallsScoredPerCycle,
-            isPasserBot,
             defenseRating,
             shootingRange,
             teleopObstacle,
-            fuelBeaching,
-            fuelBeachingType,
+            beachingType,
+            herdsFuelThroughTrench,
             climbResult,
             climbPosition,
-            climbStability,
+            driverSkill,
+            disabledOrShutDown,
             notes,
         };
 
@@ -149,25 +152,25 @@ const ScoutMatch = () => {
             // Reset form for next entry
             setMatchNumber(prev => prev + 1);
             setTeamNumber('');
+            setStartingPosition('hub');
             setAutoCycles(0);
-            setAutoPreload(false);
-            setAutoPreloadScored(false);
-            setAutoPreloadCount(0);
+            setHoppersPassedAuto(0);
             setAutoClimb('none');
             setAutoObstacle('none');
             setTeleopCycles(0);
-            setAvgBallsScoredPerCycle(0);
-            setIsPasserBot(false);
+            setHoppersPassed(0);
             setDefenseRating(0);
-            setDefenseType('none');
-            setDefenseLocation('none');
-            setShootingRange(null);
+            setDefenseType([]);
+            setOtherDefenseText('');
+            setDefenseLocation([]);
+            setShootingRange([]);
             setTeleopObstacle('none');
-            setFuelBeaching(false);
-            setFuelBeachingType('none');
+            setBeachingType([]);
+            setHerdsFuelThroughTrench(false);
             setClimbResult('none');
             setClimbPosition('none');
-            setClimbStability(0);
+            setDriverSkill(3);
+            setDisabledOrShutDown(false);
             setNotes('');
             setSaved(false);
         }, 1500);
@@ -275,27 +278,27 @@ const ScoutMatch = () => {
                 {/* Autonomous */}
                 <section className="stat-card">
                     <h2 className="section-header">Autonomous</h2>
-                    <ToggleField
-                        value={autoPreload}
-                        onChange={setAutoPreload}
-                        label="Preload?"
-                    />
-                    <ToggleField
-                        value={autoPreloadScored}
-                        onChange={setAutoPreloadScored}
-                        label="Scored ALL of Preload?"
-                    />
-                    <Counter
-                        value={autoPreloadCount}
-                        onChange={setAutoPreloadCount}
-                        min={0}
-                        max={8}
-                        label="How many preload scored? (0–8)"
+                    <OptionSelector
+                        value={startingPosition}
+                        onChange={(v) => setStartingPosition(v as typeof startingPosition)}
+                        label="Starting Position"
+                        options={[
+                            { value: 'left_trench' as const, label: 'Left Trench' },
+                            { value: 'left_bump' as const, label: 'Left Bump' },
+                            { value: 'hub' as const, label: 'Hub' },
+                            { value: 'right_trench' as const, label: 'Right Trench' },
+                            { value: 'right_bump' as const, label: 'Right Bump' },
+                        ]}
                     />
                     <Counter
                         value={autoCycles}
                         onChange={setAutoCycles}
                         label="Hoppers Shot into Hub (Auto)"
+                    />
+                    <Counter
+                        value={hoppersPassedAuto}
+                        onChange={setHoppersPassedAuto}
+                        label="Hoppers Passed (Auto)"
                     />
                     <OptionSelector
                         value={autoClimb}
@@ -323,63 +326,10 @@ const ScoutMatch = () => {
                 {/* Teleop */}
                 <section className="stat-card">
                     <h2 className="section-header">Teleop</h2>
-                    <Counter
-                        value={teleopCycles}
-                        onChange={setTeleopCycles}
-                        label="Hoppers Shot into Hub (Teleop)"
-                    />
-                    <Counter
-                        value={avgBallsScoredPerCycle}
-                        onChange={setAvgBallsScoredPerCycle}
-                        label="Avg Balls Scored Per Cycle"
-                    />
-                    <ToggleField
-                        value={isPasserBot}
-                        onChange={setIsPasserBot}
-                        label="Passer Bot"
-                    />
-                    <RatingField
-                        value={defenseRating}
-                        onChange={setDefenseRating}
-                        label="Defense Rating"
-                    />
-                    <OptionSelector
-                        value={defenseType}
-                        onChange={(v) => setDefenseType(v as typeof defenseType)}
-                        label="Defense Type"
-                        options={[
-                            { value: 'none' as const, label: 'Did Not Play' },
-                            { value: 'pushing' as const, label: 'Pushing' },
-                            { value: 'blocking' as const, label: 'Blocking' },
-                            { value: 'poaching' as const, label: 'Poaching' },
-                        ]}
-                    />
-                    <OptionSelector
-                        value={defenseLocation}
-                        onChange={(v) => setDefenseLocation(v as typeof defenseLocation)}
-                        label="Defense Location"
-                        options={[
-                            { value: 'none' as const, label: 'N/A' },
-                            { value: 'neutral' as const, label: 'Neutral' },
-                            { value: 'our_alliance' as const, label: 'Our Alliance' },
-                            { value: 'their_alliance' as const, label: 'Their Alliance' },
-                        ]}
-                    />
-                    <OptionSelector
-                        value={shootingRange ?? 'alliance'}
-                        onChange={(v) => setShootingRange(v as typeof shootingRange)}
-                        label="Shooting Zone"
-                        options={[
-                            { value: 'alliance' as const, label: 'Alliance Zone' },
-                            { value: 'close_neutral' as const, label: 'Close Neutral' },
-                            { value: 'far_neutral' as const, label: 'Far Neutral' },
-                            { value: 'opponent' as const, label: 'Opponent Zone' },
-                        ]}
-                    />
                     <OptionSelector
                         value={teleopObstacle}
                         onChange={(v) => setTeleopObstacle(v as typeof teleopObstacle)}
-                        label="Travel (Teleop)"
+                        label="Travel Mode (Teleop)"
                         options={[
                             { value: 'none' as const, label: 'None' },
                             { value: 'trench' as const, label: 'Trench' },
@@ -387,20 +337,99 @@ const ScoutMatch = () => {
                             { value: 'both' as const, label: 'Both' },
                         ]}
                     />
-                    <ToggleField
-                        value={fuelBeaching}
-                        onChange={setFuelBeaching}
-                        label="Fuel Beaching?"
+                    <Counter
+                        value={teleopCycles}
+                        onChange={setTeleopCycles}
+                        label="Hoppers Shot into Hub (Teleop)"
+                    />
+                    <Counter
+                        value={hoppersPassed}
+                        onChange={setHoppersPassed}
+                        label="Hoppers Passed (Teleop)"
+                    />
+                    <RatingField
+                        value={defenseRating}
+                        onChange={setDefenseRating}
+                        label="Defense Rating"
                     />
                     <OptionSelector
-                        value={fuelBeachingType}
-                        onChange={(v) => setFuelBeachingType(v as typeof fuelBeachingType)}
+                        multiSelect={true}
+                        value={defenseType}
+                        onChange={(v) => {
+                            setDefenseType(v);
+                            if (!v.includes('other')) setOtherDefenseText('');
+                        }}
+                        label="Defense Type"
+                        options={[
+                            { value: 'pushing', label: 'Pushing' },
+                            { value: 'blocking', label: 'Blocking' },
+                            { value: 'poaching', label: 'Poaching' },
+                            { value: 'other', label: 'Other' },
+                        ]}
+                    />
+                    {defenseType.includes('other') && (
+                        <div className="py-2 px-1">
+                            <input
+                                type="text"
+                                value={otherDefenseText}
+                                onChange={(e) => setOtherDefenseText(e.target.value)}
+                                placeholder="Specify other defense..."
+                                className="w-full h-10 px-4 rounded-lg bg-secondary text-foreground border-0 focus:ring-2 ring-primary"
+                            />
+                        </div>
+                    )}
+                    <OptionSelector
+                        multiSelect={true}
+                        value={defenseLocation}
+                        onChange={(v) => {
+                            if (v.includes('none')) {
+                                // If 'none' is selected, deselect others, or if it was just added, clear others
+                                const wasAlreadyNone = defenseLocation.includes('none');
+                                if (!wasAlreadyNone) {
+                                    setDefenseLocation(['none']);
+                                } else if (v.length > 1) {
+                                    setDefenseLocation(v.filter(x => x !== 'none'));
+                                } else {
+                                    setDefenseLocation(v);
+                                }
+                            } else {
+                                setDefenseLocation(v);
+                            }
+                        }}
+                        label="Defense Location"
+                        options={[
+                            { value: 'none', label: 'N/A' },
+                            { value: 'neutral', label: 'Neutral' },
+                            { value: 'our_alliance', label: 'Our Alliance' },
+                            { value: 'their_alliance', label: 'Their Alliance' },
+                        ]}
+                    />
+                    <OptionSelector
+                        multiSelect={true}
+                        value={shootingRange}
+                        onChange={setShootingRange}
+                        label="Shooting Zone"
+                        options={[
+                            { value: 'alliance', label: 'Alliance Zone' },
+                            { value: 'close_neutral', label: 'Close Neutral' },
+                            { value: 'far_neutral', label: 'Far Neutral' },
+                            { value: 'opponent', label: 'Opponent Zone' },
+                        ]}
+                    />
+                    <OptionSelector
+                        multiSelect={true}
+                        value={beachingType}
+                        onChange={setBeachingType}
                         label="Beaching Type"
                         options={[
-                            { value: 'none' as const, label: 'N/A' },
-                            { value: 'off_bump' as const, label: 'Off Bump' },
-                            { value: 'random' as const, label: 'Random' },
+                            { value: 'off_bump', label: 'Off Bump' },
+                            { value: 'random', label: 'Random' },
                         ]}
+                    />
+                    <ToggleField
+                        value={herdsFuelThroughTrench}
+                        onChange={setHerdsFuelThroughTrench}
+                        label="Pushes Fuel Through Trench?"
                     />
                 </section>
 
@@ -413,9 +442,9 @@ const ScoutMatch = () => {
                         label="Climb Result"
                         options={[
                             { value: 'none' as const, label: 'None' },
-                            { value: 'low' as const, label: 'Low' },
-                            { value: 'mid' as const, label: 'Mid' },
-                            { value: 'high' as const, label: 'High' },
+                            { value: 'L1' as const, label: 'L1' },
+                            { value: 'L2' as const, label: 'L2' },
+                            { value: 'L3' as const, label: 'L3' },
                         ]}
                     />
                     <OptionSelector
@@ -429,9 +458,14 @@ const ScoutMatch = () => {
                         ]}
                     />
                     <RatingField
-                        value={climbStability}
-                        onChange={setClimbStability}
-                        label="Climb Stability"
+                        value={driverSkill}
+                        onChange={setDriverSkill}
+                        label="Driver Skill (1–5)"
+                    />
+                    <ToggleField
+                        value={disabledOrShutDown}
+                        onChange={setDisabledOrShutDown}
+                        label="Disabled / Shut Down?"
                     />
                 </section>
 

@@ -24,67 +24,68 @@ export function calculateTeamStatsFromEntries(entries: ScoutingEntry[]): TeamSta
     const teamNumber = entries[0].teamNumber;
 
     // Auto Stats
-    const autoCyclesValues = entries.map(e => e.autoCycles);
+    const autoCyclesValues = entries.map(e => e.autoCycles || 0);
     const avgAutoCycles = autoCyclesValues.reduce((a, b) => a + b, 0) / matchesPlayed;
     const meanAutoCycles = avgAutoCycles;
     const medianAutoCycles = calculateMedian(autoCyclesValues);
     const stdDevAutoCycles = calculateStdDev(autoCyclesValues, avgAutoCycles);
 
-
-    const preloadSuccesses = entries.filter(e => e.autoPreload && e.autoPreloadScored).length;
-    const preloadAttempts = entries.filter(e => e.autoPreload).length;
-    const autoPreloadSuccessRate = preloadAttempts > 0 ? (preloadSuccesses / preloadAttempts) * 100 : 0;
+    const hoppersPassedAutoValues = entries.map(e => e.hoppersPassedAuto || 0);
+    const avgHoppersPassedAuto = hoppersPassedAutoValues.reduce((a, b) => a + b, 0) / matchesPlayed;
 
     // Teleop Stats
-    const teleopCyclesValues = entries.map(e => e.teleopCycles);
+    const teleopCyclesValues = entries.map(e => e.teleopCycles || 0);
     const avgTeleopCycles = teleopCyclesValues.reduce((a, b) => a + b, 0) / matchesPlayed;
     const meanTeleopCycles = avgTeleopCycles;
     const medianTeleopCycles = calculateMedian(teleopCyclesValues);
     const stdDevTeleopCycles = calculateStdDev(teleopCyclesValues, avgTeleopCycles);
 
+    const hoppersPassedValues = entries.map(e => e.hoppersPassed || 0);
+    const avgHoppersPassed = hoppersPassedValues.reduce((a, b) => a + b, 0) / matchesPlayed;
 
     // Climb Stats
     const successfulClimbs = entries.filter(e =>
-        e.climbResult === 'low' || e.climbResult === 'mid' || e.climbResult === 'high'
+        e.climbResult === 'L1' || e.climbResult === 'L2' || e.climbResult === 'L3'
     ).length;
     const climbSuccessRate = (successfulClimbs / matchesPlayed) * 100;
 
-    const highMidClimbs = entries.filter(e =>
-        e.climbResult === 'mid' || e.climbResult === 'high'
-    ).length;
-    const highMidClimbRate = (highMidClimbs / matchesPlayed) * 100;
+    const l3Climbs = entries.filter(e => e.climbResult === 'L3').length;
+    const l3ClimbRate = (l3Climbs / matchesPlayed) * 100;
 
     // Defense Stats
-    const defenseMatches = entries.filter(e => e.defenseType && e.defenseType !== 'none').length;
+    const defenseMatches = entries.filter(e => Array.isArray(e.defenseType) ? e.defenseType.length > 0 : false).length;
     const defensePlayRate = (defenseMatches / matchesPlayed) * 100;
 
+    // Driver Skill
+    const driverSkillValues = entries.map(e => e.driverSkill || 0).filter(v => v > 0);
+    const avgDriverSkill = driverSkillValues.length > 0
+        ? driverSkillValues.reduce((a, b) => a + b, 0) / driverSkillValues.length
+        : 0;
 
     // Score calculation (Match-by-Match)
-    const teleopClimbPoints: Record<string, number> = {
+    const climbPoints: Record<string, number> = {
         'none': 0,
-        'low': 10,
-        'mid': 20,
-        'high': 30
+        'L1': 10,
+        'L2': 20,
+        'L3': 30,
     };
 
     const matchScores = entries.map(e => {
-        // Auto Fuel: Preload + Cycles
-        let preloadPts = 0;
-        if (e.autoPreload) {
-            preloadPts = e.autoPreloadScored ? 8 : (e.autoPreloadCount || 0);
-        }
-        const autoFuelPts = e.autoCycles + preloadPts;
+        // Auto: hoppers into hub + hoppers passed
+        const autoHubPts = (e.autoCycles || 0);
+        const autoHopperPts = (e.hoppersPassedAuto || 0);
 
         // Auto Climb: 15 points if not 'none'
         const autoClimbPts = (e.autoClimb !== 'none') ? 15 : 0;
 
-        // Teleop Hoppers Scored
-        const teleopFuelPts = e.teleopCycles;
+        // Teleop: hoppers into hub + hoppers passed
+        const teleopFuelPts = (e.teleopCycles || 0);
+        const teleopHopperPts = (e.hoppersPassed || 0);
 
         // Endgame Climb
-        const teleopClimbPts = teleopClimbPoints[e.climbResult] || 0;
+        const climbPts = climbPoints[e.climbResult] || 0;
 
-        return autoFuelPts + autoClimbPts + teleopFuelPts + teleopClimbPts;
+        return autoHubPts + autoHopperPts + autoClimbPts + teleopFuelPts + teleopHopperPts + climbPts;
     });
 
     const totalScore = matchScores.reduce((a, b) => a + b, 0) / matchesPlayed;
@@ -96,14 +97,16 @@ export function calculateTeamStatsFromEntries(entries: ScoutingEntry[]): TeamSta
         meanAutoCycles: Math.round(meanAutoCycles * 10) / 10,
         medianAutoCycles: Math.round(medianAutoCycles * 10) / 10,
         stdDevAutoCycles: Math.round(stdDevAutoCycles * 10) / 10,
-        autoPreloadSuccessRate: Math.round(autoPreloadSuccessRate),
+        avgHoppersPassedAuto: Math.round(avgHoppersPassedAuto * 10) / 10,
         avgTeleopCycles: Math.round(avgTeleopCycles * 10) / 10,
         meanTeleopCycles: Math.round(meanTeleopCycles * 10) / 10,
         medianTeleopCycles: Math.round(medianTeleopCycles * 10) / 10,
         stdDevTeleopCycles: Math.round(stdDevTeleopCycles * 10) / 10,
+        avgHoppersPassed: Math.round(avgHoppersPassed * 10) / 10,
         climbSuccessRate: Math.round(climbSuccessRate),
-        highMidClimbRate: Math.round(highMidClimbRate),
+        l3ClimbRate: Math.round(l3ClimbRate),
         defensePlayRate: Math.round(defensePlayRate),
+        avgDriverSkill: Math.round(avgDriverSkill * 10) / 10,
         totalScore: Math.round(totalScore * 10) / 10,
     };
 }
@@ -116,14 +119,16 @@ export function createEmptyStats(teamNumber: number): TeamStats {
         meanAutoCycles: 0,
         medianAutoCycles: 0,
         stdDevAutoCycles: 0,
-        autoPreloadSuccessRate: 0,
+        avgHoppersPassedAuto: 0,
         avgTeleopCycles: 0,
         meanTeleopCycles: 0,
         medianTeleopCycles: 0,
         stdDevTeleopCycles: 0,
+        avgHoppersPassed: 0,
         climbSuccessRate: 0,
-        highMidClimbRate: 0,
+        l3ClimbRate: 0,
         defensePlayRate: 0,
+        avgDriverSkill: 0,
         totalScore: 0,
     };
 }
