@@ -3,6 +3,18 @@ import { supabase } from '../supabase.js';
 
 const router = Router();
 
+// Safely parses a field that may be a JSON array string, a plain old string, or already an array.
+function safeParseArray(val: unknown): string[] {
+    if (Array.isArray(val)) return val;
+    if (typeof val !== 'string' || !val) return [];
+    try {
+        const parsed = JSON.parse(val);
+        return Array.isArray(parsed) ? parsed : [];
+    } catch {
+        return [];
+    }
+}
+
 // GET all pit entries
 router.get('/', async (req, res) => {
     try {
@@ -25,12 +37,12 @@ router.get('/', async (req, res) => {
             event: row.event || '2026cahal',
             teamNumber: row.team_number,
             scoutName: row.scout_name || 'Unknown',
-            autoClimb: Array.isArray(row.auto_climb) ? row.auto_climb : (row.auto_climb ? JSON.parse(row.auto_climb) : []),
-            robotClimb: Array.isArray(row.robot_climb) ? row.robot_climb : (row.robot_climb ? JSON.parse(row.robot_climb) : []),
+            autoClimb: safeParseArray(row.auto_climb),
+            robotClimb: safeParseArray(row.robot_climb),
             ballsPerSecond: row.balls_per_second || 0,
             canGoUnderTrench: row.can_go_under_trench,
             canGoOverBump: row.can_go_over_bump,
-            canPassFuel: Array.isArray(row.can_pass_fuel) ? row.can_pass_fuel : (row.can_pass_fuel ? JSON.parse(row.can_pass_fuel) : []),
+            canPassFuel: safeParseArray(row.can_pass_fuel),
             canBulldozeFuel: row.can_bulldoze_fuel || false,
             intakeType: row.intake_type || '',
             shooterType: row.shooter_type || 'none',
@@ -68,12 +80,12 @@ router.get('/team/:teamNumber', async (req, res) => {
             event: data.event || '2026cahal',
             teamNumber: data.team_number,
             scoutName: data.scout_name || 'Unknown',
-            autoClimb: Array.isArray(data.auto_climb) ? data.auto_climb : (data.auto_climb ? JSON.parse(data.auto_climb) : []),
-            robotClimb: Array.isArray(data.robot_climb) ? data.robot_climb : (data.robot_climb ? JSON.parse(data.robot_climb) : []),
+            autoClimb: safeParseArray(data.auto_climb),
+            robotClimb: safeParseArray(data.robot_climb),
             ballsPerSecond: data.balls_per_second || 0,
             canGoUnderTrench: data.can_go_under_trench,
             canGoOverBump: data.can_go_over_bump,
-            canPassFuel: Array.isArray(data.can_pass_fuel) ? data.can_pass_fuel : (data.can_pass_fuel ? JSON.parse(data.can_pass_fuel) : []),
+            canPassFuel: safeParseArray(data.can_pass_fuel),
             canBulldozeFuel: data.can_bulldoze_fuel || false,
             intakeType: data.intake_type || '',
             shooterType: data.shooter_type || 'none',
