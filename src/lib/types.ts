@@ -24,8 +24,8 @@ export interface ScoutingEntry {
     teleopCycles: number;
     hoppersPassed: number;
     defenseType: string[]; // multi-select: 'pushing', 'blocking', 'poaching'
-    defenseLocation: 'none' | 'neutral' | 'our_alliance' | 'their_alliance';
-    shootingRange: 'alliance' | 'close_neutral' | 'far_neutral' | 'opponent' | null;
+    defenseLocation: string[]; // multi-select: 'none', 'neutral', 'our_alliance', 'their_alliance'
+    shootingRange: string[]; // multi-select: 'alliance', 'close_neutral', 'far_neutral', 'opponent'
     teleopObstacle: 'none' | 'trench' | 'bump' | 'both';
     beachingType: string[]; // multi-select: 'off_bump', 'random'
     defenseRating: number; // 0-5 (0 = none)
@@ -71,15 +71,15 @@ export interface PitScoutingEntry {
     event: string;
     teamNumber: number;
     scoutName: string;
-    autoClimb: 'none' | 'side' | 'middle';
-    robotClimb: 'none' | 'L1' | 'L2' | 'L3';
+    autoClimb: string[]; // multi-select: 'none', 'side', 'middle'
+    robotClimb: string[]; // multi-select: 'none', 'L1', 'L2', 'L3'
     ballsPerSecond: number;
     canGoUnderTrench: boolean;
     canGoOverBump: boolean;
     canPassFuel: string[]; // multi-select: 'middle', 'opponent_zone'
     canBulldozeFuel: boolean;
     intakeType: string;
-    shooterType: 'turret' | 'variable_angle' | 'fixed' | 'other' | 'none';
+    shooterType: string;
     frontPhoto: boolean;
     backPhoto: boolean;
     notes: string;

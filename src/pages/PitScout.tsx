@@ -19,8 +19,8 @@ const PitScout = () => {
     const [submitted, setSubmitted] = useState(false);
 
     // Form State
-    const [autoClimbPosition, setAutoClimbPosition] = useState<'none' | 'side' | 'middle'>('none');
-    const [climbLevel, setClimbLevel] = useState<'none' | 'L1' | 'L2' | 'L3'>('none');
+    const [autoClimbPosition, setAutoClimbPosition] = useState<string[]>([]);
+    const [climbLevel, setClimbLevel] = useState<string[]>([]);
 
     const [ballsPerSecond, setBallsPerSecond] = useState<string>('');
 
@@ -31,7 +31,7 @@ const PitScout = () => {
     const [canBulldozeFuel, setCanBulldozeFuel] = useState(false);
 
     const [intakeType, setIntakeType] = useState('');
-    const [shooterType, setShooterType] = useState<'none' | 'turret' | 'variable_angle' | 'fixed' | 'other'>('none');
+    const [shooterType, setShooterType] = useState('');
 
     const [frontPhoto, setFrontPhoto] = useState(false);
     const [backPhoto, setBackPhoto] = useState(false);
@@ -165,8 +165,22 @@ const PitScout = () => {
                         <section className="stat-card">
                             <h2 className="section-header">Autonomous</h2>
                             <OptionSelector
+                                multiSelect={true}
                                 value={autoClimbPosition}
-                                onChange={(v) => setAutoClimbPosition(v as typeof autoClimbPosition)}
+                                onChange={(v) => {
+                                    if (v.includes('none')) {
+                                        const wasAlreadyNone = autoClimbPosition.includes('none');
+                                        if (!wasAlreadyNone) {
+                                            setAutoClimbPosition(['none']);
+                                        } else if (v.length > 1) {
+                                            setAutoClimbPosition(v.filter(x => x !== 'none'));
+                                        } else {
+                                            setAutoClimbPosition(v);
+                                        }
+                                    } else {
+                                        setAutoClimbPosition(v);
+                                    }
+                                }}
                                 label="Auto Climb Position"
                                 options={[
                                     { value: 'none', label: 'Cannot Climb' },
@@ -180,8 +194,22 @@ const PitScout = () => {
                         <section className="stat-card">
                             <h2 className="section-header">Endgame Climb</h2>
                             <OptionSelector
+                                multiSelect={true}
                                 value={climbLevel}
-                                onChange={(v) => setClimbLevel(v as typeof climbLevel)}
+                                onChange={(v) => {
+                                    if (v.includes('none')) {
+                                        const wasAlreadyNone = climbLevel.includes('none');
+                                        if (!wasAlreadyNone) {
+                                            setClimbLevel(['none']);
+                                        } else if (v.length > 1) {
+                                            setClimbLevel(v.filter(x => x !== 'none'));
+                                        } else {
+                                            setClimbLevel(v);
+                                        }
+                                    } else {
+                                        setClimbLevel(v);
+                                    }
+                                }}
                                 label="Endgame Climb"
                                 options={[
                                     { value: 'none', label: 'Cannot Climb' },
@@ -244,18 +272,16 @@ const PitScout = () => {
                         {/* Robot Hardware */}
                         <section className="stat-card">
                             <h2 className="section-header">Robot Hardware</h2>
-                            <OptionSelector
-                                value={shooterType}
-                                onChange={(v) => setShooterType(v as typeof shooterType)}
-                                label="Shooter Type"
-                                options={[
-                                    { value: 'none', label: 'None / Unknown' },
-                                    { value: 'turret', label: 'Turret' },
-                                    { value: 'variable_angle', label: 'Variable Angle' },
-                                    { value: 'fixed', label: 'Fixed' },
-                                    { value: 'other', label: 'Other' },
-                                ]}
-                            />
+                            <div className="py-3">
+                                <label className="text-foreground font-medium block mb-2">Shooter Type</label>
+                                <input
+                                    type="text"
+                                    value={shooterType}
+                                    onChange={(e) => setShooterType(e.target.value)}
+                                    placeholder="e.g. Turret, Fixed, etc."
+                                    className="w-full h-11 px-4 rounded-lg bg-secondary text-foreground border-0 focus:ring-2 ring-primary"
+                                />
+                            </div>
                             <div className="py-3">
                                 <label className="text-foreground font-medium block mb-2">Intake Type</label>
                                 <input

@@ -60,8 +60,9 @@ const ScoutMatch = () => {
     const [hoppersPassed, setHoppersPassed] = useState(0);
     const [defenseRating, setDefenseRating] = useState(0);
     const [defenseType, setDefenseType] = useState<string[]>([]);
-    const [defenseLocation, setDefenseLocation] = useState<'none' | 'neutral' | 'our_alliance' | 'their_alliance'>('none');
-    const [shootingRange, setShootingRange] = useState<'alliance' | 'close_neutral' | 'far_neutral' | 'opponent' | null>(null);
+    const [otherDefenseText, setOtherDefenseText] = useState('');
+    const [defenseLocation, setDefenseLocation] = useState<string[]>([]);
+    const [shootingRange, setShootingRange] = useState<string[]>([]);
     const [teleopObstacle, setTeleopObstacle] = useState<'none' | 'trench' | 'bump' | 'both'>('none');
     const [beachingType, setBeachingType] = useState<string[]>([]);
     const [herdsFuelThroughTrench, setHerdsFuelThroughTrench] = useState(false);
@@ -109,7 +110,9 @@ const ScoutMatch = () => {
             autoObstacle,
             teleopCycles,
             hoppersPassed,
-            defenseType,
+            defenseType: defenseType.includes('other') && otherDefenseText.trim()
+                ? [...defenseType.filter(t => t !== 'other'), otherDefenseText.trim()]
+                : defenseType,
             defenseLocation,
             defenseRating,
             shootingRange,
@@ -158,8 +161,9 @@ const ScoutMatch = () => {
             setHoppersPassed(0);
             setDefenseRating(0);
             setDefenseType([]);
-            setDefenseLocation('none');
-            setShootingRange(null);
+            setOtherDefenseText('');
+            setDefenseLocation([]);
+            setShootingRange([]);
             setTeleopObstacle('none');
             setBeachingType([]);
             setHerdsFuelThroughTrench(false);
@@ -351,34 +355,65 @@ const ScoutMatch = () => {
                     <OptionSelector
                         multiSelect={true}
                         value={defenseType}
-                        onChange={setDefenseType}
+                        onChange={(v) => {
+                            setDefenseType(v);
+                            if (!v.includes('other')) setOtherDefenseText('');
+                        }}
                         label="Defense Type"
                         options={[
                             { value: 'pushing', label: 'Pushing' },
                             { value: 'blocking', label: 'Blocking' },
                             { value: 'poaching', label: 'Poaching' },
+                            { value: 'other', label: 'Other' },
                         ]}
                     />
+                    {defenseType.includes('other') && (
+                        <div className="py-2 px-1">
+                            <input
+                                type="text"
+                                value={otherDefenseText}
+                                onChange={(e) => setOtherDefenseText(e.target.value)}
+                                placeholder="Specify other defense..."
+                                className="w-full h-10 px-4 rounded-lg bg-secondary text-foreground border-0 focus:ring-2 ring-primary"
+                            />
+                        </div>
+                    )}
                     <OptionSelector
+                        multiSelect={true}
                         value={defenseLocation}
-                        onChange={(v) => setDefenseLocation(v as typeof defenseLocation)}
+                        onChange={(v) => {
+                            if (v.includes('none')) {
+                                // If 'none' is selected, deselect others, or if it was just added, clear others
+                                const wasAlreadyNone = defenseLocation.includes('none');
+                                if (!wasAlreadyNone) {
+                                    setDefenseLocation(['none']);
+                                } else if (v.length > 1) {
+                                    setDefenseLocation(v.filter(x => x !== 'none'));
+                                } else {
+                                    setDefenseLocation(v);
+                                }
+                            } else {
+                                setDefenseLocation(v);
+                            }
+                        }}
                         label="Defense Location"
                         options={[
-                            { value: 'none' as const, label: 'N/A' },
-                            { value: 'neutral' as const, label: 'Neutral' },
-                            { value: 'our_alliance' as const, label: 'Our Alliance' },
-                            { value: 'their_alliance' as const, label: 'Their Alliance' },
+                            { value: 'none', label: 'N/A' },
+                            { value: 'neutral', label: 'Neutral' },
+                            { value: 'our_alliance', label: 'Our Alliance' },
+                            { value: 'their_alliance', label: 'Their Alliance' },
                         ]}
                     />
                     <OptionSelector
-                        value={shootingRange ?? 'alliance'}
-                        onChange={(v) => setShootingRange(v as typeof shootingRange)}
+                        multiSelect={true}
+                        value={shootingRange}
+                        onChange={setShootingRange}
                         label="Shooting Zone"
                         options={[
-                            { value: 'alliance' as const, label: 'Alliance Zone' },
-                            { value: 'close_neutral' as const, label: 'Close Neutral' },
-                            { value: 'far_neutral' as const, label: 'Far Neutral' },
-                            { value: 'opponent' as const, label: 'Opponent Zone' },
+                            { value: 'alliance', label: 'Alliance Zone' },
+                            { value: 'close_neutral', label: 'Close Neutral' },
+                            { value: 'far_neutral', label: 'Far Neutral' },
+                            { value: 'opponent', label: 'Opponent Zone' },
                         ]}
                     />
                     <OptionSelector
