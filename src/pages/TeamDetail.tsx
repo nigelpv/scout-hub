@@ -233,17 +233,17 @@ const TeamDetail = () => {
                 <div className="stat-card">
                     <div className="flex items-center justify-between mb-4">
                         <div>
-                                    <p className="text-sm text-muted-foreground">Avg Est. Score</p>
-                                    <TooltipProvider>
-                                    <Tooltip>
-                                        <TooltipTrigger asChild>
-                                            <HelpCircle className="w-3.5 h-3.5 text-muted-foreground/50 cursor-help" />
-                                        </TooltipTrigger>
-                                        <TooltipContent>
-                                            <p className="text-xs max-w-[220px]">Auto hoppers + hoppers passed (auto) + auto climb (15 pts) + Teleop hoppers + hoppers passed (teleop) + Endgame climb (L1 10 / L2 20 / L3 30), averaged across matches</p>
-                                        </TooltipContent>
-                                    </Tooltip>
-                                </TooltipProvider>
+                            <p className="text-sm text-muted-foreground">Avg Est. Score</p>
+                            <TooltipProvider>
+                                <Tooltip>
+                                    <TooltipTrigger asChild>
+                                        <HelpCircle className="w-3.5 h-3.5 text-muted-foreground/50 cursor-help" />
+                                    </TooltipTrigger>
+                                    <TooltipContent>
+                                        <p className="text-xs max-w-[220px]">Auto hoppers + hoppers passed (auto) + auto climb (15 pts) + Teleop hoppers + hoppers passed (teleop) + Endgame climb (L1 10 / L2 20 / L3 30), averaged across matches</p>
+                                    </TooltipContent>
+                                </Tooltip>
+                            </TooltipProvider>
                             <p className="font-mono text-3xl font-bold text-primary">{stats?.totalScore ?? 0}</p>
                         </div>
                         <div>
@@ -371,11 +371,11 @@ const TeamDetail = () => {
                                     <div className="text-sm space-y-1 mt-1">
                                         <div className="flex justify-between border-b border-border/50 pb-0.5">
                                             <span>Auto Climb</span>
-                                            <span className="font-medium capitalize">{pitData.autoClimb}</span>
+                                            <span>{Array.isArray(pitData.autoClimb) ? (pitData.autoClimb.length > 0 ? pitData.autoClimb.join(', ') : 'None') : (pitData.autoClimb || 'None')}</span>
                                         </div>
                                         <div className="flex justify-between border-b border-border/50 pb-0.5">
                                             <span>Endgame Climb</span>
-                                            <span className="font-medium uppercase">{pitData.robotClimb === 'none' ? 'None' : pitData.robotClimb}</span>
+                                            <span className="font-medium uppercase">{Array.isArray(pitData.robotClimb) ? (pitData.robotClimb.length > 0 ? pitData.robotClimb.filter(v => v !== 'none').join(', ') || 'None' : 'None') : (pitData.robotClimb === 'none' ? 'None' : pitData.robotClimb)}</span>
                                         </div>
                                         {pitData.intakeType && (
                                             <div className="flex justify-between border-b border-border/50 pb-0.5">
@@ -386,7 +386,7 @@ const TeamDetail = () => {
                                         {pitData.shooterType && pitData.shooterType !== 'none' && (
                                             <div className="flex justify-between border-b border-border/50 pb-0.5">
                                                 <span>Shooter</span>
-                                                <span className="font-medium capitalize">{pitData.shooterType.replace('_', ' ')}</span>
+                                                <span className="font-medium">{pitData.shooterType}</span>
                                             </div>
                                         )}
                                     </div>
@@ -504,7 +504,7 @@ const TeamDetail = () => {
                                     </div>
                                     <div className="flex items-center gap-2">
                                         <div className="bg-secondary px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
-                                            {entry.shootingRange}
+                                            {Array.isArray(entry.shootingRange) ? (entry.shootingRange.length > 0 ? entry.shootingRange.map(r => shootingRangeLabels[r] ?? r).join(', ') : '—') : (entry.shootingRange ? shootingRangeLabels[entry.shootingRange as string] ?? entry.shootingRange : '—')}
                                         </div>
                                         {isAdmin && !selectedEntries.has(entry.id) && (
                                             <button
@@ -564,7 +564,7 @@ const TeamDetail = () => {
                                                     <span>Defense</span>
                                                     <span className="font-medium text-foreground capitalize">
                                                         {Array.isArray(entry.defenseType) && entry.defenseType.length > 0
-                                                            ? `${entry.defenseType.join(', ')} · ${(entry.defenseLocation ?? 'none').replace('_', ' ')}`
+                                                            ? `${entry.defenseType.join(', ')}${Array.isArray(entry.defenseLocation) && entry.defenseLocation.length > 0 && !entry.defenseLocation.includes('none') ? ' · ' + entry.defenseLocation.join(', ').replace(/_/g, ' ') : ''}`
                                                             : 'None'}
                                                     </span>
                                                 </div>
