@@ -414,6 +414,10 @@ const TeamDetail = () => {
                                             <span className="font-mono font-medium">{pitData.ballsPerSecond}</span>
                                         </div>
                                         <div className="flex justify-between border-b border-border/50 pb-0.5">
+                                            <span>Hopper Capacity</span>
+                                            <span className="font-mono font-medium">{pitData.hopperCapacity ?? 0}</span>
+                                        </div>
+                                        <div className="flex justify-between border-b border-border/50 pb-0.5">
                                             <span>Pass Fuel</span>
                                             <span className="font-medium">{pitData.canPassFuel && pitData.canPassFuel.length > 0 ? pitData.canPassFuel.join(', ') : 'No'}</span>
                                         </div>

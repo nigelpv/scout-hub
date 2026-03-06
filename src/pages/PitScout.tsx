@@ -23,6 +23,7 @@ const PitScout = () => {
     const [climbLevel, setClimbLevel] = useState<string[]>([]);
 
     const [ballsPerSecond, setBallsPerSecond] = useState<string>('');
+    const [hopperCapacity, setHopperCapacity] = useState<string>('');
 
     const [canGoUnderTrench, setCanGoUnderTrench] = useState(false);
     const [canGoOverBump, setCanGoOverBump] = useState(false);
@@ -61,6 +62,7 @@ const PitScout = () => {
             autoClimb: autoClimbPosition,
             robotClimb: climbLevel,
             ballsPerSecond: parseFloat(ballsPerSecond) || 0,
+            hopperCapacity: parseInt(hopperCapacity) || 0,
             canGoUnderTrench,
             canGoOverBump,
             canPassFuel,
@@ -233,6 +235,18 @@ const PitScout = () => {
                                         placeholder="e.g. 3"
                                         min={0}
                                         step={0.1}
+                                        className="w-full h-11 px-4 rounded-lg bg-secondary text-foreground border-0 focus:ring-2 ring-primary font-mono"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="text-foreground font-medium block mb-2">Hopper Capacity</label>
+                                    <input
+                                        type="number"
+                                        value={hopperCapacity}
+                                        onChange={(e) => setHopperCapacity(e.target.value)}
+                                        placeholder="e.g. 5"
+                                        min={0}
+                                        step={1}
                                         className="w-full h-11 px-4 rounded-lg bg-secondary text-foreground border-0 focus:ring-2 ring-primary font-mono"
                                     />
                                 </div>
