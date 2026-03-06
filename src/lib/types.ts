@@ -78,6 +78,7 @@ export interface PitScoutingEntry {
     canGoOverBump: boolean;
     canPassFuel: string[]; // multi-select: 'middle', 'opponent_zone'
     canBulldozeFuel: boolean;
+    hopperCapacity: number;
     intakeType: string;
     shooterType: string;
     frontPhoto: boolean;
