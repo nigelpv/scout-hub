@@ -5,7 +5,7 @@ import { PageHeader } from '@/components/layout/PageHeader';
 import { getAllTeamStatsFromEntries, getRatingColor } from '@/lib/stats';
 import { getEntries, deleteTeamData, deleteTeamsBatch, getPitEntries, EVENT_KEY, updateEventKey } from '@/lib/storage';
 import { fetchEventOPRs, getTeamOPR, TBAOprResult } from '@/lib/tba';
-import { exportMatchEntriesToCSV, exportPitEntriesToCSV } from '@/lib/csv';
+import { exportMatchEntriesToCSV, exportPitEntriesToCSV, exportTeamAveragesToCSV } from '@/lib/csv';
 import { TeamStats } from '@/lib/types';
 import { toast } from 'sonner';
 
@@ -183,6 +183,15 @@ const Teams = () => {
     setIsUpdatingKey(false);
   };
 
+  const handleExportAveragesCSV = async () => {
+    const result = await exportTeamAveragesToCSV();
+    if (result.success) {
+      toast.success('Team averages exported successfully');
+    } else {
+      toast.error(result.message || 'Export failed');
+    }
+  };
+
   const exitAdmin = () => {
     setIsAdmin(false);
     setSelectedTeams(new Set());
@@ -282,6 +291,13 @@ const Teams = () => {
               className="text-xs font-medium text-emerald-600 hover:text-emerald-700 hover:underline"
             >
               Export Pit (CSV)
+            </button>
+            <span className="text-xs text-muted-foreground">|</span>
+            <button
+              onClick={handleExportAveragesCSV}
+              className="text-xs font-medium text-emerald-600 hover:text-emerald-700 hover:underline"
+            >
+              Export Averages (CSV)
             </button>
           </div>
           <span className="text-xs text-muted-foreground">

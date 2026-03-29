@@ -96,3 +96,102 @@ export async function exportPitEntriesToCSV() {
         return { success: false, message: 'Failed to export pit entries' };
     }
 }
+
+/**
+ * Exports match and pit scouting entries locally averaged out so each team occupies only one row
+ */
+export async function exportTeamAveragesToCSV() {
+    try {
+        const entries = await getEntries();
+        const pitEntries = await getPitEntries();
+
+        if (entries.length === 0 && pitEntries.length === 0) {
+            return { success: false, message: 'No data to export' };
+        }
+
+        const allTeamNumbers = [...new Set([
+            ...entries.map(e => e.teamNumber),
+            ...pitEntries.map(e => e.teamNumber)
+        ])].sort((a, b) => a - b);
+
+        const teamAverages = allTeamNumbers.map(teamNum => {
+            const teamMatches = entries.filter(e => e.teamNumber === teamNum);
+            const teamPitEntry = pitEntries.find(e => e.teamNumber === teamNum);
+            const count = teamMatches.length;
+
+            const avg = (key: keyof ScoutingEntry) => {
+                if (count === 0) return '';
+                // Assume the field is boolean or numeric
+                const sum = teamMatches.reduce((acc, e) => acc + (Number(e[key]) || 0), 0);
+                return (sum / count).toFixed(2);
+            };
+
+            const mode = (key: keyof ScoutingEntry) => {
+                if (count === 0) return '';
+                const counts: Record<string, number> = {};
+                let maxCount = 0;
+                let maxVal = '';
+
+                teamMatches.forEach(e => {
+                    const val = String(e[key] || '');
+                    if (val === 'none' || val === 'null' || !val) return;
+                    counts[val] = (counts[val] || 0) + 1;
+                    if (counts[val] > maxCount) {
+                        maxCount = counts[val];
+                        maxVal = val;
+                    }
+                });
+                return maxVal || 'none';
+            };
+
+            return {
+                TeamNumber: teamNum,
+                MatchesPlayed: count,
+
+                // Auto Averages
+                AutoCycles_Avg: avg('autoCycles'),
+                AutoPreload_Rate: avg('autoPreload'),
+                AutoPreloadScored_Rate: avg('autoPreloadScored'),
+                AutoPreloadCount_Avg: avg('autoPreloadCount'),
+                AutoClimb_Mode: mode('autoClimb'),
+                AutoObstacle_Mode: mode('autoObstacle'),
+
+                // Teleop Averages
+                TeleopCycles_Avg: avg('teleopCycles'),
+                AvgBallsScoredPerCycle_Avg: avg('avgBallsScoredPerCycle'),
+                PasserBot_Rate: avg('isPasserBot'),
+                DefenseRating_Avg: avg('defenseRating'),
+                DefenseType_Mode: mode('defenseType'),
+                DefenseLocation_Mode: mode('defenseLocation'),
+                ShootingRange_Mode: mode('shootingRange'),
+                TeleopObstacle_Mode: mode('teleopObstacle'),
+                FuelBeaching_Rate: avg('fuelBeaching'),
+                FuelBeachingType_Mode: mode('fuelBeachingType'),
+
+                // Endgame Averages
+                ClimbResult_Mode: mode('climbResult'),
+                ClimbPosition_Mode: mode('climbPosition'),
+                ClimbStability_Avg: avg('climbStability'),
+
+                // Pit Data
+                Pit_EstimatedPoints: teamPitEntry?.estimatedPoints ?? '',
+                Pit_IsPasserBot: teamPitEntry?.isPasserBot ?? '',
+                Pit_AutoClimb: teamPitEntry?.autoClimb ?? '',
+                Pit_RobotClimb: teamPitEntry?.robotClimb ?? '',
+                Pit_MaxBalls: teamPitEntry?.maxBalls ?? '',
+                Pit_CanGoUnderTrench: teamPitEntry?.canGoUnderTrench ?? '',
+                Pit_CanGoOverBump: teamPitEntry?.canGoOverBump ?? '',
+                Pit_IntakeType: teamPitEntry?.intakeType ?? '',
+                Pit_ShooterType: teamPitEntry?.shooterType ?? ''
+            };
+        });
+
+        const csvString = convertToCSV(teamAverages);
+        const date = new Date().toISOString().split('T')[0];
+        downloadCSV(csvString, `team_averages_${date}.csv`);
+        return { success: true };
+    } catch (error) {
+        console.error('Error exporting team averages:', error);
+        return { success: false, message: 'Failed to export team averages' };
+    }
+}
