@@ -53,8 +53,13 @@ export function calculateTeamStatsFromEntries(entries: ScoutingEntry[]): TeamSta
     const l3ClimbRate = (l3Climbs / matchesPlayed) * 100;
 
     // Defense Stats
-    const defenseMatches = entries.filter(e => Array.isArray(e.defenseType) ? e.defenseType.length > 0 : false).length;
+    const defenseMatches = entries.filter(e => e.playedDefense).length;
     const defensePlayRate = (defenseMatches / matchesPlayed) * 100;
+
+    const defenseEffectivenessValues = entries.map(e => e.defenseEffectiveness || 0).filter(v => v > 0);
+    const avgDefenseEffectiveness = defenseEffectivenessValues.length > 0
+        ? defenseEffectivenessValues.reduce((a, b) => a + b, 0) / defenseEffectivenessValues.length
+        : 0;
 
     // Driver Skill
     const driverSkillValues = entries.map(e => e.driverSkill || 0).filter(v => v > 0);
@@ -68,6 +73,7 @@ export function calculateTeamStatsFromEntries(entries: ScoutingEntry[]): TeamSta
         'L1': 10,
         'L2': 20,
         'L3': 30,
+        'failed_attempt': 0,
     };
 
     const matchScores = entries.map(e => {
@@ -75,8 +81,8 @@ export function calculateTeamStatsFromEntries(entries: ScoutingEntry[]): TeamSta
         const autoHubPts = (e.autoCycles || 0);
         const autoHopperPts = (e.hoppersPassedAuto || 0);
 
-        // Auto Climb: 15 points if not 'none'
-        const autoClimbPts = (e.autoClimb !== 'none') ? 15 : 0;
+        // Auto Climb: 15 points if not 'none' or 'failed_attempt'
+        const autoClimbPts = (e.autoClimb !== 'none' && e.autoClimb !== 'failed_attempt') ? 15 : 0;
 
         // Teleop: hoppers into hub + hoppers passed
         const teleopFuelPts = (e.teleopCycles || 0);
@@ -106,6 +112,7 @@ export function calculateTeamStatsFromEntries(entries: ScoutingEntry[]): TeamSta
         climbSuccessRate: Math.round(climbSuccessRate),
         l3ClimbRate: Math.round(l3ClimbRate),
         defensePlayRate: Math.round(defensePlayRate),
+        avgDefenseEffectiveness: Math.round(avgDefenseEffectiveness * 10) / 10,
         avgDriverSkill: Math.round(avgDriverSkill * 10) / 10,
         totalScore: Math.round(totalScore * 10) / 10,
     };
@@ -128,6 +135,7 @@ export function createEmptyStats(teamNumber: number): TeamStats {
         climbSuccessRate: 0,
         l3ClimbRate: 0,
         defensePlayRate: 0,
+        avgDefenseEffectiveness: 0,
         avgDriverSkill: 0,
         totalScore: 0,
     };

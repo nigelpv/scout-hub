@@ -47,31 +47,29 @@ const ScoutMatch = () => {
     }, [event, matchNumber, alliancePosition]);
 
     // Match Info
-    const [startingPosition, setStartingPosition] = useState<'left_trench' | 'left_bump' | 'hub' | 'right_trench' | 'right_bump'>('hub');
+    const [startingPosition, setStartingPosition] = useState<'outpost_trench' | 'outpost_bump' | 'hub' | 'depot_trench' | 'depot_bump'>('hub');
 
     // Autonomous
     const [autoCycles, setAutoCycles] = useState(0);
     const [hoppersPassedAuto, setHoppersPassedAuto] = useState(0);
-    const [autoClimb, setAutoClimb] = useState<'none' | 'side' | 'middle'>('none');
-    const [autoObstacle, setAutoObstacle] = useState<'none' | 'trench' | 'bump' | 'both'>('none');
+    const [autoClimb, setAutoClimb] = useState<'none' | 'side' | 'middle' | 'failed_attempt'>('none');
+    const [autoObstacle, setAutoObstacle] = useState<'none' | 'outpost_trench' | 'depot_trench' | 'outpost_bump' | 'depot_bump' | 'both'>('none');
 
     // Teleop
     const [teleopCycles, setTeleopCycles] = useState(0);
     const [hoppersPassed, setHoppersPassed] = useState(0);
-    const [defenseRating, setDefenseRating] = useState(0);
-    const [defenseType, setDefenseType] = useState<string[]>([]);
-    const [otherDefenseText, setOtherDefenseText] = useState('');
+    const [playedDefense, setPlayedDefense] = useState(false);
+    const [defenseEffectiveness, setDefenseEffectiveness] = useState(0);
     const [defenseLocation, setDefenseLocation] = useState<string[]>([]);
-    const [shootingRange, setShootingRange] = useState<string[]>([]);
     const [teleopObstacle, setTeleopObstacle] = useState<'none' | 'trench' | 'bump' | 'both'>('none');
     const [beachingType, setBeachingType] = useState<string[]>([]);
     const [herdsFuelThroughTrench, setHerdsFuelThroughTrench] = useState(false);
 
     // Endgame
-    const [climbResult, setClimbResult] = useState<'none' | 'L1' | 'L2' | 'L3'>('none');
+    const [climbResult, setClimbResult] = useState<'none' | 'L1' | 'L2' | 'L3' | 'failed_attempt'>('none');
     const [climbPosition, setClimbPosition] = useState<'none' | 'side' | 'center'>('none');
     const [driverSkill, setDriverSkill] = useState(3);
-    const [disabledOrShutDown, setDisabledOrShutDown] = useState(false);
+    const [incapacitated, setIncapacitated] = useState(false);
 
     const [notes, setNotes] = useState('');
 
@@ -110,19 +108,16 @@ const ScoutMatch = () => {
             autoObstacle,
             teleopCycles,
             hoppersPassed,
-            defenseType: defenseType.includes('other') && otherDefenseText.trim()
-                ? [...defenseType.filter(t => t !== 'other'), otherDefenseText.trim()]
-                : defenseType,
+            playedDefense,
             defenseLocation,
-            defenseRating,
-            shootingRange,
+            defenseEffectiveness,
             teleopObstacle,
             beachingType,
             herdsFuelThroughTrench,
             climbResult,
             climbPosition,
             driverSkill,
-            disabledOrShutDown,
+            incapacitated,
             notes,
         };
 
@@ -159,18 +154,16 @@ const ScoutMatch = () => {
             setAutoObstacle('none');
             setTeleopCycles(0);
             setHoppersPassed(0);
-            setDefenseRating(0);
-            setDefenseType([]);
-            setOtherDefenseText('');
+            setPlayedDefense(false);
+            setDefenseEffectiveness(0);
             setDefenseLocation([]);
-            setShootingRange([]);
             setTeleopObstacle('none');
             setBeachingType([]);
             setHerdsFuelThroughTrench(false);
             setClimbResult('none');
             setClimbPosition('none');
             setDriverSkill(3);
-            setDisabledOrShutDown(false);
+            setIncapacitated(false);
             setNotes('');
             setSaved(false);
         }, 1500);
@@ -189,7 +182,7 @@ const ScoutMatch = () => {
     }
 
     return (
-        <div className="min-h-screen bg-background pb-24">
+        <div className="min-h-screen bg-background pb-32">
             <PageHeader title="Scout Match" />
 
             <div className="p-4 space-y-6">
@@ -283,11 +276,11 @@ const ScoutMatch = () => {
                         onChange={(v) => setStartingPosition(v as typeof startingPosition)}
                         label="Starting Position"
                         options={[
-                            { value: 'left_trench' as const, label: 'Left Trench' },
-                            { value: 'left_bump' as const, label: 'Left Bump' },
+                            { value: 'outpost_trench' as const, label: 'Outpost Trench' },
+                            { value: 'outpost_bump' as const, label: 'Outpost Bump' },
                             { value: 'hub' as const, label: 'Hub' },
-                            { value: 'right_trench' as const, label: 'Right Trench' },
-                            { value: 'right_bump' as const, label: 'Right Bump' },
+                            { value: 'depot_trench' as const, label: 'Depot Trench' },
+                            { value: 'depot_bump' as const, label: 'Depot Bump' },
                         ]}
                     />
                     <Counter
@@ -308,6 +301,7 @@ const ScoutMatch = () => {
                             { value: 'none' as const, label: 'None' },
                             { value: 'side' as const, label: 'Side' },
                             { value: 'middle' as const, label: 'Middle' },
+                            { value: 'failed_attempt' as const, label: 'Failed Attempt' },
                         ]}
                     />
                     <OptionSelector
@@ -316,8 +310,10 @@ const ScoutMatch = () => {
                         label="Travel (Auto)"
                         options={[
                             { value: 'none' as const, label: 'None' },
-                            { value: 'trench' as const, label: 'Trench' },
-                            { value: 'bump' as const, label: 'Bump' },
+                            { value: 'outpost_trench' as const, label: 'Outpost Trench' },
+                            { value: 'depot_trench' as const, label: 'Depot Trench' },
+                            { value: 'outpost_bump' as const, label: 'Outpost Bump' },
+                            { value: 'depot_bump' as const, label: 'Depot Bump' },
                             { value: 'both' as const, label: 'Both' },
                         ]}
                     />
@@ -347,83 +343,59 @@ const ScoutMatch = () => {
                         onChange={setHoppersPassed}
                         label="Hoppers Passed (Teleop)"
                     />
-                    <RatingField
-                        value={defenseRating}
-                        onChange={setDefenseRating}
-                        label="Defense Rating"
-                    />
-                    <OptionSelector
-                        multiSelect={true}
-                        value={defenseType}
-                        onChange={(v) => {
-                            setDefenseType(v);
-                            if (!v.includes('other')) setOtherDefenseText('');
-                        }}
-                        label="Defense Type"
-                        options={[
-                            { value: 'pushing', label: 'Pushing' },
-                            { value: 'blocking', label: 'Blocking' },
-                            { value: 'poaching', label: 'Poaching' },
-                            { value: 'other', label: 'Other' },
-                        ]}
-                    />
-                    {defenseType.includes('other') && (
-                        <div className="py-2 px-1">
-                            <input
-                                type="text"
-                                value={otherDefenseText}
-                                onChange={(e) => setOtherDefenseText(e.target.value)}
-                                placeholder="Specify other defense..."
-                                className="w-full h-10 px-4 rounded-lg bg-secondary text-foreground border-0 focus:ring-2 ring-primary"
-                            />
-                        </div>
-                    )}
-                    <OptionSelector
-                        multiSelect={true}
-                        value={defenseLocation}
-                        onChange={(v) => {
-                            if (v.includes('none')) {
-                                // If 'none' is selected, deselect others, or if it was just added, clear others
-                                const wasAlreadyNone = defenseLocation.includes('none');
-                                if (!wasAlreadyNone) {
-                                    setDefenseLocation(['none']);
-                                } else if (v.length > 1) {
-                                    setDefenseLocation(v.filter(x => x !== 'none'));
-                                } else {
-                                    setDefenseLocation(v);
-                                }
-                            } else {
-                                setDefenseLocation(v);
-                            }
-                        }}
-                        label="Defense Location"
-                        options={[
-                            { value: 'none', label: 'N/A' },
-                            { value: 'neutral', label: 'Neutral' },
-                            { value: 'our_alliance', label: 'Our Alliance' },
-                            { value: 'their_alliance', label: 'Their Alliance' },
-                        ]}
-                    />
-                    <OptionSelector
-                        multiSelect={true}
-                        value={shootingRange}
-                        onChange={setShootingRange}
-                        label="Shooting Zone"
-                        options={[
-                            { value: 'alliance', label: 'Alliance Zone' },
-                            { value: 'close_neutral', label: 'Close Neutral' },
-                            { value: 'far_neutral', label: 'Far Neutral' },
-                            { value: 'opponent', label: 'Opponent Zone' },
-                        ]}
-                    />
+
+                    <div className="space-y-4 pt-2">
+                        <ToggleField
+                            value={playedDefense}
+                            onChange={setPlayedDefense}
+                            label="Played Defense?"
+                        />
+
+                        {playedDefense && (
+                            <div className="space-y-4 animate-in fade-in slide-in-from-top-2 duration-200">
+                                <RatingField
+                                    value={defenseEffectiveness}
+                                    onChange={setDefenseEffectiveness}
+                                    label="Defense Effectiveness"
+                                />
+                                <OptionSelector
+                                    multiSelect={true}
+                                    value={defenseLocation}
+                                    onChange={(v) => {
+                                        if (v.includes('none')) {
+                                            const wasAlreadyNone = defenseLocation.includes('none');
+                                            if (!wasAlreadyNone) {
+                                                setDefenseLocation(['none']);
+                                            } else if (v.length > 1) {
+                                                setDefenseLocation(v.filter(x => x !== 'none'));
+                                            } else {
+                                                setDefenseLocation(v);
+                                            }
+                                        } else {
+                                            setDefenseLocation(v);
+                                        }
+                                    }}
+                                    label="Defense Location"
+                                    options={[
+                                        { value: 'none', label: 'N/A' },
+                                        { value: 'neutral', label: 'Neutral' },
+                                        { value: 'our_alliance', label: 'Our Alliance' },
+                                        { value: 'their_alliance', label: 'Their Alliance' },
+                                    ]}
+                                />
+                            </div>
+                        )}
+                    </div>
+
                     <OptionSelector
                         multiSelect={true}
                         value={beachingType}
                         onChange={setBeachingType}
                         label="Beaching Type"
                         options={[
-                            { value: 'off_bump', label: 'Off Bump' },
-                            { value: 'random', label: 'Random' },
+                            { value: 'beached_on_bump', label: 'Beached on Bump' },
+                            { value: 'beached_on_fuel_off_bump', label: 'Beached on Fuel (off bump)' },
+                            { value: 'other', label: 'Other' },
                         ]}
                     />
                     <ToggleField
@@ -439,12 +411,13 @@ const ScoutMatch = () => {
                     <OptionSelector
                         value={climbResult}
                         onChange={(v) => setClimbResult(v as typeof climbResult)}
-                        label="Climb Result"
+                        label="Climb Height"
                         options={[
-                            { value: 'none' as const, label: 'None' },
+                            { value: 'none' as const, label: 'No Climb' },
                             { value: 'L1' as const, label: 'L1' },
                             { value: 'L2' as const, label: 'L2' },
                             { value: 'L3' as const, label: 'L3' },
+                            { value: 'failed_attempt' as const, label: 'Failed Attempt' },
                         ]}
                     />
                     <OptionSelector
@@ -460,12 +433,12 @@ const ScoutMatch = () => {
                     <RatingField
                         value={driverSkill}
                         onChange={setDriverSkill}
-                        label="Driver Skill (1–5)"
+                        label="Driver Skill"
                     />
                     <ToggleField
-                        value={disabledOrShutDown}
-                        onChange={setDisabledOrShutDown}
-                        label="Disabled / Shut Down?"
+                        value={incapacitated}
+                        onChange={setIncapacitated}
+                        label="Incapacitated?"
                     />
                 </section>
 
@@ -484,8 +457,30 @@ const ScoutMatch = () => {
                 </section>
             </div>
 
+            {/* Sticky Fuel Counter */}
+            <div className="fixed bottom-24 right-4 flex flex-col gap-2 z-50">
+                <div className="bg-background/80 backdrop-blur-md border-2 border-primary/20 p-2 rounded-2xl shadow-2xl flex flex-col items-center gap-1 min-w-[80px]">
+                    <span className="text-[10px] uppercase font-bold text-muted-foreground">Fuel</span>
+                    <div className="flex items-center gap-3">
+                        <button
+                            onClick={() => setTeleopCycles(prev => Math.max(0, prev - 1))}
+                            className="w-8 h-8 rounded-full bg-secondary flex items-center justify-center text-xl font-bold active:scale-95 transition-transform"
+                        >
+                            -
+                        </button>
+                        <span className="text-2xl font-mono font-black text-primary">{teleopCycles + autoCycles}</span>
+                        <button
+                            onClick={() => setTeleopCycles(prev => prev + 1)}
+                            className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xl font-bold active:scale-95 transition-transform shadow-lg shadow-primary/30"
+                        >
+                            +
+                        </button>
+                    </div>
+                </div>
+            </div>
+
             {/* Submit Button */}
-            <div className="fixed bottom-0 left-0 right-0 p-4 bg-background/95 backdrop-blur border-t border-border">
+            <div className="fixed bottom-0 left-0 right-0 p-4 bg-background/95 backdrop-blur border-t border-border z-40">
                 <button
                     onClick={handleSubmit}
                     disabled={saving || !matchNumber || !teamNumber || Number(matchNumber) <= 0 || Number(teamNumber) <= 0}

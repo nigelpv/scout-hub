@@ -141,24 +141,30 @@ const TeamDetail = () => {
         'L1': 'L1',
         'L2': 'L2',
         'L3': 'L3',
+        'failed_attempt': 'Failed Attempt',
     };
 
     const startingPositionLabels: Record<string, string> = {
-        'left_trench': 'Left Trench',
-        'left_bump': 'Left Bump',
+        'outpost_trench': 'Outpost Trench',
+        'outpost_bump': 'Outpost Bump',
         'hub': 'Hub',
-        'right_trench': 'Right Trench',
-        'right_bump': 'Right Bump',
+        'depot_trench': 'Depot Trench',
+        'depot_bump': 'Depot Bump',
     };
 
     const autoClimbLabels: Record<string, string> = {
         'none': 'None',
         'side': 'Side',
         'middle': 'Middle',
+        'failed_attempt': 'Failed Attempt',
     };
 
     const obstacleLabels: Record<string, string> = {
         'none': 'None',
+        'outpost_trench': 'Outpost Trench',
+        'depot_trench': 'Depot Trench',
+        'outpost_bump': 'Outpost Bump',
+        'depot_bump': 'Depot Bump',
         'trench': 'Trench',
         'bump': 'Bump',
         'both': 'Both',
@@ -240,7 +246,7 @@ const TeamDetail = () => {
                                         <HelpCircle className="w-3.5 h-3.5 text-muted-foreground/50 cursor-help" />
                                     </TooltipTrigger>
                                     <TooltipContent>
-                                        <p className="text-xs max-w-[220px]">Auto hoppers + hoppers passed (auto) + auto climb (15 pts) + Teleop hoppers + hoppers passed (teleop) + Endgame climb (L1 10 / L2 20 / L3 30), averaged across matches</p>
+                                        <p className="text-xs max-w-[220px]">Auto hoppers + hoppers passed (auto) + auto climb (15 pts) + Teleop hoppers + hoppers passed (teleop) + Endgame climb (L1 10 / L2 20 / L3 30), averaged excluding failed attempts</p>
                                     </TooltipContent>
                                 </Tooltip>
                             </TooltipProvider>
@@ -326,31 +332,33 @@ const TeamDetail = () => {
             </div>
 
             {/* Defense */}
-            {stats && stats.defensePlayRate > 0 && (
+            {stats && (stats.defensePlayRate > 0 || stats.avgDefenseEffectiveness > 0) && (
                 <div className="px-4 mb-4">
                     <div className="stat-card">
                         <div className="flex items-center gap-2 mb-4">
                             <Shield className="w-5 h-5 text-destructive" />
                             <h2 className="font-semibold">Defense</h2>
                         </div>
-                        <p className="text-sm text-muted-foreground mb-3">
-                            Played defense in{' '}
-                            <span className="font-bold text-foreground">
-                                {entries.filter(e => Array.isArray(e.defenseType) && e.defenseType.length > 0).length}
-                            </span>
-                            /{entries.length} matches
+                        <div className="flex justify-between items-center mb-4">
+                            <div>
+                                <p className="text-sm text-muted-foreground">Defense Play Rate</p>
+                                <p className="text-xl font-mono font-bold">{stats.defensePlayRate.toFixed(0)}%</p>
+                            </div>
+                            <div className="text-right">
+                                <p className="text-sm text-muted-foreground">Avg Effectiveness</p>
+                                <p className={`text-xl font-mono font-bold ${getRatingColor(stats.avgDefenseEffectiveness, 5)}`}>
+                                    {stats.avgDefenseEffectiveness.toFixed(1)}
+                                </p>
+                            </div>
+                        </div>
+                        <p className="text-xs text-muted-foreground mb-3 italic">
+                            *Effectiveness average excludes zero-value ratings
                         </p>
                         <div className="space-y-1">
-                            {(['pushing', 'blocking', 'poaching'] as const).map(type => {
-                                const count = entries.filter(e => Array.isArray(e.defenseType) && e.defenseType.includes(type)).length;
-                                if (count === 0) return null;
-                                return (
-                                    <div key={type} className="flex justify-between text-sm">
-                                        <span className="capitalize text-muted-foreground">{type}</span>
-                                        <span className="font-medium">{count}×</span>
-                                    </div>
-                                );
-                            })}
+                            <div className="flex justify-between text-sm">
+                                <span className="text-muted-foreground">Matches Played Defense</span>
+                                <span className="font-medium">{entries.filter(e => e.playedDefense).length} / {entries.length}</span>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -416,14 +424,6 @@ const TeamDetail = () => {
                                         <div className="flex justify-between border-b border-border/50 pb-0.5">
                                             <span>Hopper Capacity</span>
                                             <span className="font-mono font-medium">{pitData.hopperCapacity ?? 0}</span>
-                                        </div>
-                                        <div className="flex justify-between border-b border-border/50 pb-0.5">
-                                            <span>Pass Fuel</span>
-                                            <span className="font-medium">{pitData.canPassFuel && pitData.canPassFuel.length > 0 ? pitData.canPassFuel.join(', ') : 'No'}</span>
-                                        </div>
-                                        <div className="flex justify-between border-b border-border/50 pb-0.5">
-                                            <span>Bulldoze Fuel</span>
-                                            <span className="font-medium">{pitData.canBulldozeFuel ? 'Yes' : 'No'}</span>
                                         </div>
                                     </div>
                                 </div>
@@ -566,9 +566,9 @@ const TeamDetail = () => {
                                                 </div>
                                                 <div className="flex justify-between border-b border-border/50 pb-0.5">
                                                     <span>Defense</span>
-                                                    <span className="font-medium text-foreground capitalize">
-                                                        {Array.isArray(entry.defenseType) && entry.defenseType.length > 0
-                                                            ? `${entry.defenseType.join(', ')}${Array.isArray(entry.defenseLocation) && entry.defenseLocation.length > 0 && !entry.defenseLocation.includes('none') ? ' · ' + entry.defenseLocation.join(', ').replace(/_/g, ' ') : ''}`
+                                                    <span className="font-medium text-foreground">
+                                                        {entry.playedDefense
+                                                            ? `Played (${entry.defenseEffectiveness ?? 0}/5)${Array.isArray(entry.defenseLocation) && entry.defenseLocation.length > 0 && !entry.defenseLocation.includes('none') ? ' · ' + entry.defenseLocation.join(', ').replace(/_/g, ' ') : ''}`
                                                             : 'None'}
                                                     </span>
                                                 </div>
@@ -583,9 +583,9 @@ const TeamDetail = () => {
                                                     <span>Driver Skill</span>
                                                     <span className="font-medium text-foreground">{entry.driverSkill ?? '—'}/5</span>
                                                 </div>
-                                                {entry.disabledOrShutDown && (
+                                                {entry.incapacitated && (
                                                     <div className="flex justify-between border-b border-border/50 pb-0.5 text-destructive">
-                                                        <span>Disabled/Shutdown</span>
+                                                        <span>Incapacitated</span>
                                                         <span className="font-medium">Yes</span>
                                                     </div>
                                                 )}

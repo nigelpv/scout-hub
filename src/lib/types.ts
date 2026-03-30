@@ -12,30 +12,29 @@ export interface ScoutingEntry {
     timestamp: number;
 
     // Match Info
-    startingPosition: 'left_trench' | 'left_bump' | 'hub' | 'right_trench' | 'right_bump';
+    startingPosition: 'outpost_trench' | 'outpost_bump' | 'hub' | 'depot_trench' | 'depot_bump';
 
     // Autonomous
     autoCycles: number;
     hoppersPassedAuto: number;
-    autoClimb: 'none' | 'side' | 'middle';
-    autoObstacle: 'none' | 'trench' | 'bump' | 'both';
+    autoClimb: 'none' | 'side' | 'middle' | 'failed_attempt';
+    autoObstacle: 'none' | 'outpost_trench' | 'depot_trench' | 'outpost_bump' | 'depot_bump' | 'both';
 
     // Teleop
     teleopCycles: number;
     hoppersPassed: number;
-    defenseType: string[]; // multi-select: 'pushing', 'blocking', 'poaching'
+    playedDefense: boolean;
+    defenseEffectiveness: number; // 0-5 (0 = none/did not play)
     defenseLocation: string[]; // multi-select: 'none', 'neutral', 'our_alliance', 'their_alliance'
-    shootingRange: string[]; // multi-select: 'alliance', 'close_neutral', 'far_neutral', 'opponent'
     teleopObstacle: 'none' | 'trench' | 'bump' | 'both';
-    beachingType: string[]; // multi-select: 'off_bump', 'random'
-    defenseRating: number; // 0-5 (0 = none)
+    beachingType: string[]; // multi-select: 'beached_on_bump', 'beached_on_fuel_off_bump', 'other'
     herdsFuelThroughTrench: boolean;
 
     // Endgame
-    climbResult: 'none' | 'L1' | 'L2' | 'L3';
+    climbResult: 'none' | 'L1' | 'L2' | 'L3' | 'failed_attempt';
     climbPosition: 'none' | 'side' | 'center';
     driverSkill: number; // 1-5
-    disabledOrShutDown: boolean;
+    incapacitated: boolean;
 
     notes: string;
 }
@@ -56,6 +55,7 @@ export interface TeamStats {
     climbSuccessRate: number;
     l3ClimbRate: number;
     defensePlayRate: number; // % of matches where defense was played
+    avgDefenseEffectiveness: number;
     avgDriverSkill: number;
     totalScore: number; // Computed ranking score
     opr?: number;
@@ -76,8 +76,6 @@ export interface PitScoutingEntry {
     ballsPerSecond: number;
     canGoUnderTrench: boolean;
     canGoOverBump: boolean;
-    canPassFuel: string[]; // multi-select: 'middle', 'opponent_zone'
-    canBulldozeFuel: boolean;
     hopperCapacity: number;
     intakeType: string;
     shooterType: string;

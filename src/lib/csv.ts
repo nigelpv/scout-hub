@@ -119,11 +119,15 @@ export async function exportTeamAveragesToCSV() {
             const teamPitEntry = pitEntries.find(e => e.teamNumber === teamNum);
             const count = teamMatches.length;
 
-            const avg = (key: keyof ScoutingEntry) => {
+            const avg = (key: keyof ScoutingEntry, filterZeros = false) => {
                 if (count === 0) return '';
-                // Assume the field is boolean or numeric
-                const sum = teamMatches.reduce((acc, e) => acc + (Number(e[key]) || 0), 0);
-                return (sum / count).toFixed(2);
+                const values = teamMatches
+                    .map(e => Number(e[key]) || 0)
+                    .filter(v => !filterZeros || v > 0);
+
+                if (values.length === 0) return '0.00';
+                const sum = values.reduce((acc, v) => acc + v, 0);
+                return (sum / values.length).toFixed(2);
             };
 
             const mode = (key: keyof ScoutingEntry) => {
@@ -150,39 +154,33 @@ export async function exportTeamAveragesToCSV() {
 
                 // Auto Averages
                 AutoCycles_Avg: avg('autoCycles'),
-                AutoPreload_Rate: avg('autoPreload'),
-                AutoPreloadScored_Rate: avg('autoPreloadScored'),
-                AutoPreloadCount_Avg: avg('autoPreloadCount'),
                 AutoClimb_Mode: mode('autoClimb'),
                 AutoObstacle_Mode: mode('autoObstacle'),
 
                 // Teleop Averages
                 TeleopCycles_Avg: avg('teleopCycles'),
-                AvgBallsScoredPerCycle_Avg: avg('avgBallsScoredPerCycle'),
-                PasserBot_Rate: avg('isPasserBot'),
-                DefenseRating_Avg: avg('defenseRating'),
-                DefenseType_Mode: mode('defenseType'),
+                PlayedDefense_Rate: avg('playedDefense'),
+                DefenseEffectiveness_Avg: avg('defenseEffectiveness', true),
                 DefenseLocation_Mode: mode('defenseLocation'),
-                ShootingRange_Mode: mode('shootingRange'),
                 TeleopObstacle_Mode: mode('teleopObstacle'),
-                FuelBeaching_Rate: avg('fuelBeaching'),
-                FuelBeachingType_Mode: mode('fuelBeachingType'),
+                HerdsThroughTrench_Rate: avg('herdsFuelThroughTrench'),
 
                 // Endgame Averages
                 ClimbResult_Mode: mode('climbResult'),
                 ClimbPosition_Mode: mode('climbPosition'),
-                ClimbStability_Avg: avg('climbStability'),
+                DriverSkill_Avg: avg('driverSkill', true),
+                Incapacitated_Rate: avg('incapacitated'),
 
                 // Pit Data
-                Pit_EstimatedPoints: teamPitEntry?.estimatedPoints ?? '',
-                Pit_IsPasserBot: teamPitEntry?.isPasserBot ?? '',
-                Pit_AutoClimb: teamPitEntry?.autoClimb ?? '',
-                Pit_RobotClimb: teamPitEntry?.robotClimb ?? '',
-                Pit_MaxBalls: teamPitEntry?.maxBalls ?? '',
+                Pit_AutoClimb: teamPitEntry?.autoClimb?.join('|') ?? '',
+                Pit_RobotClimb: teamPitEntry?.robotClimb?.join('|') ?? '',
+                Pit_BallsPerSecond: teamPitEntry?.ballsPerSecond ?? '',
+                Pit_HopperCapacity: teamPitEntry?.hopperCapacity ?? '',
                 Pit_CanGoUnderTrench: teamPitEntry?.canGoUnderTrench ?? '',
                 Pit_CanGoOverBump: teamPitEntry?.canGoOverBump ?? '',
                 Pit_IntakeType: teamPitEntry?.intakeType ?? '',
-                Pit_ShooterType: teamPitEntry?.shooterType ?? ''
+                Pit_ShooterType: teamPitEntry?.shooterType ?? '',
+                Pit_Notes: teamPitEntry?.notes ?? ''
             };
         });
 
