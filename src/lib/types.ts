@@ -10,6 +10,7 @@ export interface ScoutingEntry {
     teamNumber: number;
     scoutName?: string;
     timestamp: number;
+    shootingRange?: string | string[];
 
     // Match Info
     startingPosition: 'outpost_trench' | 'outpost_bump' | 'hub' | 'depot_trench' | 'depot_bump';
