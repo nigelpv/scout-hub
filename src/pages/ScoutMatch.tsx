@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Save, CheckCircle, RefreshCw, Loader2 } from 'lucide-react';
 import { PageHeader } from '@/components/layout/PageHeader';
-import { Counter } from '@/components/scouting/Counter';
 import { ToggleField } from '@/components/scouting/ToggleField';
 import { OptionSelector } from '@/components/scouting/OptionSelector';
 import { RatingField } from '@/components/scouting/RatingField';
@@ -58,7 +57,7 @@ const ScoutMatch = () => {
     // Teleop
     const [teleopCycles, setTeleopCycles] = useState(0);
     const [hoppersPassed, setHoppersPassed] = useState(0);
-    const [playedDefense, setPlayedDefense] = useState(false);
+    const [playedDefense, setPlayedDefense] = useState(true);
     const [defenseEffectiveness, setDefenseEffectiveness] = useState(0);
     const [defenseLocation, setDefenseLocation] = useState<string[]>([]);
     const [teleopObstacle, setTeleopObstacle] = useState<'none' | 'trench' | 'bump' | 'both'>('none');
@@ -154,7 +153,7 @@ const ScoutMatch = () => {
             setAutoObstacle('none');
             setTeleopCycles(0);
             setHoppersPassed(0);
-            setPlayedDefense(false);
+            setPlayedDefense(true);
             setDefenseEffectiveness(0);
             setDefenseLocation([]);
             setTeleopObstacle('none');
@@ -283,16 +282,7 @@ const ScoutMatch = () => {
                             { value: 'depot_bump' as const, label: 'Depot Bump' },
                         ]}
                     />
-                    <Counter
-                        value={autoCycles}
-                        onChange={setAutoCycles}
-                        label="Hoppers Shot into Hub (Auto)"
-                    />
-                    <Counter
-                        value={hoppersPassedAuto}
-                        onChange={setHoppersPassedAuto}
-                        label="Hoppers Passed (Auto)"
-                    />
+
                     <OptionSelector
                         value={autoClimb}
                         onChange={(v) => setAutoClimb(v as typeof autoClimb)}
@@ -332,16 +322,6 @@ const ScoutMatch = () => {
                             { value: 'bump' as const, label: 'Bump' },
                             { value: 'both' as const, label: 'Both' },
                         ]}
-                    />
-                    <Counter
-                        value={teleopCycles}
-                        onChange={setTeleopCycles}
-                        label="Hoppers Shot into Hub (Teleop)"
-                    />
-                    <Counter
-                        value={hoppersPassed}
-                        onChange={setHoppersPassed}
-                        label="Hoppers Passed (Teleop)"
                     />
 
                     <div className="space-y-4 pt-2">
@@ -455,26 +435,52 @@ const ScoutMatch = () => {
                         />
                     </div>
                 </section>
+                <div className="h-[280px]"></div> {/* Space for sticky scoring bar */}
             </div>
 
-            {/* Sticky Fuel Counter */}
-            <div className="fixed bottom-24 right-4 flex flex-col gap-2 z-50">
-                <div className="bg-background/80 backdrop-blur-md border-2 border-primary/20 p-2 rounded-2xl shadow-2xl flex flex-col items-center gap-1 min-w-[80px]">
-                    <span className="text-[10px] uppercase font-bold text-muted-foreground">Fuel</span>
-                    <div className="flex items-center gap-3">
-                        <button
-                            onClick={() => setTeleopCycles(prev => Math.max(0, prev - 1))}
-                            className="w-8 h-8 rounded-full bg-secondary flex items-center justify-center text-xl font-bold active:scale-95 transition-transform"
-                        >
-                            -
-                        </button>
-                        <span className="text-2xl font-mono font-black text-primary">{teleopCycles + autoCycles}</span>
-                        <button
-                            onClick={() => setTeleopCycles(prev => prev + 1)}
-                            className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xl font-bold active:scale-95 transition-transform shadow-lg shadow-primary/30"
-                        >
-                            +
-                        </button>
+            {/* Sticky Scoring Bar */}
+            <div className="fixed bottom-[84px] left-0 right-0 px-4 py-3 bg-background/95 backdrop-blur-md border-t border-primary/10 shadow-[0_-10px_40px_-15px_rgba(0,0,0,0.3)] z-40 transition-all">
+                <div className="max-w-md mx-auto space-y-3">
+                    {/* Auto Row */}
+                    <div className="flex items-center justify-between gap-4 bg-secondary/20 p-2 rounded-2xl border border-primary/5">
+                        <div className="flex flex-col items-center flex-1">
+                            <span className="text-[10px] uppercase font-black text-muted-foreground tracking-tighter">Auto Hub</span>
+                            <div className="flex items-center gap-3">
+                                <button onClick={() => setAutoCycles(prev => Math.max(0, prev - 1))} className="w-10 h-10 rounded-lg bg-secondary flex items-center justify-center text-xl font-bold active:scale-90 transition-transform">-</button>
+                                <span className="text-2xl font-mono font-black text-primary min-w-[2rem] text-center">{autoCycles}</span>
+                                <button onClick={() => setAutoCycles(prev => prev + 1)} className="w-10 h-10 rounded-lg bg-primary text-primary-foreground flex items-center justify-center text-xl font-bold active:scale-90 transition-transform shadow-lg shadow-primary/20">+</button>
+                            </div>
+                        </div>
+                        <div className="w-px h-10 bg-primary/10"></div>
+                        <div className="flex flex-col items-center flex-1">
+                            <span className="text-[10px] uppercase font-black text-muted-foreground tracking-tighter">Auto Pass</span>
+                            <div className="flex items-center gap-3">
+                                <button onClick={() => setHoppersPassedAuto(prev => Math.max(0, prev - 1))} className="w-10 h-10 rounded-lg bg-secondary flex items-center justify-center text-xl font-bold active:scale-90 transition-transform">-</button>
+                                <span className="text-2xl font-mono font-black text-primary min-w-[2rem] text-center">{hoppersPassedAuto}</span>
+                                <button onClick={() => setHoppersPassedAuto(prev => prev + 1)} className="w-10 h-10 rounded-lg bg-primary text-primary-foreground flex items-center justify-center text-xl font-bold active:scale-90 transition-transform shadow-lg shadow-primary/20">+</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Teleop Row */}
+                    <div className="flex items-center justify-between gap-4 bg-primary/5 p-2 rounded-2xl border border-primary/10">
+                        <div className="flex flex-col items-center flex-1">
+                            <span className="text-[10px] uppercase font-black text-primary/60 tracking-tighter">Teleop Hub</span>
+                            <div className="flex items-center gap-3">
+                                <button onClick={() => setTeleopCycles(prev => Math.max(0, prev - 1))} className="w-12 h-12 rounded-xl bg-secondary flex items-center justify-center text-2xl font-bold active:scale-90 transition-transform">-</button>
+                                <span className="text-3xl font-mono font-black text-primary min-w-[2.5rem] text-center">{teleopCycles}</span>
+                                <button onClick={() => setTeleopCycles(prev => prev + 1)} className="w-12 h-12 rounded-xl bg-primary text-primary-foreground flex items-center justify-center text-2xl font-bold active:scale-90 transition-transform shadow-lg shadow-primary/20">+</button>
+                            </div>
+                        </div>
+                        <div className="w-px h-12 bg-primary/20"></div>
+                        <div className="flex flex-col items-center flex-1">
+                            <span className="text-[10px] uppercase font-black text-primary/60 tracking-tighter">Teleop Pass</span>
+                            <div className="flex items-center gap-3">
+                                <button onClick={() => setHoppersPassed(prev => Math.max(0, prev - 1))} className="w-12 h-12 rounded-xl bg-secondary flex items-center justify-center text-2xl font-bold active:scale-90 transition-transform">-</button>
+                                <span className="text-3xl font-mono font-black text-primary min-w-[2.5rem] text-center">{hoppersPassed}</span>
+                                <button onClick={() => setHoppersPassed(prev => prev + 1)} className="w-12 h-12 rounded-xl bg-primary text-primary-foreground flex items-center justify-center text-2xl font-bold active:scale-90 transition-transform shadow-lg shadow-primary/20">+</button>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
