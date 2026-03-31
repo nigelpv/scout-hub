@@ -439,47 +439,45 @@ const ScoutMatch = () => {
             </div>
 
             {/* Sticky Scoring Bar */}
-            <div className="fixed bottom-[84px] left-0 right-0 px-4 py-3 bg-background/95 backdrop-blur-md border-t border-primary/10 shadow-[0_-10px_40px_-15px_rgba(0,0,0,0.3)] z-40 transition-all">
-                <div className="max-w-md mx-auto space-y-3">
+            <div className="fixed bottom-[80px] left-0 right-0 px-3 py-2 bg-background/95 backdrop-blur-md border-t border-primary/10 shadow-[0_-10px_30px_-10px_rgba(0,0,0,0.3)] z-40 transition-all">
+                <div className="max-w-xl mx-auto space-y-2">
                     {/* Auto Row */}
-                    <div className="flex items-center justify-between gap-4 bg-secondary/20 p-2 rounded-2xl border border-primary/5">
-                        <div className="flex flex-col items-center flex-1">
-                            <span className="text-[10px] uppercase font-black text-muted-foreground tracking-tighter">Auto Hub</span>
-                            <div className="flex items-center gap-3">
-                                <button onClick={() => setAutoCycles(prev => Math.max(0, prev - 1))} className="w-10 h-10 rounded-lg bg-secondary flex items-center justify-center text-xl font-bold active:scale-90 transition-transform">-</button>
-                                <span className="text-2xl font-mono font-black text-primary min-w-[2rem] text-center">{autoCycles}</span>
-                                <button onClick={() => setAutoCycles(prev => prev + 1)} className="w-10 h-10 rounded-lg bg-primary text-primary-foreground flex items-center justify-center text-xl font-bold active:scale-90 transition-transform shadow-lg shadow-primary/20">+</button>
+                    <div className="grid grid-cols-2 gap-2">
+                        <div className="flex items-center justify-between gap-2 bg-secondary/10 p-1.5 rounded-xl border border-primary/5">
+                            <button onClick={() => setAutoCycles(prev => Math.max(0, prev - 1))} className="flex-1 h-10 rounded-lg bg-secondary flex items-center justify-center text-2xl font-bold active:scale-95 transition-transform shadow-sm">-</button>
+                            <div className="flex flex-col items-center min-w-[50px]">
+                                <span className="text-[8px] uppercase font-black text-muted-foreground tracking-tighter">Auto Hub</span>
+                                <span className="text-xl font-mono font-black text-primary">{autoCycles}</span>
                             </div>
+                            <button onClick={() => setAutoCycles(prev => prev + 1)} className="flex-1 h-10 rounded-lg bg-primary text-primary-foreground flex items-center justify-center text-2xl font-bold active:scale-95 transition-transform shadow-md shadow-primary/10">+</button>
                         </div>
-                        <div className="w-px h-10 bg-primary/10"></div>
-                        <div className="flex flex-col items-center flex-1">
-                            <span className="text-[10px] uppercase font-black text-muted-foreground tracking-tighter">Auto Pass</span>
-                            <div className="flex items-center gap-3">
-                                <button onClick={() => setHoppersPassedAuto(prev => Math.max(0, prev - 1))} className="w-10 h-10 rounded-lg bg-secondary flex items-center justify-center text-xl font-bold active:scale-90 transition-transform">-</button>
-                                <span className="text-2xl font-mono font-black text-primary min-w-[2rem] text-center">{hoppersPassedAuto}</span>
-                                <button onClick={() => setHoppersPassedAuto(prev => prev + 1)} className="w-10 h-10 rounded-lg bg-primary text-primary-foreground flex items-center justify-center text-xl font-bold active:scale-90 transition-transform shadow-lg shadow-primary/20">+</button>
+                        <div className="flex items-center justify-between gap-2 bg-secondary/10 p-1.5 rounded-xl border border-primary/5">
+                            <button onClick={() => setHoppersPassedAuto(prev => Math.max(0, prev - 1))} className="flex-1 h-10 rounded-lg bg-secondary flex items-center justify-center text-2xl font-bold active:scale-95 transition-transform shadow-sm">-</button>
+                            <div className="flex flex-col items-center min-w-[50px]">
+                                <span className="text-[8px] uppercase font-black text-muted-foreground tracking-tighter">Auto Pass</span>
+                                <span className="text-xl font-mono font-black text-primary">{hoppersPassedAuto}</span>
                             </div>
+                            <button onClick={() => setHoppersPassedAuto(prev => prev + 1)} className="flex-1 h-10 rounded-lg bg-primary text-primary-foreground flex items-center justify-center text-2xl font-bold active:scale-95 transition-transform shadow-md shadow-primary/10">+</button>
                         </div>
                     </div>
 
                     {/* Teleop Row */}
-                    <div className="flex items-center justify-between gap-4 bg-primary/5 p-2 rounded-2xl border border-primary/10">
-                        <div className="flex flex-col items-center flex-1">
-                            <span className="text-[10px] uppercase font-black text-primary/60 tracking-tighter">Teleop Hub</span>
-                            <div className="flex items-center gap-3">
-                                <button onClick={() => setTeleopCycles(prev => Math.max(0, prev - 1))} className="w-12 h-12 rounded-xl bg-secondary flex items-center justify-center text-2xl font-bold active:scale-90 transition-transform">-</button>
-                                <span className="text-3xl font-mono font-black text-primary min-w-[2.5rem] text-center">{teleopCycles}</span>
-                                <button onClick={() => setTeleopCycles(prev => prev + 1)} className="w-12 h-12 rounded-xl bg-primary text-primary-foreground flex items-center justify-center text-2xl font-bold active:scale-90 transition-transform shadow-lg shadow-primary/20">+</button>
+                    <div className="grid grid-cols-2 gap-2">
+                        <div className="flex items-center justify-between gap-3 bg-secondary/10 p-1.5 rounded-xl border border-primary/10">
+                            <button onClick={() => setTeleopCycles(prev => Math.max(0, prev - 1))} className="flex-1 h-10 rounded-lg bg-secondary flex items-center justify-center text-2xl font-bold active:scale-95 transition-transform shadow-sm">-</button>
+                            <div className="flex flex-col items-center min-w-[55px]">
+                                <span className="text-[9px] uppercase font-black text-primary/60 tracking-wider">Tele Hub</span>
+                                <span className="text-xl font-mono font-black text-primary">{teleopCycles}</span>
                             </div>
+                            <button onClick={() => setTeleopCycles(prev => prev + 1)} className="flex-1 h-10 rounded-lg bg-primary text-primary-foreground flex items-center justify-center text-2xl font-bold active:scale-95 transition-transform shadow-md shadow-primary/10">+</button>
                         </div>
-                        <div className="w-px h-12 bg-primary/20"></div>
-                        <div className="flex flex-col items-center flex-1">
-                            <span className="text-[10px] uppercase font-black text-primary/60 tracking-tighter">Teleop Pass</span>
-                            <div className="flex items-center gap-3">
-                                <button onClick={() => setHoppersPassed(prev => Math.max(0, prev - 1))} className="w-12 h-12 rounded-xl bg-secondary flex items-center justify-center text-2xl font-bold active:scale-90 transition-transform">-</button>
-                                <span className="text-3xl font-mono font-black text-primary min-w-[2.5rem] text-center">{hoppersPassed}</span>
-                                <button onClick={() => setHoppersPassed(prev => prev + 1)} className="w-12 h-12 rounded-xl bg-primary text-primary-foreground flex items-center justify-center text-2xl font-bold active:scale-90 transition-transform shadow-lg shadow-primary/20">+</button>
+                        <div className="flex items-center justify-between gap-3 bg-secondary/10 p-1.5 rounded-xl border border-primary/10">
+                            <button onClick={() => setHoppersPassed(prev => Math.max(0, prev - 1))} className="flex-1 h-10 rounded-lg bg-secondary flex items-center justify-center text-2xl font-bold active:scale-95 transition-transform shadow-sm">-</button>
+                            <div className="flex flex-col items-center min-w-[55px]">
+                                <span className="text-[9px] uppercase font-black text-primary/60 tracking-wider">Tele Pass</span>
+                                <span className="text-xl font-mono font-black text-primary">{hoppersPassed}</span>
                             </div>
+                            <button onClick={() => setHoppersPassed(prev => prev + 1)} className="flex-1 h-10 rounded-lg bg-primary text-primary-foreground flex items-center justify-center text-2xl font-bold active:scale-95 transition-transform shadow-md shadow-primary/10">+</button>
                         </div>
                     </div>
                 </div>
