@@ -407,12 +407,15 @@ const Teams = () => {
                       {team.matchesPlayed} match{team.matchesPlayed !== 1 ? 'es' : ''}
                     </span>
                   </div>
-                  <div className="flex items-center gap-3 text-sm mt-1">
-                    <span className="text-muted-foreground">
+                  <div className="flex flex-wrap items-center gap-3 text-sm mt-1">
+                    <span className="text-muted-foreground whitespace-nowrap">
                       Climb: <span className={getRatingColor(team.climbSuccessRate, 100)}>{team.climbSuccessRate}%</span>
                     </span>
-                    <span className="text-muted-foreground">
-                      Cycles: <span className="text-foreground font-mono">{team.avgAutoCycles + team.avgTeleopCycles}</span>
+                    <span className="text-muted-foreground whitespace-nowrap">
+                      Defense: <span className={getRatingColor(team.avgDefenseEffectiveness, 5)}>{team.avgDefenseEffectiveness.toFixed(1)}</span>
+                    </span>
+                    <span className="text-muted-foreground whitespace-nowrap">
+                      Cycles: <span className="text-foreground font-mono font-bold">{(team.avgAutoCycles + team.avgTeleopCycles).toFixed(1)}</span>
                     </span>
                   </div>
                 </div>

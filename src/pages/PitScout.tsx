@@ -28,8 +28,6 @@ const PitScout = () => {
     const [canGoUnderTrench, setCanGoUnderTrench] = useState(false);
     const [canGoOverBump, setCanGoOverBump] = useState(false);
 
-    const [canPassFuel, setCanPassFuel] = useState<string[]>([]);
-    const [canBulldozeFuel, setCanBulldozeFuel] = useState(false);
 
     const [intakeType, setIntakeType] = useState('');
     const [shooterType, setShooterType] = useState('');
@@ -65,8 +63,6 @@ const PitScout = () => {
             hopperCapacity: parseInt(hopperCapacity) || 0,
             canGoUnderTrench,
             canGoOverBump,
-            canPassFuel,
-            canBulldozeFuel,
             intakeType,
             shooterType,
             frontPhoto,
@@ -251,21 +247,6 @@ const PitScout = () => {
                                     />
                                 </div>
                             </div>
-                            <OptionSelector
-                                multiSelect={true}
-                                value={canPassFuel}
-                                onChange={setCanPassFuel}
-                                label="Can Pass Fuel (Multi-select)"
-                                options={[
-                                    { value: 'middle', label: 'Middle' },
-                                    { value: 'opponent_zone', label: 'Opponent Zone' },
-                                ]}
-                            />
-                            <ToggleField
-                                value={canBulldozeFuel}
-                                onChange={setCanBulldozeFuel}
-                                label="Can Bulldoze Fuel?"
-                            />
                         </section>
 
                         {/* Obstacles */}
