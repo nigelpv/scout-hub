@@ -28,7 +28,6 @@ const PitScout = () => {
     const [canGoUnderTrench, setCanGoUnderTrench] = useState(false);
     const [canGoOverBump, setCanGoOverBump] = useState(false);
 
-    const [canGoOverBump, setCanGoOverBump] = useState(false);
 
     const [intakeType, setIntakeType] = useState('');
     const [shooterType, setShooterType] = useState('');
@@ -248,7 +247,6 @@ const PitScout = () => {
                                     />
                                 </div>
                             </div>
-                            />
                         </section>
 
                         {/* Obstacles */}
