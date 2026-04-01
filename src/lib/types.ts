@@ -54,12 +54,18 @@ export interface TeamStats {
     stdDevTeleopCycles: number;
     avgHoppersPassed: number;
     climbSuccessRate: number;
+    l1ClimbRate: number;
+    l2ClimbRate: number;
     l3ClimbRate: number;
     defensePlayRate: number; // % of matches where defense was played
     avgDefenseEffectiveness: number;
+    defenseLocationStats: Record<string, number>; // Location -> % of defense matches
+    beachingRate: number; // % of matches with any beaching
+    incapRate: number; // % of matches incapacitated
     avgDriverSkill: number;
     totalScore: number; // Computed ranking score
     opr?: number;
+    cycleHistory?: { matchNumber: number; auto: number; teleop: number; total: number }[];
 }
 
 export interface PicklistTeam {

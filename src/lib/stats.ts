@@ -49,11 +49,17 @@ export function calculateTeamStatsFromEntries(entries: ScoutingEntry[]): TeamSta
     ).length;
     const climbSuccessRate = (successfulClimbs / matchesPlayed) * 100;
 
+    const l1Climbs = entries.filter(e => e.climbResult === 'L1').length;
+    const l2Climbs = entries.filter(e => e.climbResult === 'L2').length;
     const l3Climbs = entries.filter(e => e.climbResult === 'L3').length;
+
+    const l1ClimbRate = (l1Climbs / matchesPlayed) * 100;
+    const l2ClimbRate = (l2Climbs / matchesPlayed) * 100;
     const l3ClimbRate = (l3Climbs / matchesPlayed) * 100;
 
     // Defense Stats
-    const defenseMatches = entries.filter(e => e.playedDefense).length;
+    const defenseEntries = entries.filter(e => e.playedDefense);
+    const defenseMatches = defenseEntries.length;
     const defensePlayRate = (defenseMatches / matchesPlayed) * 100;
 
     const defenseEffectivenessValues = entries.map(e => e.defenseEffectiveness || 0).filter(v => v > 0);
@@ -61,11 +67,52 @@ export function calculateTeamStatsFromEntries(entries: ScoutingEntry[]): TeamSta
         ? defenseEffectivenessValues.reduce((a, b) => a + b, 0) / defenseEffectivenessValues.length
         : 0;
 
+    // Defense Location Stats
+    const defenseLocationStats: Record<string, number> = {
+        'neutral': 0,
+        'our_alliance': 0,
+        'their_alliance': 0
+    };
+
+    if (defenseMatches > 0) {
+        defenseEntries.forEach(e => {
+            if (Array.isArray(e.defenseLocation)) {
+                e.defenseLocation.forEach(loc => {
+                    if (defenseLocationStats[loc] !== undefined) {
+                        defenseLocationStats[loc]++;
+                    }
+                });
+            }
+        });
+
+        // Convert to percentages of defense matches
+        Object.keys(defenseLocationStats).forEach(key => {
+            defenseLocationStats[key] = Math.round((defenseLocationStats[key] / defenseMatches) * 100);
+        });
+    }
+
+    // Issues & Stability
+    const beachedMatches = entries.filter(e => e.beachingType && e.beachingType.length > 0 && !e.beachingType.includes('none')).length;
+    const beachingRate = (beachedMatches / matchesPlayed) * 100;
+
+    const incapMatches = entries.filter(e => e.incapacitated).length;
+    const incapRate = (incapMatches / matchesPlayed) * 100;
+
     // Driver Skill
     const driverSkillValues = entries.map(e => e.driverSkill || 0).filter(v => v > 0);
     const avgDriverSkill = driverSkillValues.length > 0
         ? driverSkillValues.reduce((a, b) => a + b, 0) / driverSkillValues.length
         : 0;
+
+    // Cycle History (for Trend Graph)
+    const cycleHistory = entries
+        .sort((a, b) => a.matchNumber - b.matchNumber)
+        .map(e => ({
+            matchNumber: e.matchNumber,
+            auto: e.autoCycles || 0,
+            teleop: e.teleopCycles || 0,
+            total: (e.autoCycles || 0) + (e.teleopCycles || 0)
+        }));
 
     // Score calculation (Match-by-Match)
     const climbPoints: Record<string, number> = {
@@ -110,11 +157,17 @@ export function calculateTeamStatsFromEntries(entries: ScoutingEntry[]): TeamSta
         stdDevTeleopCycles: Math.round(stdDevTeleopCycles * 10) / 10,
         avgHoppersPassed: Math.round(avgHoppersPassed * 10) / 10,
         climbSuccessRate: Math.round(climbSuccessRate),
+        l1ClimbRate: Math.round(l1ClimbRate),
+        l2ClimbRate: Math.round(l2ClimbRate),
         l3ClimbRate: Math.round(l3ClimbRate),
         defensePlayRate: Math.round(defensePlayRate),
         avgDefenseEffectiveness: Math.round(avgDefenseEffectiveness * 10) / 10,
+        defenseLocationStats,
+        beachingRate: Math.round(beachingRate),
+        incapRate: Math.round(incapRate),
         avgDriverSkill: Math.round(avgDriverSkill * 10) / 10,
         totalScore: Math.round(totalScore * 10) / 10,
+        cycleHistory
     };
 }
 
@@ -133,9 +186,18 @@ export function createEmptyStats(teamNumber: number): TeamStats {
         stdDevTeleopCycles: 0,
         avgHoppersPassed: 0,
         climbSuccessRate: 0,
+        l1ClimbRate: 0,
+        l2ClimbRate: 0,
         l3ClimbRate: 0,
         defensePlayRate: 0,
         avgDefenseEffectiveness: 0,
+        defenseLocationStats: {
+            'neutral': 0,
+            'our_alliance': 0,
+            'their_alliance': 0
+        },
+        beachingRate: 0,
+        incapRate: 0,
         avgDriverSkill: 0,
         totalScore: 0,
     };

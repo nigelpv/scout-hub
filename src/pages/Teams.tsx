@@ -1,17 +1,22 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import { ChevronRight, TrendingUp, Loader2, Lock, Unlock, Trash2, X, CheckSquare, Square } from 'lucide-react';
+import { ChevronRight, TrendingUp, Loader2, Lock, Unlock, Trash2, X, CheckSquare, Square, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { getAllTeamStatsFromEntries, getRatingColor } from '@/lib/stats';
-import { getEntries, deleteTeamData, deleteTeamsBatch, getPitEntries, EVENT_KEY, updateEventKey } from '@/lib/storage';
+import { getEntries, deleteTeamData, deleteTeamsBatch, getPitEntries, EVENT_KEY, updateEventKey, getPicklist } from '@/lib/storage';
 import { fetchEventOPRs, getTeamOPR, TBAOprResult } from '@/lib/tba';
 import { exportMatchEntriesToCSV, exportPitEntriesToCSV, exportTeamAveragesToCSV } from '@/lib/csv';
-import { TeamStats } from '@/lib/types';
+import { TeamStats, PicklistTeam } from '@/lib/types';
 import { toast } from 'sonner';
+
+type SortKey = 'rank' | 'climbSuccessRate' | 'avgCycles' | 'avgDefenseEffectiveness' | 'opr';
 
 const Teams = () => {
   const [teams, setTeams] = useState<TeamStats[]>([]);
+  const [picklist, setPicklist] = useState<Record<number, number>>({});
   const [loading, setLoading] = useState(true);
+  const [sortKey, setSortKey] = useState<SortKey>('rank');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
 
   // Admin Mode State
   const [isAdmin, setIsAdmin] = useState(false);
@@ -24,23 +29,29 @@ const Teams = () => {
   const [isUpdatingKey, setIsUpdatingKey] = useState(false);
   const isFetching = useRef(false);
 
-  const loadTeams = useCallback(async (isBackground = false, forceOPR = false) => {
+  const loadTeams = useCallback(async (isBackground = false) => {
     if (isFetching.current) return;
     isFetching.current = true;
 
     if (!isBackground) setLoading(true);
     try {
-      const [entries, pitEntries, newOprData] = await Promise.all([
+      const [entries, pitEntries, newOprData, savedPicklist] = await Promise.all([
         getEntries(),
         getPitEntries(),
-        fetchEventOPRs(EVENT_KEY())
+        fetchEventOPRs(EVENT_KEY()),
+        getPicklist()
       ]);
 
       if (newOprData) setOprData(newOprData);
 
-      // Critical: use result directly or fallback to current state
-      const effectiveOprData = newOprData || oprData;
+      // Map picklist for quick lookup
+      const picklistMap: Record<number, number> = {};
+      savedPicklist.forEach(p => {
+        picklistMap[p.teamNumber] = p.rank;
+      });
+      setPicklist(picklistMap);
 
+      const effectiveOprData = newOprData || oprData;
       const pitTeamNumbers = pitEntries.map(e => e.teamNumber);
       const stats = getAllTeamStatsFromEntries(entries, pitTeamNumbers);
 
@@ -68,8 +79,6 @@ const Teams = () => {
     loadTeams();
 
     const handleUpdate = () => {
-      // Background refresh only, with a small delay to avoid race conditions
-      // and only if we aren't already fetching
       if (!isFetching.current) {
         loadTeams(true);
       }
@@ -78,7 +87,7 @@ const Teams = () => {
     window.addEventListener('scout_entries_updated', handleUpdate);
     window.addEventListener('scout_pit_updated', handleUpdate);
     window.addEventListener('scout_event_key_changed', handleUpdate);
-    
+
     return () => {
       window.removeEventListener('scout_entries_updated', handleUpdate);
       window.removeEventListener('scout_pit_updated', handleUpdate);
@@ -86,6 +95,50 @@ const Teams = () => {
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  const sortedTeams = useMemo(() => {
+    return [...teams].sort((a, b) => {
+      let valA: number;
+      let valB: number;
+
+      switch (sortKey) {
+        case 'rank':
+          valA = picklist[a.teamNumber] || 999;
+          valB = picklist[b.teamNumber] || 999;
+          break;
+        case 'climbSuccessRate':
+          valA = a.climbSuccessRate;
+          valB = b.climbSuccessRate;
+          break;
+        case 'avgCycles':
+          valA = a.avgAutoCycles + a.avgTeleopCycles;
+          valB = b.avgAutoCycles + b.avgTeleopCycles;
+          break;
+        case 'avgDefenseEffectiveness':
+          valA = a.avgDefenseEffectiveness;
+          valB = b.avgDefenseEffectiveness;
+          break;
+        case 'opr':
+          valA = a.opr || 0;
+          valB = b.opr || 0;
+          break;
+        default:
+          return 0;
+      }
+
+      if (sortOrder === 'asc') return valA - valB;
+      return valB - valA;
+    });
+  }, [teams, sortKey, sortOrder, picklist]);
+
+  const toggleSort = (key: SortKey) => {
+    if (sortKey === key) {
+      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortKey(key);
+      setSortOrder(key === 'rank' ? 'asc' : 'desc');
+    }
+  };
 
   // Admin Functions
   const handleAuth = (e: React.FormEvent) => {
@@ -180,7 +233,6 @@ const Teams = () => {
     const success = await updateEventKey(newEventKey.trim(), adminPassword);
     if (success) {
       toast.success(`Switched to event: ${newEventKey}`);
-      // The event listener will trigger loadTeams(true) via 'scout_event_key_changed'
     } else {
       toast.error('Failed to update event key');
     }
@@ -202,6 +254,11 @@ const Teams = () => {
     toast.info('Exited admin mode');
   };
 
+  const SortIcon = ({ k }: { k: SortKey }) => {
+    if (sortKey !== k) return <ArrowUpDown className="w-3 h-3 opacity-30" />;
+    return sortOrder === 'asc' ? <ArrowUp className="w-3 h-3 text-primary" /> : <ArrowDown className="w-3 h-3 text-primary" />;
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-background">
@@ -220,9 +277,9 @@ const Teams = () => {
         rightContent={
           <div className="flex items-center gap-2">
             <button
-              onClick={() => loadTeams(false, true)}
+              onClick={() => loadTeams(false)}
               className="p-2 rounded-lg hover:bg-secondary text-muted-foreground transition-colors"
-              title="Refresh OPRs"
+              title="Refresh Data"
             >
               <TrendingUp className="w-5 h-5" />
             </button>
@@ -264,194 +321,125 @@ const Teams = () => {
         </div>
       )}
 
-      {/* Select All / Actions Bar */}
+      {/* Sorting Header */}
+      {!isAdmin && (
+        <div className="sticky top-[64px] z-30 bg-background/95 backdrop-blur-md border-b border-border px-4 py-2 flex items-center justify-between overflow-x-auto no-scrollbar gap-4">
+          <button onClick={() => toggleSort('rank')} className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-muted-foreground whitespace-nowrap">
+            Rank <SortIcon k="rank" />
+          </button>
+          <div className="flex items-center gap-4">
+            <button onClick={() => toggleSort('avgCycles')} className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-muted-foreground whitespace-nowrap">
+              Cycles <SortIcon k="avgCycles" />
+            </button>
+            <button onClick={() => toggleSort('climbSuccessRate')} className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-muted-foreground whitespace-nowrap">
+              Climb <SortIcon k="climbSuccessRate" />
+            </button>
+            <button onClick={() => toggleSort('avgDefenseEffectiveness')} className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-muted-foreground whitespace-nowrap">
+              Defense <SortIcon k="avgDefenseEffectiveness" />
+            </button>
+            <button onClick={() => toggleSort('opr')} className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-muted-foreground whitespace-nowrap">
+              OPR <SortIcon k="opr" />
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Admin Actions Bar */}
       {isAdmin && (
         <div className="px-4 py-2 flex items-center justify-between bg-secondary/30 border-b border-border">
           <div className="flex gap-2">
-            <button
-              onClick={handleSelectAll}
-              className="text-xs font-medium text-primary hover:underline"
-            >
-              Select All
-            </button>
+            <button onClick={handleSelectAll} className="text-xs font-medium text-primary hover:underline">Select All</button>
             <span className="text-xs text-muted-foreground">|</span>
-            <button
-              onClick={handleDeselectAll}
-              className="text-xs font-medium text-muted-foreground hover:text-foreground hover:underline"
-            >
-              Deselect
-            </button>
+            <button onClick={handleDeselectAll} className="text-xs font-medium text-muted-foreground hover:text-foreground hover:underline">Deselect</button>
           </div>
-          <div className="flex gap-2">
-            <button
-              onClick={handleExportMatchCSV}
-              className="text-xs font-medium text-emerald-600 hover:text-emerald-700 hover:underline"
-            >
-              Export Match (CSV)
-            </button>
-            <span className="text-xs text-muted-foreground">|</span>
-            <button
-              onClick={handleExportPitCSV}
-              className="text-xs font-medium text-emerald-600 hover:text-emerald-700 hover:underline"
-            >
-              Export Pit (CSV)
-            </button>
-            <span className="text-xs text-muted-foreground">|</span>
-            <button
-              onClick={handleExportAveragesCSV}
-              className="text-xs font-medium text-emerald-600 hover:text-emerald-700 hover:underline"
-            >
-              Export Averages (CSV)
-            </button>
-          </div>
-          <span className="text-xs text-muted-foreground">
-            {selectedTeams.size} selected
-          </span>
-        </div>
-      )}
-
-      {/* Competition Settings */}
-      {isAdmin && (
-        <div className="px-4 py-4 bg-secondary/10 border-b border-border">
-          <div className="flex flex-col gap-2">
-            <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Competition Settings</h4>
-            <div className="flex gap-2">
-              <div className="relative flex-1">
-                <input
-                  type="text"
-                  value={newEventKey}
-                  onChange={(e) => setNewEventKey(e.target.value)}
-                  placeholder="e.g. 2026cahal"
-                  className="w-full h-10 px-3 rounded-md bg-background border border-border focus:border-primary outline-none font-mono"
-                  disabled={isUpdatingKey || !navigator.onLine}
-                />
-                {!navigator.onLine && (
-                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] text-warning font-medium">Offline</span>
-                )}
-              </div>
-              <button
-                type="button"
-                onClick={handleUpdateEventKey}
-                disabled={isUpdatingKey || !navigator.onLine || !newEventKey.trim()}
-                className="h-10 px-4 bg-primary text-primary-foreground rounded-md font-medium disabled:opacity-50 flex items-center gap-2"
-              >
-                {isUpdatingKey && <Loader2 className="w-4 h-4 animate-spin" />}
-                Switch Event
-              </button>
-            </div>
-            <p className="text-[10px] text-muted-foreground">
-              Changing the event key will instantly switch the entire app to the new competition.
-            </p>
+          <div className="flex gap-2 text-xs font-medium text-emerald-600">
+            <button onClick={handleExportMatchCSV} className="hover:underline">Match CSV</button>
+            <span className="text-muted-foreground">|</span>
+            <button onClick={handleExportPitCSV} className="hover:underline">Pit CSV</button>
+            <span className="text-muted-foreground">|</span>
+            <button onClick={handleExportAveragesCSV} className="hover:underline">Avgs CSV</button>
           </div>
         </div>
       )}
 
-      {/* Batch Delete Floating Button */}
-      {isAdmin && selectedTeams.size > 0 && (
-        <div className="fixed bottom-4 left-4 right-4 z-40 animate-in slide-in-from-bottom-4 fade-in">
-          <div className="bg-destructive text-destructive-foreground rounded-xl shadow-lg p-4 flex items-center justify-between">
-            <span className="font-medium">{selectedTeams.size} teams selected</span>
-            <button
-              onClick={handleBatchDelete}
-              className="bg-white/20 hover:bg-white/30 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
-            >
-              Delete All Data
-            </button>
-          </div>
-        </div>
-      )}
-
-      <div className="p-4">
-        {teams.length === 0 ? (
+      {/* Team List */}
+      <div className="p-4 space-y-3">
+        {sortedTeams.length === 0 ? (
           <div className="text-center py-12">
-            <p className="text-muted-foreground mb-2">No teams scouted yet</p>
-            <Link to="/scout" className="text-primary font-medium">
-              Start scouting →
-            </Link>
+            <p className="text-muted-foreground mb-2">No teams found</p>
+            <Link to="/scout" className="text-primary font-medium">Start scouting →</Link>
           </div>
         ) : (
-          <div className="space-y-2">
-            {teams.map((team, index) => (
-              <Link
-                key={team.teamNumber}
-                to={`/team/${team.teamNumber}`}
-                onClick={(e) => {
-                  if (isAdmin) {
-                    e.preventDefault();
-                    toggleSelection(team.teamNumber);
-                  }
-                }}
-                className={`stat-card flex items-center gap-4 transition-transform ${!isAdmin ? 'active:scale-[0.99]' : 'cursor-pointer'}`}
-              >
-                {/* Checkbox for Admin */}
-                {isAdmin && (
-                  <div className={`p-1 -ml-1 rounded ${selectedTeams.has(team.teamNumber) ? 'text-primary' : 'text-muted-foreground'}`}>
-                    {selectedTeams.has(team.teamNumber) ? (
-                      <CheckSquare className="w-5 h-5" />
-                    ) : (
-                      <Square className="w-5 h-5" />
-                    )}
+          sortedTeams.map((team) => (
+            <Link
+              key={team.teamNumber}
+              to={`/team/${team.teamNumber}`}
+              onClick={(e) => {
+                if (isAdmin) {
+                  e.preventDefault();
+                  toggleSelection(team.teamNumber);
+                }
+              }}
+              className={`stat-card block relative overflow-hidden transition-all ${!isAdmin ? 'active:scale-[0.98]' : 'cursor-pointer'
+                }`}
+            >
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-3">
+                  {isAdmin && (
+                    <div className={selectedTeams.has(team.teamNumber) ? 'text-primary' : 'text-muted-foreground'}>
+                      {selectedTeams.has(team.teamNumber) ? <CheckSquare className="w-5 h-5" /> : <Square className="w-5 h-5" />}
+                    </div>
+                  )}
+                  <div className={`w-8 h-8 rounded-full flex items-center justify-center font-mono font-bold text-sm ${(!isAdmin && (picklist[team.teamNumber] || 99) <= 3) ? 'bg-primary text-primary-foreground' : 'bg-secondary'
+                    }`}>
+                    {picklist[team.teamNumber] || '—'}
                   </div>
-                )}
-
-                {/* Rank */}
-                {!isAdmin && (
-                  <div className="w-8 h-8 rounded-full bg-secondary flex items-center justify-center font-mono font-bold text-sm">
-                    {index + 1}
-                  </div>
-                )}
-
-                {/* Team Info */}
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
-                    <span className="font-mono text-lg font-bold">
-                      {team.teamNumber}
-                    </span>
-                    <span className="text-xs text-muted-foreground">
+                  <div>
+                    <span className="font-mono text-2xl font-black">{team.teamNumber}</span>
+                    <span className="ml-2 text-[10px] text-muted-foreground uppercase font-bold tracking-widest">
                       {team.matchesPlayed} match{team.matchesPlayed !== 1 ? 'es' : ''}
                     </span>
                   </div>
-                  <div className="flex flex-wrap items-center gap-3 text-sm mt-1">
-                    <span className="text-muted-foreground whitespace-nowrap">
-                      Climb: <span className={getRatingColor(team.climbSuccessRate, 100)}>{team.climbSuccessRate}%</span>
-                    </span>
-                    <span className="text-muted-foreground whitespace-nowrap">
-                      Defense: <span className={getRatingColor(team.avgDefenseEffectiveness, 5)}>{team.avgDefenseEffectiveness.toFixed(1)}</span>
-                    </span>
-                    <span className="text-muted-foreground whitespace-nowrap">
-                      Cycles: <span className="text-foreground font-mono font-bold">{(team.avgAutoCycles + team.avgTeleopCycles).toFixed(1)}</span>
-                    </span>
-                  </div>
                 </div>
-
-                {/* Score/OPR */}
-                <div className="text-right flex flex-col items-end gap-1">
-                  <div className="flex items-center gap-1 text-primary">
-                    <span className="text-[10px] text-muted-foreground uppercase tracking-wider mr-1">Score:</span>
-                    <span className="font-mono font-bold">
-                      {team.totalScore}
-                    </span>
+                <div className="flex items-center gap-2">
+                  <div className="text-right">
+                    <p className="text-[10px] text-muted-foreground uppercase font-black leading-none mb-0.5">OPR</p>
+                    <p className="text-xl font-mono font-black text-info italic leading-none">
+                      {team.opr !== undefined ? team.opr.toFixed(1) : 'N/A'}
+                    </p>
                   </div>
-                  <div className="flex items-center gap-1 text-info">
-                    <span className="text-[10px] text-muted-foreground uppercase tracking-wider mr-1">OPR:</span>
-                    <span className="font-mono font-bold">
-                      {team.opr !== undefined ? team.opr : 'N/A'}
-                    </span>
-                  </div>
+                  {!isAdmin && <ChevronRight className="w-5 h-5 text-muted-foreground/30" />}
+                  {isAdmin && !selectedTeams.has(team.teamNumber) && (
+                    <button onClick={(e) => handleDeleteTeam(e, team.teamNumber)} className="p-2 text-muted-foreground hover:text-destructive">
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  )}
                 </div>
+              </div>
 
-                {!isAdmin && <ChevronRight className="w-5 h-5 text-muted-foreground" />}
-                {isAdmin && !selectedTeams.has(team.teamNumber) && (
-                  <button
-                    onClick={(e) => handleDeleteTeam(e, team.teamNumber)}
-                    className="p-2 text-muted-foreground hover:text-destructive transition-colors"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                )}
-              </Link>
-            ))}
-          </div>
+              {/* Primary Metrics Row */}
+              <div className="grid grid-cols-3 gap-2">
+                <div className="bg-secondary/20 p-2 rounded-lg border border-border/50">
+                  <p className="text-[9px] text-muted-foreground uppercase font-bold tracking-tighter mb-1">Cycles</p>
+                  <p className="text-2xl font-mono font-black leading-none">
+                    {(team.avgAutoCycles + team.avgTeleopCycles).toFixed(1)}
+                  </p>
+                </div>
+                <div className="bg-secondary/20 p-2 rounded-lg border border-border/50">
+                  <p className="text-[9px] text-muted-foreground uppercase font-bold tracking-tighter mb-1">Climb</p>
+                  <p className={`text-2xl font-mono font-black leading-none ${getRatingColor(team.climbSuccessRate, 100)}`}>
+                    {team.climbSuccessRate}%
+                  </p>
+                </div>
+                <div className="bg-secondary/20 p-2 rounded-lg border border-border/50">
+                  <p className="text-[9px] text-muted-foreground uppercase font-bold tracking-tighter mb-1">Defense</p>
+                  <p className={`text-2xl font-mono font-black leading-none ${getRatingColor(team.avgDefenseEffectiveness, 5)}`}>
+                    {team.avgDefenseEffectiveness.toFixed(1)}
+                  </p>
+                </div>
+              </div>
+            </Link>
+          ))
         )}
       </div>
     </div>
