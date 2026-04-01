@@ -346,18 +346,42 @@ const Teams = () => {
 
       {/* Admin Actions Bar */}
       {isAdmin && (
-        <div className="px-4 py-2 flex items-center justify-between bg-secondary/30 border-b border-border">
-          <div className="flex gap-2">
-            <button onClick={handleSelectAll} className="text-xs font-medium text-primary hover:underline">Select All</button>
-            <span className="text-xs text-muted-foreground">|</span>
-            <button onClick={handleDeselectAll} className="text-xs font-medium text-muted-foreground hover:text-foreground hover:underline">Deselect</button>
+        <div className="flex flex-col bg-secondary/30 border-b border-border">
+          <div className="px-4 py-2 flex items-center justify-between border-b border-border/50">
+            <div className="flex gap-2">
+              <button onClick={handleSelectAll} className="text-xs font-medium text-primary hover:underline">Select All</button>
+              <span className="text-xs text-muted-foreground">|</span>
+              <button onClick={handleDeselectAll} className="text-xs font-medium text-muted-foreground hover:text-foreground hover:underline">Deselect</button>
+            </div>
+            <div className="flex gap-2 text-xs font-medium text-emerald-600">
+              <button onClick={handleExportMatchCSV} className="hover:underline">Match CSV</button>
+              <span className="text-muted-foreground">|</span>
+              <button onClick={handleExportPitCSV} className="hover:underline">Pit CSV</button>
+              <span className="text-muted-foreground">|</span>
+              <button onClick={handleExportAveragesCSV} className="hover:underline">Avgs CSV</button>
+            </div>
           </div>
-          <div className="flex gap-2 text-xs font-medium text-emerald-600">
-            <button onClick={handleExportMatchCSV} className="hover:underline">Match CSV</button>
-            <span className="text-muted-foreground">|</span>
-            <button onClick={handleExportPitCSV} className="hover:underline">Pit CSV</button>
-            <span className="text-muted-foreground">|</span>
-            <button onClick={handleExportAveragesCSV} className="hover:underline">Avgs CSV</button>
+          <div className="px-4 py-2 flex items-center justify-between gap-4">
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] font-bold text-muted-foreground uppercase">Event:</span>
+              <span className="text-xs font-mono font-bold text-primary">{EVENT_KEY()}</span>
+            </div>
+            <div className="flex items-center gap-2 flex-1 max-w-[200px]">
+              <input
+                type="text"
+                value={newEventKey}
+                onChange={(e) => setNewEventKey(e.target.value)}
+                placeholder="New Event Key"
+                className="w-full h-8 px-2 text-xs rounded border border-border bg-background font-mono focus:border-primary outline-none"
+              />
+              <button
+                onClick={handleUpdateEventKey}
+                disabled={isUpdatingKey || !newEventKey.trim() || newEventKey === EVENT_KEY()}
+                className="h-8 px-3 text-xs bg-primary text-primary-foreground rounded font-medium whitespace-nowrap disabled:opacity-50"
+              >
+                {isUpdatingKey ? <Loader2 className="w-3 h-3 animate-spin" /> : 'Switch'}
+              </button>
+            </div>
           </div>
         </div>
       )}
