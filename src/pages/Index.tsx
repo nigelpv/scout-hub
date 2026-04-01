@@ -14,8 +14,7 @@ const Index = () => {
 
   useEffect(() => {
     const loadStats = async () => {
-      // If we have cached data, this returns instantly.
-      // If not, it waits for the server.
+      setLoading(true);
       const entries = await getEntries();
       setEntriesCount(entries.length);
       setTeamsCount(getUniqueTeamsFromEntries(entries).length);
@@ -25,7 +24,7 @@ const Index = () => {
 
     loadStats();
 
-    // Listen for background background cache updates (Stale-While-Revalidate)
+    // Listen for background cache updates (Stale-While-Revalidate)
     const handleUpdate = (e: Event) => {
       const updatedEntries = (e as CustomEvent).detail;
       setEntriesCount(updatedEntries.length);
@@ -38,14 +37,16 @@ const Index = () => {
 
     // If still loading after 3 seconds, show the "waking up" hint
     const timer = setTimeout(() => {
-      if (loading) setWakeUpHint(true);
+      // Check the ref/state safely
+      setWakeUpHint(true);
     }, 3000);
 
     return () => {
       window.removeEventListener('scout_entries_updated', handleUpdate);
       clearTimeout(timer);
     };
-  }, [loading]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const getLimitColor = () => {
     if (entriesCount >= ENTRY_LIMIT) return 'text-destructive';

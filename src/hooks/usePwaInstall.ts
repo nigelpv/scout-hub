@@ -6,6 +6,11 @@ export function usePwaInstall() {
     const [isInstallable, setIsInstallable] = useState(false);
 
     useEffect(() => {
+        // Don't show install prompt if already in standalone mode
+        if (window.matchMedia('(display-mode: standalone)').matches) {
+            return;
+        }
+
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const handler = (e: any) => {
             // Prevent the mini-infobar from appearing on mobile
@@ -14,6 +19,7 @@ export function usePwaInstall() {
             setDeferredPrompt(e);
             // Update UI notify the user they can install the PWA
             setIsInstallable(true);
+            console.log('PWA: beforeinstallprompt event fired');
         };
 
         window.addEventListener('beforeinstallprompt', handler);

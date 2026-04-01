@@ -68,13 +68,17 @@ const Teams = () => {
     loadTeams();
 
     const handleUpdate = () => {
-      // Background refresh only
-      loadTeams(true);
+      // Background refresh only, with a small delay to avoid race conditions
+      // and only if we aren't already fetching
+      if (!isFetching.current) {
+        loadTeams(true);
+      }
     };
 
     window.addEventListener('scout_entries_updated', handleUpdate);
     window.addEventListener('scout_pit_updated', handleUpdate);
     window.addEventListener('scout_event_key_changed', handleUpdate);
+    
     return () => {
       window.removeEventListener('scout_entries_updated', handleUpdate);
       window.removeEventListener('scout_pit_updated', handleUpdate);

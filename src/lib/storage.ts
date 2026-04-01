@@ -44,6 +44,44 @@ function dispatchSyncUpdate(isSyncing: boolean) {
   window.dispatchEvent(new CustomEvent(SYNC_EVENT, { detail: status }));
 }
 
+// Track active fetches to prevent redundant background requests
+const activeFetches: Record<string, Promise<any> | null> = {};
+
+async function fetchWithCache(key: string, url: string, dispatchEventName: string, initialData: any[]): Promise<any[]> {
+  // If a fetch is already in progress for this key, return the existing promise
+  if (activeFetches[key]) {
+    return activeFetches[key];
+  }
+
+  const fetchPromise = (async () => {
+    try {
+      const response = await fetch(url);
+      if (!response.ok) throw new Error(`Failed to fetch ${key}`);
+      const data = await response.json();
+
+      // Simple equality check to avoid redundant UI updates
+      const currentCached = localStorage.getItem(key);
+      const newDataStr = JSON.stringify(data);
+      
+      if (currentCached !== newDataStr) {
+        localStorage.setItem(key, newDataStr);
+        // Dispatch event only if data changed
+        window.dispatchEvent(new CustomEvent(dispatchEventName, { detail: data }));
+      }
+
+      return data;
+    } catch (error) {
+      console.error(`Error fetching ${key}:`, error);
+      return initialData;
+    } finally {
+      activeFetches[key] = null;
+    }
+  })();
+
+  activeFetches[key] = fetchPromise;
+  return fetchPromise;
+}
+
 // ============ ENTRIES ============
 
 export async function getEntries(): Promise<ScoutingEntry[]> {
@@ -54,30 +92,17 @@ export async function getEntries(): Promise<ScoutingEntry[]> {
   const cached = localStorage.getItem(cacheKey);
   const initialEntries: ScoutingEntry[] = cached ? JSON.parse(cached) : [];
 
-  // Fetch from server in the background
-  const fetchPromise = (async () => {
-    try {
-      const response = await fetch(`${API_URL}/entries?event=${eventKey}`);
-      if (!response.ok) throw new Error('Failed to fetch entries');
-      const data = await response.json();
+  // If no cache, wait for fetch. If cache exists, trigger background fetch but return cache now.
+  const url = `${API_URL}/entries?event=${eventKey}`;
+  const fetchPromise = fetchWithCache(cacheKey, url, 'scout_entries_updated', initialEntries);
 
-      // Filter for safety in case backend hasn't implemented filtering yet
-      const filteredData = data.filter((e: ScoutingEntry) => e.event === eventKey);
+  if (initialEntries.length > 0) {
+    // Avoid re-fetching too frequently if we just fetched
+    // For now, we still trigger background fetch but fetchWithCache handles deduplication
+    return initialEntries;
+  }
 
-      localStorage.setItem(cacheKey, JSON.stringify(filteredData));
-
-      // Dispatch event so UI can refresh if it wants
-      window.dispatchEvent(new CustomEvent('scout_entries_updated', { detail: filteredData }));
-
-      return filteredData;
-    } catch (error) {
-      console.error('Error fetching entries:', error);
-      return initialEntries;
-    }
-  })();
-
-  // If we have cached data, return it. If not, wait for fetch.
-  return initialEntries.length > 0 ? initialEntries : fetchPromise;
+  return fetchPromise;
 }
 
 export async function getEntriesForTeam(teamNumber: number): Promise<ScoutingEntry[]> {
@@ -395,25 +420,14 @@ export async function getPitEntries(): Promise<PitScoutingEntry[]> {
   const cached = localStorage.getItem(cacheKey);
   const initialEntries: PitScoutingEntry[] = cached ? JSON.parse(cached) : [];
 
-  const fetchPromise = (async () => {
-    try {
-      const response = await fetch(`${API_URL}/pit?event=${eventKey}`);
-      if (!response.ok) throw new Error('Failed to fetch pit entries');
-      const data = await response.json();
+  const url = `${API_URL}/pit?event=${eventKey}`;
+  const fetchPromise = fetchWithCache(cacheKey, url, 'scout_pit_updated', initialEntries);
 
-      // Filter for safety
-      const filteredData = data.filter((e: PitScoutingEntry) => e.event === eventKey);
+  if (initialEntries.length > 0) {
+    return initialEntries;
+  }
 
-      localStorage.setItem(cacheKey, JSON.stringify(filteredData));
-      window.dispatchEvent(new CustomEvent('scout_pit_updated', { detail: filteredData }));
-      return filteredData;
-    } catch (error) {
-      console.error('Error fetching pit entries:', error);
-      return initialEntries;
-    }
-  })();
-
-  return initialEntries.length > 0 ? initialEntries : fetchPromise;
+  return fetchPromise;
 }
 
 export async function getPitEntryForTeam(teamNumber: number): Promise<PitScoutingEntry | null> {
