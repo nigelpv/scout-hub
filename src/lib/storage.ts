@@ -56,7 +56,14 @@ async function fetchWithCache(key: string, url: string, dispatchEventName: strin
   const fetchPromise = (async () => {
     try {
       const response = await fetch(url);
-      if (!response.ok) throw new Error(`Failed to fetch ${key}`);
+      if (!response.ok) {
+        const errorText = await response.text().catch(() => 'No body');
+        console.error(`[FETCH ERROR] ${key} - Status: ${response.status} (${response.statusText})`, {
+            url,
+            bodyPreview: errorText.substring(0, 200)
+        });
+        throw new Error(`Failed to fetch ${key}: ${response.status} ${response.statusText}`);
+      }
       const data = await response.json();
 
       // Simple equality check to avoid redundant UI updates
@@ -71,7 +78,7 @@ async function fetchWithCache(key: string, url: string, dispatchEventName: strin
 
       return data;
     } catch (error) {
-      console.error(`Error fetching ${key}:`, error);
+      console.error(`[CACHE ERROR] ${key}:`, error);
       return initialData;
     } finally {
       activeFetches[key] = null;
@@ -108,10 +115,14 @@ export async function getEntries(): Promise<ScoutingEntry[]> {
 export async function getEntriesForTeam(teamNumber: number): Promise<ScoutingEntry[]> {
   try {
     const response = await fetch(`${API_URL}/entries/team/${teamNumber}`);
-    if (!response.ok) throw new Error('Failed to fetch team entries');
+    if (!response.ok) {
+        const errorText = await response.text().catch(() => 'No body');
+        console.error(`[FETCH ERROR] Team Entries - Status: ${response.status}`, { teamNumber, body: errorText.substring(0, 200) });
+        throw new Error('Failed to fetch team entries');
+    }
     return await response.json();
   } catch (error) {
-    console.error('Error fetching team entries:', error);
+    console.error(`[TEAM FETCH ERROR] Team ${teamNumber}:`, error);
     return [];
   }
 }
@@ -135,29 +146,33 @@ export async function saveEntry(entry: ScoutingEntry): Promise<{ success: boolea
       body: JSON.stringify(entry),
     });
 
-    if (response.ok) {
-      // Update local cache immediately
-      const current = await getEntries();
-      const updated = [entry, ...current.filter(e => e.id !== entry.id)];
-      localStorage.setItem(ENTRIES_CACHE_KEY_PREFIX + entry.event, JSON.stringify(updated));
-      window.dispatchEvent(new CustomEvent('scout_entries_updated', { detail: updated }));
+    if (!response.ok) {
+      const errorText = await response.text().catch(() => 'No body');
+      console.error(`[FETCH ERROR] Save Entry - Status: ${response.status}`, { team: entry.teamNumber, body: errorText.substring(0, 200) });
+      
+      // If server says limit reached (403), don't queue locally
+      if (response.status === 403) {
+        toast.error(`Entry limit reached on server. Please delete old entries.`);
+        return { success: false, limitReached: true };
+      }
 
-      return { success: true };
+      // If server error (500+), queue it locally
+      if (response.status >= 500) {
+        queueEntryLocally(entry);
+        return { success: true, offline: true };
+      }
+
+      return { success: false };
     }
 
-    // If server says limit reached (403), don't queue locally
-    if (response.status === 403) {
-      toast.error(`Entry limit reached on server. Please delete old entries.`);
-      return { success: false, limitReached: true };
-    }
+    // response.ok is true
+    // Update local cache immediately
+    const current = await getEntries();
+    const updated = [entry, ...current.filter(e => e.id !== entry.id)];
+    localStorage.setItem(ENTRIES_CACHE_KEY_PREFIX + entry.event, JSON.stringify(updated));
+    window.dispatchEvent(new CustomEvent('scout_entries_updated', { detail: updated }));
 
-    // If server error (500+), queue it locally
-    if (response.status >= 500) {
-      queueEntryLocally(entry);
-      return { success: true, offline: true };
-    }
-
-    return { success: false };
+    return { success: true };
   } catch (error) {
     // Network error (offline), check if we can queue locally
     const pending = getPendingEntries();
@@ -225,9 +240,12 @@ export async function syncPendingEntries(): Promise<void> {
       if (response.ok) {
         successCount++;
       } else {
+        const errorText = await response.text().catch(() => 'No body');
+        console.error(`[SYNC ERROR] Match Entry ${entry.id} - Status: ${response.status}`, { body: errorText.substring(0, 200) });
         remaining.push(entry);
       }
     } catch (error) {
+      console.error(`[SYNC NETWORK ERROR] Match Entry ${entry.id}:`, error);
       remaining.push(entry);
     }
   }
@@ -249,9 +267,12 @@ export async function syncPendingEntries(): Promise<void> {
       if (response.ok) {
         pitSuccessCount++;
       } else {
+        const errorText = await response.text().catch(() => 'No body');
+        console.error(`[SYNC ERROR] Pit Entry for ${entry.teamNumber} - Status: ${response.status}`, { body: errorText.substring(0, 200) });
         remainingPit.push(entry);
       }
     } catch (error) {
+      console.error(`[SYNC NETWORK ERROR] Pit Entry for ${entry.teamNumber}:`, error);
       remainingPit.push(entry);
     }
   }
@@ -466,20 +487,23 @@ export async function savePitEntry(entry: PitScoutingEntry): Promise<{ success: 
       body: JSON.stringify(entry),
     });
 
-    if (response.ok) {
-      const current = await getPitEntries();
-      const updated = [entry, ...current.filter(e => e.teamNumber !== entry.teamNumber)];
-      localStorage.setItem(PIT_CACHE_KEY_PREFIX + entry.event, JSON.stringify(updated));
-      window.dispatchEvent(new CustomEvent('scout_pit_updated', { detail: updated }));
-      return { success: true };
+    if (!response.ok) {
+      const errorText = await response.text().catch(() => 'No body');
+      console.error(`[FETCH ERROR] Save Pit Entry - Status: ${response.status}`, { team: entry.teamNumber, body: errorText.substring(0, 200) });
+      
+      if (response.status >= 500) {
+        queuePitEntryLocally(entry);
+        return { success: true, offline: true };
+      }
+      return { success: false };
     }
 
-    if (response.status >= 500) {
-      queuePitEntryLocally(entry);
-      return { success: true, offline: true };
-    }
-
-    return { success: false };
+    // response.ok is true
+    const current = await getPitEntries();
+    const updated = [entry, ...current.filter(e => e.teamNumber !== entry.teamNumber)];
+    localStorage.setItem(PIT_CACHE_KEY_PREFIX + entry.event, JSON.stringify(updated));
+    window.dispatchEvent(new CustomEvent('scout_pit_updated', { detail: updated }));
+    return { success: true };
   } catch (error) {
     console.warn('Network error, saving pit entry locally:', error);
     queuePitEntryLocally(entry);
