@@ -20,9 +20,15 @@ router.get('/event-key', async (req, res) => {
             throw error;
         }
         res.json({ eventKey: data.value });
-    } catch (err: unknown) {
-        const message = err instanceof Error ? err.message : String(err);
-        res.status(500).json({ error: message });
+    } catch (err: any) {
+        const timestamp = new Date().toISOString();
+        console.error(`[${timestamp}] Error fetching event key:`, {
+            message: err.message,
+            code: err.code,
+            details: err.details,
+            hint: err.hint
+        });
+        res.status(500).json({ error: 'Failed to fetch event key', details: err.message });
     }
 });
 
@@ -46,9 +52,16 @@ router.post('/event-key', async (req, res) => {
 
         if (error) throw error;
         res.json({ success: true, eventKey });
-    } catch (err: unknown) {
-        const message = err instanceof Error ? err.message : String(err);
-        res.status(500).json({ error: message });
+    } catch (err: any) {
+        const timestamp = new Date().toISOString();
+        console.error(`[${timestamp}] Error updating event key:`, {
+            eventKey,
+            message: err.message,
+            code: err.code,
+            details: err.details,
+            hint: err.hint
+        });
+        res.status(500).json({ error: 'Failed to update event key', details: err.message });
     }
 });
 

@@ -61,9 +61,20 @@ router.get('/', async (req, res) => {
             notes: row.notes || '',
         }));
         res.json(mappedEntries);
-    } catch (err) {
-        console.error('Error fetching entries:', err);
-        res.status(500).json({ error: 'Failed to fetch entries' });
+    } catch (err: any) {
+        const timestamp = new Date().toISOString();
+        console.error(`[${timestamp}] Error fetching entries:`, {
+            message: err.message,
+            code: err.code,
+            details: err.details,
+            hint: err.hint,
+            stack: err.stack
+        });
+        res.status(500).json({ 
+            error: 'Failed to fetch entries', 
+            details: err.message,
+            code: err.code 
+        });
     }
 });
 
@@ -108,9 +119,16 @@ router.get('/team/:teamNumber', async (req, res) => {
             notes: row.notes || '',
         }));
         res.json(mappedEntries);
-    } catch (err) {
-        console.error('Error fetching team entries:', err);
-        res.status(500).json({ error: 'Failed to fetch team entries' });
+    } catch (err: any) {
+        const timestamp = new Date().toISOString();
+        console.error(`[${timestamp}] Error fetching team entries:`, {
+            teamNumber: req.params.teamNumber,
+            message: err.message,
+            code: err.code,
+            details: err.details,
+            hint: err.hint
+        });
+        res.status(500).json({ error: 'Failed to fetch team entries', details: err.message });
     }
 });
 
@@ -172,8 +190,16 @@ router.post('/', async (req, res) => {
         res.status(201).json({ success: true, id: entry.id });
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (err: any) {
-        console.error('Error creating entry:', err.message);
-        res.status(500).json({ error: 'Failed to create entry', details: err.message });
+        const timestamp = new Date().toISOString();
+        console.error(`[${timestamp}] Error creating entry:`, {
+            team: req.body?.teamNumber,
+            match: req.body?.matchNumber,
+            message: err.message,
+            code: err.code,
+            details: err.details,
+            hint: err.hint
+        });
+        res.status(500).json({ error: 'Failed to create entry', details: err.message, code: err.code });
     }
 });
 

@@ -52,9 +52,15 @@ router.get('/', async (req, res) => {
         }));
 
         res.json(entries);
-    } catch (err) {
-        console.error('Error fetching pit entries:', err);
-        res.status(500).json({ error: 'Failed to fetch pit entries' });
+    } catch (err: any) {
+        const timestamp = new Date().toISOString();
+        console.error(`[${timestamp}] Error fetching pit entries:`, {
+            message: err.message,
+            code: err.code,
+            details: err.details,
+            hint: err.hint
+        });
+        res.status(500).json({ error: 'Failed to fetch pit entries', details: err.message });
     }
 });
 
@@ -92,9 +98,16 @@ router.get('/team/:teamNumber', async (req, res) => {
             notes: data.notes || '',
             timestamp: parseInt(data.timestamp),
         });
-    } catch (err) {
-        console.error('Error fetching pit entry for team:', err);
-        res.status(500).json({ error: 'Failed to fetch pit entry' });
+    } catch (err: any) {
+        const timestamp = new Date().toISOString();
+        console.error(`[${timestamp}] Error fetching pit entry for team:`, {
+            teamNumber: req.params.teamNumber,
+            message: err.message,
+            code: err.code,
+            details: err.details,
+            hint: err.hint
+        });
+        res.status(500).json({ error: 'Failed to fetch pit entry', details: err.message });
     }
 });
 
@@ -126,9 +139,16 @@ router.post('/', async (req, res) => {
         if (error) throw error;
 
         res.json({ success: true });
-    } catch (err) {
-        console.error('Error creating/updating pit entry:', err);
-        res.status(500).json({ error: 'Failed to save pit entry' });
+    } catch (err: any) {
+        const timestamp = new Date().toISOString();
+        console.error(`[${timestamp}] Error creating/updating pit entry:`, {
+            team: req.body?.teamNumber,
+            message: err.message,
+            code: err.code,
+            details: err.details,
+            hint: err.hint
+        });
+        res.status(500).json({ error: 'Failed to save pit entry', details: err.message });
     }
 });
 
