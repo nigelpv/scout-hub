@@ -53,6 +53,7 @@ const ScoutMatch = () => {
     const [hoppersPassedAuto, setHoppersPassedAuto] = useState(0);
     const [autoClimb, setAutoClimb] = useState<'none' | 'side' | 'middle' | 'failed_attempt'>('none');
     const [autoObstacle, setAutoObstacle] = useState<'none' | 'outpost_trench' | 'depot_trench' | 'outpost_bump' | 'depot_bump' | 'both'>('none');
+    const [shootAndIntakeAuto, setShootAndIntakeAuto] = useState(false);
 
     // Teleop
     const [teleopCycles, setTeleopCycles] = useState(0);
@@ -63,6 +64,7 @@ const ScoutMatch = () => {
     const [teleopObstacle, setTeleopObstacle] = useState<'none' | 'trench' | 'bump' | 'both'>('none');
     const [beachingType, setBeachingType] = useState<string[]>([]);
     const [herdsFuelThroughTrench, setHerdsFuelThroughTrench] = useState(false);
+    const [shootAndIntakeTeleop, setShootAndIntakeTeleop] = useState(false);
 
     // Endgame
     const [climbResult, setClimbResult] = useState<'none' | 'L1' | 'L2' | 'L3' | 'failed_attempt'>('none');
@@ -113,6 +115,8 @@ const ScoutMatch = () => {
             teleopObstacle,
             beachingType,
             herdsFuelThroughTrench,
+            shootPlusIntakeAuto: shootAndIntakeAuto,
+            shootPlusIntakeTeleop: shootAndIntakeTeleop,
             climbResult,
             climbPosition,
             driverSkill,
@@ -159,6 +163,8 @@ const ScoutMatch = () => {
             setTeleopObstacle('none');
             setBeachingType([]);
             setHerdsFuelThroughTrench(false);
+            setShootAndIntakeAuto(false);
+            setShootAndIntakeTeleop(false);
             setClimbResult('none');
             setClimbPosition('none');
             setDriverSkill(3);
@@ -307,6 +313,11 @@ const ScoutMatch = () => {
                             { value: 'both' as const, label: 'Both' },
                         ]}
                     />
+                    <ToggleField
+                        value={shootAndIntakeAuto}
+                        onChange={setShootAndIntakeAuto}
+                        label="A Lot Of Shooting While Intaking"
+                    />
                 </section>
 
                 {/* Teleop */}
@@ -382,6 +393,11 @@ const ScoutMatch = () => {
                         value={herdsFuelThroughTrench}
                         onChange={setHerdsFuelThroughTrench}
                         label="Pushes Fuel Through Trench?"
+                    />
+                    <ToggleField
+                        value={shootAndIntakeTeleop}
+                        onChange={setShootAndIntakeTeleop}
+                        label="A Lot Of Shooting While Intaking"
                     />
                 </section>
 

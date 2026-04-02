@@ -103,6 +103,13 @@ export function calculateTeamStatsFromEntries(entries: ScoutingEntry[]): TeamSta
     const avgDriverSkill = driverSkillValues.length > 0
         ? driverSkillValues.reduce((a, b) => a + b, 0) / driverSkillValues.length
         : 0;
+    
+    // Shooting while intaking stats
+    const shootPlusIntakeAutoCount = entries.filter(e => e.shootPlusIntakeAuto).length;
+    const shootPlusIntakeAutoRate = (shootPlusIntakeAutoCount / matchesPlayed) * 100;
+    
+    const shootPlusIntakeTeleopCount = entries.filter(e => e.shootPlusIntakeTeleop).length;
+    const shootPlusIntakeTeleopRate = (shootPlusIntakeTeleopCount / matchesPlayed) * 100;
 
     // Cycle History (for Trend Graph)
     const cycleHistory = entries
@@ -165,6 +172,8 @@ export function calculateTeamStatsFromEntries(entries: ScoutingEntry[]): TeamSta
         defenseLocationStats,
         beachingRate: Math.round(beachingRate),
         incapRate: Math.round(incapRate),
+        shootPlusIntakeAutoRate: Math.round(shootPlusIntakeAutoRate),
+        shootPlusIntakeTeleopRate: Math.round(shootPlusIntakeTeleopRate),
         avgDriverSkill: Math.round(avgDriverSkill * 10) / 10,
         totalScore: Math.round(totalScore * 10) / 10,
         cycleHistory
@@ -198,6 +207,8 @@ export function createEmptyStats(teamNumber: number): TeamStats {
         },
         beachingRate: 0,
         incapRate: 0,
+        shootPlusIntakeAutoRate: 0,
+        shootPlusIntakeTeleopRate: 0,
         avgDriverSkill: 0,
         totalScore: 0,
     };
