@@ -67,6 +67,16 @@ export interface TeamStats {
     shootPlusIntakeAutoRate: number; // % of matches where they shot while intaking in auto
     shootPlusIntakeTeleopRate: number; // % of matches where they shot while intaking in teleop
     avgDriverSkill: number;
+    
+    // Detailed Stats (Expanding)
+    startingPositionStats: Record<string, number>; // Position -> % of matches
+    autoClimbStats: Record<string, number>; // Result -> % of matches
+    autoObstacleStats: Record<string, number>; // Obstacle -> % of matches
+    teleopObstacleStats: Record<string, number>; // Obstacle -> % of matches
+    beachingTypeStats: Record<string, number>; // Type -> % of matches
+    herdsFuelRate: number; // % of matches they herded fuel
+    climbPositionStats: Record<string, number>; // Side vs Center %
+    
     totalScore: number; // Computed ranking score
     opr?: number;
     cycleHistory?: { matchNumber: number; auto: number; teleop: number; total: number }[];
