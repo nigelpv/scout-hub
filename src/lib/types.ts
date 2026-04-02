@@ -20,6 +20,7 @@ export interface ScoutingEntry {
     hoppersPassedAuto: number;
     autoClimb: 'none' | 'side' | 'middle' | 'failed_attempt';
     autoObstacle: 'none' | 'outpost_trench' | 'depot_trench' | 'outpost_bump' | 'depot_bump' | 'both';
+    shootPlusIntakeAuto: boolean;
 
     // Teleop
     teleopCycles: number;
@@ -30,6 +31,7 @@ export interface ScoutingEntry {
     teleopObstacle: 'none' | 'trench' | 'bump' | 'both';
     beachingType: string[]; // multi-select: 'beached_on_bump', 'beached_on_fuel_off_bump', 'other'
     herdsFuelThroughTrench: boolean;
+    shootPlusIntakeTeleop: boolean;
 
     // Endgame
     climbResult: 'none' | 'L1' | 'L2' | 'L3' | 'failed_attempt';
@@ -62,6 +64,8 @@ export interface TeamStats {
     defenseLocationStats: Record<string, number>; // Location -> % of defense matches
     beachingRate: number; // % of matches with any beaching
     incapRate: number; // % of matches incapacitated
+    shootPlusIntakeAutoRate: number; // % of matches where they shot while intaking in auto
+    shootPlusIntakeTeleopRate: number; // % of matches where they shot while intaking in teleop
     avgDriverSkill: number;
     totalScore: number; // Computed ranking score
     opr?: number;

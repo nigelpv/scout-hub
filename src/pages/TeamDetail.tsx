@@ -332,6 +332,10 @@ const TeamDetail = () => {
                                             <p className="text-lg font-mono font-black">{stats.stdDevAutoCycles}</p>
                                         </div>
                                     </div>
+                                    <div className="mt-4 flex items-center justify-between bg-emerald-500/10 p-2 rounded border border-emerald-500/20">
+                                        <p className="text-[10px] text-muted-foreground uppercase font-black">Shooting + Intake</p>
+                                        <p className="text-lg font-mono font-black text-emerald-500">{stats.shootPlusIntakeAutoRate}%</p>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -362,6 +366,10 @@ const TeamDetail = () => {
                                             <p className="text-[8px] text-muted-foreground uppercase font-bold">StdDev</p>
                                             <p className="text-lg font-mono font-black">{stats.stdDevTeleopCycles}</p>
                                         </div>
+                                    </div>
+                                    <div className="mt-4 flex items-center justify-between bg-emerald-500/10 p-2 rounded border border-emerald-500/20">
+                                        <p className="text-[10px] text-muted-foreground uppercase font-black">Shooting + Intake</p>
+                                        <p className="text-lg font-mono font-black text-emerald-500">{stats.shootPlusIntakeTeleopRate}%</p>
                                     </div>
                                 </div>
                             </div>

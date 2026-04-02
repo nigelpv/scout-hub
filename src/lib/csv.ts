@@ -164,6 +164,8 @@ export async function exportTeamAveragesToCSV() {
                 DefenseLocation_Mode: mode('defenseLocation'),
                 TeleopObstacle_Mode: mode('teleopObstacle'),
                 HerdsThroughTrench_Rate: avg('herdsFuelThroughTrench'),
+                ShootPlusIntakeAuto_Rate: avg('shootPlusIntakeAuto'),
+                ShootPlusIntakeTeleop_Rate: avg('shootPlusIntakeTeleop'),
 
                 // Endgame Averages
                 ClimbResult_Mode: mode('climbResult'),
