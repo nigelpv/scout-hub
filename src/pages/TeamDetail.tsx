@@ -151,6 +151,14 @@ const TeamDetail = () => {
 
     // Helper component for segmented percentage bars
     const SegmentedBar = ({ data, labels, colors }: { data: Record<string, number>, labels: Record<string, string>, colors: string[] }) => {
+        const formatLabel = (key: string) => {
+            if (labels[key]) return labels[key];
+            return key
+                .split('_')
+                .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+                .join(' ');
+        }
+
         // Separate 'none' from active categories for bar background logic, but include it in the legend if val > 0
         const activeEntries = Object.entries(data).filter(([key, val]) => val > 0 && key !== 'none' && key !== 'failed_attempt');
         const noneVal = data['none'] || 0;
@@ -167,7 +175,7 @@ const TeamDetail = () => {
                             key={key}
                             style={{ width: `${value}%` }}
                             className={`${colors[idx % colors.length]} h-full border-r border-black/10 last:border-0`}
-                            title={`${labels[key] || key}: ${value}%`}
+                            title={`${formatLabel(key)}: ${value}%`}
                         />
                     ))}
                     {/* Failed attempt segment in red if present */}
@@ -184,7 +192,7 @@ const TeamDetail = () => {
                         <div key={key} className="flex items-center justify-between text-[8px] font-bold uppercase tracking-tighter">
                             <div className="flex items-center gap-1.5 min-w-0">
                                 <div className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${colors[idx % colors.length]}`} />
-                                <span className="truncate text-muted-foreground">{labels[key] || key}</span>
+                                <span className="truncate text-muted-foreground">{formatLabel(key)}</span>
                             </div>
                             <span className="flex-shrink-0">{value}%</span>
                         </div>
