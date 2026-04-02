@@ -74,7 +74,7 @@ export function calculateTeamStatsFromEntries(entries: ScoutingEntry[]): TeamSta
         'their_alliance': 0
     };
 
-    if (defenseMatches > 0) {
+    if (matchesPlayed > 0) {
         defenseEntries.forEach(e => {
             if (Array.isArray(e.defenseLocation)) {
                 e.defenseLocation.forEach(loc => {
@@ -85,9 +85,9 @@ export function calculateTeamStatsFromEntries(entries: ScoutingEntry[]): TeamSta
             }
         });
 
-        // Convert to percentages of defense matches
+        // Convert to percentages of TOTAL matches (per match stat)
         Object.keys(defenseLocationStats).forEach(key => {
-            defenseLocationStats[key] = Math.round((defenseLocationStats[key] / defenseMatches) * 100);
+            defenseLocationStats[key] = Math.round((defenseLocationStats[key] / matchesPlayed) * 100);
         });
     }
 
@@ -110,6 +110,38 @@ export function calculateTeamStatsFromEntries(entries: ScoutingEntry[]): TeamSta
     
     const shootPlusIntakeTeleopCount = entries.filter(e => e.shootPlusIntakeTeleop).length;
     const shootPlusIntakeTeleopRate = (shootPlusIntakeTeleopCount / matchesPlayed) * 100;
+
+    // Detailed Stats (Expanding)
+    const herdsFuelCount = entries.filter(e => e.herdsFuelThroughTrench).length;
+    const herdsFuelRate = (herdsFuelCount / matchesPlayed) * 100;
+
+    const startingPositionStats: Record<string, number> = { 'hub': 0, 'outpost_trench': 0, 'depot_trench': 0, 'outpost_bump': 0, 'depot_bump': 0 };
+    const autoClimbStats: Record<string, number> = { 'none': 0, 'side': 0, 'middle': 0, 'failed_attempt': 0 };
+    const autoObstacleStats: Record<string, number> = { 'none': 0, 'outpost_trench': 0, 'depot_trench': 0, 'outpost_bump': 0, 'depot_bump': 0, 'trench': 0, 'bump': 0, 'both': 0 };
+    const teleopObstacleStats: Record<string, number> = { 'none': 0, 'trench': 0, 'bump': 0, 'both': 0 };
+    const beachingTypeStats: Record<string, number> = { 'beached_on_bump': 0, 'beached_on_fuel_off_bump': 0, 'other': 0 };
+    const climbPositionStats: Record<string, number> = { 'none': 0, 'side': 0, 'center': 0 };
+
+    entries.forEach(e => {
+        if (startingPositionStats[e.startingPosition] !== undefined) startingPositionStats[e.startingPosition]++;
+        if (autoClimbStats[e.autoClimb] !== undefined) autoClimbStats[e.autoClimb]++;
+        if (autoObstacleStats[e.autoObstacle] !== undefined) autoObstacleStats[e.autoObstacle]++;
+        if (teleopObstacleStats[e.teleopObstacle] !== undefined) teleopObstacleStats[e.teleopObstacle]++;
+        if (climbPositionStats[e.climbPosition] !== undefined) climbPositionStats[e.climbPosition]++;
+        
+        if (Array.isArray(e.beachingType)) {
+            e.beachingType.forEach(t => {
+                if (beachingTypeStats[t] !== undefined) beachingTypeStats[t]++;
+            });
+        }
+    });
+
+    // Convert counts to percentages
+    [startingPositionStats, autoClimbStats, autoObstacleStats, teleopObstacleStats, beachingTypeStats, climbPositionStats].forEach(statObj => {
+        Object.keys(statObj).forEach(key => {
+            statObj[key] = Math.round((statObj[key] / matchesPlayed) * 100);
+        });
+    });
 
     // Cycle History (for Trend Graph)
     const cycleHistory = entries
@@ -175,6 +207,13 @@ export function calculateTeamStatsFromEntries(entries: ScoutingEntry[]): TeamSta
         shootPlusIntakeAutoRate: Math.round(shootPlusIntakeAutoRate),
         shootPlusIntakeTeleopRate: Math.round(shootPlusIntakeTeleopRate),
         avgDriverSkill: Math.round(avgDriverSkill * 10) / 10,
+        startingPositionStats,
+        autoClimbStats,
+        autoObstacleStats,
+        teleopObstacleStats,
+        beachingTypeStats,
+        herdsFuelRate: Math.round(herdsFuelRate),
+        climbPositionStats,
         totalScore: Math.round(totalScore * 10) / 10,
         cycleHistory
     };
@@ -210,6 +249,13 @@ export function createEmptyStats(teamNumber: number): TeamStats {
         shootPlusIntakeAutoRate: 0,
         shootPlusIntakeTeleopRate: 0,
         avgDriverSkill: 0,
+        startingPositionStats: { 'hub': 0, 'outpost_trench': 0, 'depot_trench': 0, 'outpost_bump': 0, 'depot_bump': 0 },
+        autoClimbStats: { 'none': 0, 'side': 0, 'middle': 0, 'failed_attempt': 0 },
+        autoObstacleStats: { 'none': 0, 'outpost_trench': 0, 'depot_trench': 0, 'outpost_bump': 0, 'depot_bump': 0, 'trench': 0, 'bump': 0, 'both': 0 },
+        teleopObstacleStats: { 'none': 0, 'trench': 0, 'bump': 0, 'both': 0 },
+        beachingTypeStats: { 'beached_on_bump': 0, 'beached_on_fuel_off_bump': 0, 'other': 0 },
+        herdsFuelRate: 0,
+        climbPositionStats: { 'none': 0, 'side': 0, 'center': 0 },
         totalScore: 0,
     };
 }

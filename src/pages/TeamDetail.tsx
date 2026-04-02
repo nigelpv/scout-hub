@@ -137,45 +137,79 @@ const TeamDetail = () => {
         );
     }
 
-    const climbLabels: Record<string, string> = {
-        'none': 'None',
-        'L1': 'L1',
-        'L2': 'L2',
-        'L3': 'L3',
-        'failed_attempt': 'Failed Attempt',
+    const beachingTypeLabels: Record<string, string> = {
+        'beached_on_bump': 'On Bump',
+        'beached_on_fuel_off_bump': 'On Fuel',
+        'other': 'Other',
     };
 
-    const startingPositionLabels: Record<string, string> = {
-        'outpost_trench': 'Outpost Trench',
-        'outpost_bump': 'Outpost Bump',
-        'hub': 'Hub',
-        'depot_trench': 'Depot Trench',
-        'depot_bump': 'Depot Bump',
-    };
-
-    const autoClimbLabels: Record<string, string> = {
-        'none': 'None',
+    const climbPositionLabels: Record<string, string> = {
         'side': 'Side',
-        'middle': 'Middle',
-        'failed_attempt': 'Failed Attempt',
-    };
-
-    const obstacleLabels: Record<string, string> = {
+        'center': 'Center',
         'none': 'None',
-        'outpost_trench': 'Outpost Trench',
-        'depot_trench': 'Depot Trench',
-        'outpost_bump': 'Outpost Bump',
-        'depot_bump': 'Depot Bump',
-        'trench': 'Trench',
-        'bump': 'Bump',
-        'both': 'Both',
     };
 
-    const shootingRangeLabels: Record<string, string> = {
-        'alliance': 'Alliance',
-        'close_neutral': 'Close Neutral',
-        'far_neutral': 'Far Neutral',
-        'opponent': 'Opponent',
+    // Helper component for segmented percentage bars
+    const SegmentedBar = ({ data, labels, colors }: { data: Record<string, number>, labels: Record<string, string>, colors: string[] }) => {
+        // Separate 'none' from active categories for bar background logic, but include it in the legend if val > 0
+        const activeEntries = Object.entries(data).filter(([key, val]) => val > 0 && key !== 'none' && key !== 'failed_attempt');
+        const noneVal = data['none'] || 0;
+        const failedVal = data['failed_attempt'] || 0;
+
+        if (activeEntries.length === 0 && noneVal === 0 && failedVal === 0) 
+            return <div className="h-2 bg-secondary rounded-full w-full" />;
+
+        return (
+            <div className="flex flex-col gap-2">
+                <div className="flex h-2.5 rounded-full overflow-hidden bg-secondary shadow-inner border border-black/5">
+                    {activeEntries.map(([key, value], idx) => (
+                        <div
+                            key={key}
+                            style={{ width: `${value}%` }}
+                            className={`${colors[idx % colors.length]} h-full border-r border-black/10 last:border-0`}
+                            title={`${labels[key] || key}: ${value}%`}
+                        />
+                    ))}
+                    {/* Failed attempt segment in red if present */}
+                    {failedVal > 0 && (
+                        <div
+                            style={{ width: `${failedVal}%` }}
+                            className="bg-destructive h-full border-r border-black/10 last:border-0"
+                            title={`Failed: ${failedVal}%`}
+                        />
+                    )}
+                </div>
+                <div className="grid grid-cols-2 gap-x-4 gap-y-1">
+                    {activeEntries.map(([key, value], idx) => (
+                        <div key={key} className="flex items-center justify-between text-[8px] font-bold uppercase tracking-tighter">
+                            <div className="flex items-center gap-1.5 min-w-0">
+                                <div className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${colors[idx % colors.length]}`} />
+                                <span className="truncate text-muted-foreground">{labels[key] || key}</span>
+                            </div>
+                            <span className="flex-shrink-0">{value}%</span>
+                        </div>
+                    ))}
+                    {failedVal > 0 && (
+                        <div className="flex items-center justify-between text-[8px] font-bold uppercase tracking-tighter">
+                            <div className="flex items-center gap-1.5 min-w-0">
+                                <div className="w-1.5 h-1.5 rounded-full flex-shrink-0 bg-destructive" />
+                                <span className="truncate text-muted-foreground">Failed</span>
+                            </div>
+                            <span className="flex-shrink-0">{failedVal}%</span>
+                        </div>
+                    )}
+                    {noneVal > 0 && (
+                        <div className="flex items-center justify-between text-[8px] font-bold uppercase tracking-tighter italic">
+                            <div className="flex items-center gap-1.5 min-w-0 opacity-40">
+                                <div className="w-1.5 h-1.5 rounded-full flex-shrink-0 bg-muted-foreground" />
+                                <span className="truncate">No Occurrence</span>
+                            </div>
+                            <span className="flex-shrink-0 opacity-40">{noneVal}%</span>
+                        </div>
+                    )}
+                </div>
+            </div>
+        );
     };
 
     return (
@@ -333,8 +367,43 @@ const TeamDetail = () => {
                                         </div>
                                     </div>
                                     <div className="mt-4 flex items-center justify-between bg-emerald-500/10 p-2 rounded border border-emerald-500/20">
-                                        <p className="text-[10px] text-muted-foreground uppercase font-black">Shooting + Intake</p>
+                                        <p className="text-[10px] text-muted-foreground uppercase font-black font-mono tracking-tighter">Auto Shooting + Intake Rate</p>
                                         <p className="text-lg font-mono font-black text-emerald-500">{stats.shootPlusIntakeAutoRate}%</p>
+                                    </div>
+                                    <div className="mt-4 p-3 bg-secondary/20 rounded-lg space-y-4">
+                                        <div>
+                                            <p className="text-[8px] text-muted-foreground uppercase font-black mb-2 tracking-widest">Starting Position</p>
+                                            <SegmentedBar
+                                                data={stats.startingPositionStats}
+                                                labels={{ 'outpost_trench': 'Outpost T', 'outpost_bump': 'Outpost B', 'hub': 'Hub', 'depot_trench': 'Depot T', 'depot_bump': 'Depot B' }}
+                                                colors={['bg-primary', 'bg-primary/80', 'bg-primary/60', 'bg-primary/40', 'bg-primary/20']}
+                                            />
+                                        </div>
+                                        <div className="pt-2 border-t border-border/50">
+                                            <p className="text-[8px] text-muted-foreground uppercase font-black mb-2 tracking-widest">Auto Climb Result</p>
+                                            <SegmentedBar
+                                                data={stats.autoClimbStats}
+                                                labels={{ 'side': 'Side', 'middle': 'Middle', 'failed_attempt': 'Failed' }}
+                                                colors={['bg-emerald-500', 'bg-blue-500', 'bg-destructive']}
+                                            />
+                                        </div>
+                                        <div className="pt-2 border-t border-border/50 grid grid-cols-2 gap-4">
+                                            <div>
+                                                <p className="text-[8px] text-muted-foreground uppercase font-black mb-1">Avg Hoppers</p>
+                                                <p className="font-mono font-black text-lg">{stats.avgHoppersPassedAuto}</p>
+                                            </div>
+                                            <div>
+                                                <p className="text-[8px] text-muted-foreground uppercase font-black mb-1">Obstacles (%)</p>
+                                                <div className="flex gap-1 flex-wrap">
+                                                    {Object.entries(stats.autoObstacleStats).map(([key, val]) => 
+                                                        val > 0 && key !== 'none' && (
+                                                        <span key={key} className="text-[7px] bg-secondary px-1 py-0.5 rounded font-black text-foreground">
+                                                            {key.replace('_', ' ').toUpperCase()} {val}%
+                                                        </span>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -367,9 +436,32 @@ const TeamDetail = () => {
                                             <p className="text-lg font-mono font-black">{stats.stdDevTeleopCycles}</p>
                                         </div>
                                     </div>
-                                    <div className="mt-4 flex items-center justify-between bg-emerald-500/10 p-2 rounded border border-emerald-500/20">
-                                        <p className="text-[10px] text-muted-foreground uppercase font-black">Shooting + Intake</p>
+                                    <div className="mt-4 flex items-center justify-between bg-emerald-500/10 p-2 rounded border border-emerald-500/20 shadow-sm">
+                                        <div className="flex flex-col">
+                                            <p className="text-[10px] text-muted-foreground uppercase font-black font-mono tracking-tighter">Teleop Shooting + Intake Rate</p>
+                                            <p className="text-[8px] text-muted-foreground/60 uppercase font-black">Success over {stats.matchesPlayed} matches</p>
+                                        </div>
                                         <p className="text-lg font-mono font-black text-emerald-500">{stats.shootPlusIntakeTeleopRate}%</p>
+                                    </div>
+                                    <div className="mt-4 p-3 bg-secondary/20 rounded-lg space-y-4">
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <div>
+                                                <p className="text-[8px] text-muted-foreground uppercase font-black mb-1">Avg Hoppers</p>
+                                                <p className="font-mono font-black text-lg text-info">{stats.avgHoppersPassed}</p>
+                                            </div>
+                                            <div>
+                                                <p className="text-[8px] text-muted-foreground uppercase font-black mb-1">Herd Fuel (%)</p>
+                                                <p className="font-mono font-black text-lg text-info">{stats.herdsFuelRate}%</p>
+                                            </div>
+                                        </div>
+                                        <div className="pt-2 border-t border-border/50">
+                                            <p className="text-[8px] text-muted-foreground uppercase font-black mb-2 tracking-widest">Obstacle Preference (%)</p>
+                                            <SegmentedBar
+                                                data={stats.teleopObstacleStats}
+                                                labels={{ 'trench': 'Trench', 'bump': 'Bump', 'both': 'Both' }}
+                                                colors={['bg-info', 'bg-info/70', 'bg-info/40']}
+                                            />
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -409,6 +501,14 @@ const TeamDetail = () => {
                                         <p className="text-xs font-black">{stats.l1ClimbRate}%</p>
                                     </div>
                                 </div>
+                                <div className="mt-4 pt-4 border-t border-border/50">
+                                    <p className="text-[8px] text-muted-foreground uppercase font-black mb-2 tracking-widest">Preference: Bar Position</p>
+                                    <SegmentedBar
+                                        data={stats.climbPositionStats}
+                                        labels={{ 'side': 'Side Only', 'center': 'Center Only' }}
+                                        colors={['bg-warning', 'bg-warning/50']}
+                                    />
+                                </div>
                             </div>
                         </div>
 
@@ -416,29 +516,28 @@ const TeamDetail = () => {
                         <div className="stat-card">
                             <div className="flex items-center gap-2 mb-4">
                                 <Shield className="w-5 h-5 text-destructive" />
-                                <h2 className="font-bold uppercase tracking-wider text-sm">Defense Location</h2>
+                                <h2 className="font-bold uppercase tracking-wider text-sm">Defense Strategy</h2>
                             </div>
-                            <div className="flex items-center gap-6">
-                                <div className="flex-1 space-y-3">
-                                    <div className="flex justify-between items-center text-xs">
-                                        <span className="text-muted-foreground">Neutral Zone</span>
-                                        <span className="font-mono font-bold text-foreground">{stats.defenseLocationStats?.neutral || 0}%</span>
-                                    </div>
-                                    <div className="flex justify-between items-center text-xs">
-                                        <span className="text-muted-foreground">Our Alliance</span>
-                                        <span className="font-mono font-bold text-foreground">{stats.defenseLocationStats?.our_alliance || 0}%</span>
-                                    </div>
-                                    <div className="flex justify-between items-center text-xs">
-                                        <span className="text-muted-foreground">Their Alliance</span>
-                                        <span className="font-mono font-bold text-foreground">{stats.defenseLocationStats?.their_alliance || 0}%</span>
-                                    </div>
+                            <div className="flex flex-col gap-6">
+                                <div className="p-3 bg-secondary/10 rounded-lg">
+                                    <p className="text-[8px] text-muted-foreground uppercase font-black mb-2 tracking-widest">Zone Breakdown (%)</p>
+                                    <SegmentedBar 
+                                        data={stats.defenseLocationStats}
+                                        labels={{'neutral': 'Neutral', 'our_alliance': 'Our Side', 'their_alliance': 'Their Side'}}
+                                        colors={['bg-destructive', 'bg-destructive/70', 'bg-destructive/40']}
+                                    />
                                 </div>
-                                <div className="text-right border-l border-border pl-6">
-                                    <p className="text-[10px] text-muted-foreground uppercase font-black leading-none mb-1">Effectiveness</p>
-                                    <p className={`text-4xl font-mono font-black italic leading-none ${getRatingColor(stats.avgDefenseEffectiveness, 5)}`}>
-                                        {stats.avgDefenseEffectiveness.toFixed(1)}
-                                    </p>
-                                    <p className="text-[10px] text-muted-foreground mt-2">{stats.defensePlayRate}% Play Rate</p>
+                                <div className="flex items-center justify-between px-2">
+                                    <div className="flex-1">
+                                        <p className="text-[10px] text-muted-foreground uppercase font-black mb-1">Play Frequency</p>
+                                        <p className="font-mono text-2xl font-black text-destructive">{stats.defensePlayRate}%</p>
+                                    </div>
+                                    <div className="text-right border-l border-border pl-6">
+                                        <p className="text-[10px] text-muted-foreground uppercase font-black mb-1">Effectiveness</p>
+                                        <p className={`text-4xl font-mono font-black italic leading-none ${getRatingColor(stats.avgDefenseEffectiveness, 5)}`}>
+                                            {stats.avgDefenseEffectiveness.toFixed(1)}
+                                        </p>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -469,10 +568,20 @@ const TeamDetail = () => {
                             <div>
                                 <div className="flex justify-between text-xs mb-1 font-bold">
                                     <span>Beaching Rate</span>
-                                    <span className={stats?.beachingRate && stats.beachingRate > 0 ? 'text-destructive' : 'text-emerald-500'}>{stats?.beachingRate}%</span>
+                                    <span className={stats.beachingRate > 0 ? 'text-destructive' : 'text-emerald-500'}>{stats.beachingRate}%</span>
                                 </div>
-                                <StatBar value={stats?.beachingRate || 0} max={100} className="bg-destructive/60" label="" showValue={false} />
+                                <StatBar value={stats.beachingRate} max={100} className="bg-destructive/60" label="" showValue={false} />
                             </div>
+                            {stats.beachingRate > 0 && (
+                                <div className="pt-2 border-t border-destructive/10">
+                                    <p className="text-[8px] text-muted-foreground uppercase font-black mb-2 tracking-widest">Cause Breakdown</p>
+                                    <SegmentedBar
+                                        data={stats.beachingTypeStats}
+                                        labels={{ 'beached_on_bump': 'On Bump', 'beached_on_fuel_off_bump': 'On Fuel', 'other': 'Other' }}
+                                        colors={['bg-destructive', 'bg-destructive/70', 'bg-destructive/40']}
+                                    />
+                                </div>
+                            )}
                         </div>
                     </div>
                     <div className="stat-card border-emerald-500/20 bg-emerald-500/5">
