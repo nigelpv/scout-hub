@@ -151,6 +151,14 @@ const TeamDetail = () => {
 
     // Helper component for segmented percentage bars
     const SegmentedBar = ({ data, labels, colors }: { data: Record<string, number>, labels: Record<string, string>, colors: string[] }) => {
+        const formatLabel = (key: string) => {
+            if (labels[key]) return labels[key];
+            return key
+                .split('_')
+                .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+                .join(' ');
+        }
+
         // Separate 'none' from active categories for bar background logic, but include it in the legend if val > 0
         const activeEntries = Object.entries(data).filter(([key, val]) => val > 0 && key !== 'none' && key !== 'failed_attempt');
         const noneVal = data['none'] || 0;
@@ -167,7 +175,7 @@ const TeamDetail = () => {
                             key={key}
                             style={{ width: `${value}%` }}
                             className={`${colors[idx % colors.length]} h-full border-r border-black/10 last:border-0`}
-                            title={`${labels[key] || key}: ${value}%`}
+                            title={`${formatLabel(key)}: ${value}%`}
                         />
                     ))}
                     {/* Failed attempt segment in red if present */}
@@ -184,7 +192,7 @@ const TeamDetail = () => {
                         <div key={key} className="flex items-center justify-between text-[8px] font-bold uppercase tracking-tighter">
                             <div className="flex items-center gap-1.5 min-w-0">
                                 <div className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${colors[idx % colors.length]}`} />
-                                <span className="truncate text-muted-foreground">{labels[key] || key}</span>
+                                <span className="truncate text-muted-foreground">{formatLabel(key)}</span>
                             </div>
                             <span className="flex-shrink-0">{value}%</span>
                         </div>
@@ -376,7 +384,7 @@ const TeamDetail = () => {
                                             <SegmentedBar
                                                 data={stats.startingPositionStats}
                                                 labels={{ 'outpost_trench': 'Outpost T', 'outpost_bump': 'Outpost B', 'hub': 'Hub', 'depot_trench': 'Depot T', 'depot_bump': 'Depot B' }}
-                                                colors={['bg-primary', 'bg-primary/80', 'bg-primary/60', 'bg-primary/40', 'bg-primary/20']}
+                                                colors={['bg-primary', 'bg-blue-500', 'bg-emerald-500', 'bg-purple-500', 'bg-pink-500']}
                                             />
                                         </div>
                                         <div className="pt-2 border-t border-border/50">
@@ -384,7 +392,7 @@ const TeamDetail = () => {
                                             <SegmentedBar
                                                 data={stats.autoClimbStats}
                                                 labels={{ 'side': 'Side', 'middle': 'Middle', 'failed_attempt': 'Failed' }}
-                                                colors={['bg-emerald-500', 'bg-blue-500', 'bg-destructive']}
+                                                colors={['bg-emerald-500', 'bg-blue-500', 'bg-rose-500']}
                                             />
                                         </div>
                                         <div className="pt-2 border-t border-border/50 grid grid-cols-2 gap-4">
@@ -459,7 +467,7 @@ const TeamDetail = () => {
                                             <SegmentedBar
                                                 data={stats.teleopObstacleStats}
                                                 labels={{ 'trench': 'Trench', 'bump': 'Bump', 'both': 'Both' }}
-                                                colors={['bg-info', 'bg-info/70', 'bg-info/40']}
+                                                colors={['bg-info', 'bg-purple-500', 'bg-amber-500']}
                                             />
                                         </div>
                                     </div>
@@ -484,8 +492,8 @@ const TeamDetail = () => {
 
                                 <div className="mt-6 flex h-4 rounded-full overflow-hidden bg-secondary">
                                     <div style={{ width: `${stats.l3ClimbRate}%` }} className="bg-warning h-full" />
-                                    <div style={{ width: `${stats.l2ClimbRate}%` }} className="bg-warning/60 h-full border-l border-black/20" />
-                                    <div style={{ width: `${stats.l1ClimbRate}%` }} className="bg-warning/30 h-full border-l border-black/20" />
+                                    <div style={{ width: `${stats.l2ClimbRate}%` }} className="bg-orange-500 h-full border-l border-black/20" />
+                                    <div style={{ width: `${stats.l1ClimbRate}%` }} className="bg-amber-500 h-full border-l border-black/20" />
                                 </div>
                                 <div className="grid grid-cols-3 gap-1 mt-2">
                                     <div className="text-center">
@@ -506,7 +514,7 @@ const TeamDetail = () => {
                                     <SegmentedBar
                                         data={stats.climbPositionStats}
                                         labels={{ 'side': 'Side Only', 'center': 'Center Only' }}
-                                        colors={['bg-warning', 'bg-warning/50']}
+                                        colors={['bg-warning', 'bg-indigo-500']}
                                     />
                                 </div>
                             </div>
@@ -524,7 +532,7 @@ const TeamDetail = () => {
                                     <SegmentedBar 
                                         data={stats.defenseLocationStats}
                                         labels={{'neutral': 'Neutral', 'our_alliance': 'Our Side', 'their_alliance': 'Their Side'}}
-                                        colors={['bg-destructive', 'bg-destructive/70', 'bg-destructive/40']}
+                                        colors={['bg-destructive', 'bg-indigo-500', 'bg-emerald-500']}
                                     />
                                 </div>
                                 <div className="flex items-center justify-between px-2">
@@ -578,7 +586,7 @@ const TeamDetail = () => {
                                     <SegmentedBar
                                         data={stats.beachingTypeStats}
                                         labels={{ 'beached_on_bump': 'On Bump', 'beached_on_fuel_off_bump': 'On Fuel', 'other': 'Other' }}
-                                        colors={['bg-destructive', 'bg-destructive/70', 'bg-destructive/40']}
+                                        colors={['bg-destructive', 'bg-orange-500', 'bg-amber-500']}
                                     />
                                 </div>
                             )}

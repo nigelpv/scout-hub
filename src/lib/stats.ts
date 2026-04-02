@@ -123,15 +123,28 @@ export function calculateTeamStatsFromEntries(entries: ScoutingEntry[]): TeamSta
     const climbPositionStats: Record<string, number> = { 'none': 0, 'side': 0, 'center': 0 };
 
     entries.forEach(e => {
-        if (startingPositionStats[e.startingPosition] !== undefined) startingPositionStats[e.startingPosition]++;
-        if (autoClimbStats[e.autoClimb] !== undefined) autoClimbStats[e.autoClimb]++;
-        if (autoObstacleStats[e.autoObstacle] !== undefined) autoObstacleStats[e.autoObstacle]++;
-        if (teleopObstacleStats[e.teleopObstacle] !== undefined) teleopObstacleStats[e.teleopObstacle]++;
-        if (climbPositionStats[e.climbPosition] !== undefined) climbPositionStats[e.climbPosition]++;
+        // Dynamic stats collection to handle legacy values (e.g., left_trench, right_trench)
+        if (e.startingPosition) {
+            startingPositionStats[e.startingPosition] = (startingPositionStats[e.startingPosition] || 0) + 1;
+        }
+        if (e.autoClimb) {
+            autoClimbStats[e.autoClimb] = (autoClimbStats[e.autoClimb] || 0) + 1;
+        }
+        if (e.autoObstacle) {
+            autoObstacleStats[e.autoObstacle] = (autoObstacleStats[e.autoObstacle] || 0) + 1;
+        }
+        if (e.teleopObstacle) {
+            teleopObstacleStats[e.teleopObstacle] = (teleopObstacleStats[e.teleopObstacle] || 0) + 1;
+        }
+        if (e.climbPosition) {
+            climbPositionStats[e.climbPosition] = (climbPositionStats[e.climbPosition] || 0) + 1;
+        }
         
         if (Array.isArray(e.beachingType)) {
             e.beachingType.forEach(t => {
-                if (beachingTypeStats[t] !== undefined) beachingTypeStats[t]++;
+                if (t && t !== 'none') {
+                    beachingTypeStats[t] = (beachingTypeStats[t] || 0) + 1;
+                }
             });
         }
     });
