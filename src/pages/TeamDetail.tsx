@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { StatBar } from '@/components/scouting/StatBar';
@@ -6,9 +6,10 @@ import { calculateTeamStatsFromEntries, getRatingColor, createEmptyStats } from 
 import { getEntriesForTeam, deleteEntry, deleteEntries, getPitEntryForTeam, EVENT_KEY } from '@/lib/storage';
 import { fetchEventOPRs, getTeamOPR, TBAOprResult } from '@/lib/tba';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { Target, Zap, Trophy, Shield, User, Gauge, Lock, Unlock, Trash2, X, CircleDot, Loader2, CheckSquare, Square, Box, HelpCircle } from 'lucide-react';
+import { Target, Zap, Trophy, Shield, Box, HelpCircle, Lock, Unlock, Trash2, X, CircleDot, Loader2, CheckSquare, Square, TrendingUp, AlertTriangle, Navigation } from 'lucide-react';
 import { toast } from 'sonner';
 import { TeamStats, ScoutingEntry, PitScoutingEntry } from '@/lib/types';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, Legend } from 'recharts';
 
 const TeamDetail = () => {
     const { teamNumber } = useParams();
@@ -50,7 +51,7 @@ const TeamDetail = () => {
 
     useEffect(() => {
         const loadOPR = async () => {
-            const oprs = await fetchEventOPRs(EVENT_KEY);
+            const oprs = await fetchEventOPRs(EVENT_KEY());
             if (oprs) setOpr(getTeamOPR(oprs, teamNum));
         };
         loadOPR();
@@ -116,7 +117,7 @@ const TeamDetail = () => {
 
     if (loading) {
         return (
-            <div className="min-h-screen bg-background">
+            <div className="min-h-screen bg-background text-foreground">
                 <PageHeader title={`Team ${teamNum}`} />
                 <div className="flex items-center justify-center py-20">
                     <Loader2 className="w-8 h-8 animate-spin text-primary" />
@@ -129,42 +130,98 @@ const TeamDetail = () => {
         return (
             <div className="min-h-screen bg-background">
                 <PageHeader title={`Team ${teamNum}`} />
-                <div className="p-4 text-center py-12">
+                <div className="p-4 text-center py-12 text-foreground">
                     <p className="text-muted-foreground">No data for this team</p>
                 </div>
             </div>
         );
     }
 
-    const climbLabels: Record<string, string> = {
-        'none': 'None',
-        'low': 'Low',
-        'mid': 'Mid',
-        'high': 'High',
+    const beachingTypeLabels: Record<string, string> = {
+        'beached_on_bump': 'On Bump',
+        'beached_on_fuel_off_bump': 'On Fuel',
+        'other': 'Other',
     };
 
-    const autoClimbLabels: Record<string, string> = {
-        'none': 'None',
+    const climbPositionLabels: Record<string, string> = {
         'side': 'Side',
-        'middle': 'Middle',
-    };
-
-    const obstacleLabels: Record<string, string> = {
+        'center': 'Center',
         'none': 'None',
-        'trench': 'Trench',
-        'bump': 'Bump',
-        'both': 'Both',
     };
 
-    const shootingRangeLabels: Record<string, string> = {
-        'alliance': 'Alliance',
-        'close_neutral': 'Close Neutral',
-        'far_neutral': 'Far Neutral',
-        'opponent': 'Opponent',
+    // Helper component for segmented percentage bars
+    const SegmentedBar = ({ data, labels, colors }: { data: Record<string, number>, labels: Record<string, string>, colors: string[] }) => {
+        const formatLabel = (key: string) => {
+            if (labels[key]) return labels[key];
+            return key
+                .split('_')
+                .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+                .join(' ');
+        }
+
+        // Separate 'none' from active categories for bar background logic, but include it in the legend if val > 0
+        const activeEntries = Object.entries(data).filter(([key, val]) => val > 0 && key !== 'none' && key !== 'failed_attempt');
+        const noneVal = data['none'] || 0;
+        const failedVal = data['failed_attempt'] || 0;
+
+        if (activeEntries.length === 0 && noneVal === 0 && failedVal === 0) 
+            return <div className="h-2 bg-secondary rounded-full w-full" />;
+
+        return (
+            <div className="flex flex-col gap-2">
+                <div className="flex h-2.5 rounded-full overflow-hidden bg-secondary shadow-inner border border-black/5">
+                    {activeEntries.map(([key, value], idx) => (
+                        <div
+                            key={key}
+                            style={{ width: `${value}%` }}
+                            className={`${colors[idx % colors.length]} h-full border-r border-black/10 last:border-0`}
+                            title={`${formatLabel(key)}: ${value}%`}
+                        />
+                    ))}
+                    {/* Failed attempt segment in red if present */}
+                    {failedVal > 0 && (
+                        <div
+                            style={{ width: `${failedVal}%` }}
+                            className="bg-destructive h-full border-r border-black/10 last:border-0"
+                            title={`Failed: ${failedVal}%`}
+                        />
+                    )}
+                </div>
+                <div className="grid grid-cols-2 gap-x-4 gap-y-1">
+                    {activeEntries.map(([key, value], idx) => (
+                        <div key={key} className="flex items-center justify-between text-[8px] font-bold uppercase tracking-tighter">
+                            <div className="flex items-center gap-1.5 min-w-0">
+                                <div className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${colors[idx % colors.length]}`} />
+                                <span className="truncate text-muted-foreground">{formatLabel(key)}</span>
+                            </div>
+                            <span className="flex-shrink-0">{value}%</span>
+                        </div>
+                    ))}
+                    {failedVal > 0 && (
+                        <div className="flex items-center justify-between text-[8px] font-bold uppercase tracking-tighter">
+                            <div className="flex items-center gap-1.5 min-w-0">
+                                <div className="w-1.5 h-1.5 rounded-full flex-shrink-0 bg-destructive" />
+                                <span className="truncate text-muted-foreground">Failed</span>
+                            </div>
+                            <span className="flex-shrink-0">{failedVal}%</span>
+                        </div>
+                    )}
+                    {noneVal > 0 && (
+                        <div className="flex items-center justify-between text-[8px] font-bold uppercase tracking-tighter italic">
+                            <div className="flex items-center gap-1.5 min-w-0 opacity-40">
+                                <div className="w-1.5 h-1.5 rounded-full flex-shrink-0 bg-muted-foreground" />
+                                <span className="truncate">No Occurrence</span>
+                            </div>
+                            <span className="flex-shrink-0 opacity-40">{noneVal}%</span>
+                        </div>
+                    )}
+                </div>
+            </div>
+        );
     };
 
     return (
-        <div className="min-h-screen bg-background pb-8 relative">
+        <div className="min-h-screen bg-background text-foreground pb-8 relative">
             <PageHeader
                 title={`Team ${teamNum}`}
                 rightContent={
@@ -183,7 +240,7 @@ const TeamDetail = () => {
                 <div className="fixed inset-0 z-50 bg-background/80 backdrop-blur-sm flex items-center justify-center p-4">
                     <div className="bg-card border border-border rounded-xl shadow-lg p-6 max-w-xs w-full">
                         <div className="flex justify-between items-center mb-4">
-                            <h3 className="font-bold text-lg">Admin Access</h3>
+                            <h3 className="font-bold text-lg text-foreground">Admin Access</h3>
                             <button onClick={() => setShowAuth(false)} className="text-muted-foreground hover:text-foreground">
                                 <X className="w-5 h-5" />
                             </button>
@@ -221,56 +278,140 @@ const TeamDetail = () => {
             )}
 
             <div className="p-4 space-y-4">
-                {/* Overview */}
-                <div className="stat-card">
-                    <div className="flex items-center justify-between mb-4">
+                {/* Overview Header Card */}
+                <div className="stat-card bg-primary/5 border-primary/20">
+                    <div className="grid grid-cols-2 gap-4">
                         <div>
-                            <div className="flex items-center gap-1">
-                                <p className="text-sm text-muted-foreground">Avg Est. Score</p>
-                                <TooltipProvider>
-                                    <Tooltip>
-                                        <TooltipTrigger asChild>
-                                            <HelpCircle className="w-3.5 h-3.5 text-muted-foreground/50 cursor-help" />
-                                        </TooltipTrigger>
-                                        <TooltipContent>
-                                            <p className="text-xs max-w-[220px]">Auto hoppers + preload + auto climb (15 pts) + Teleop hoppers + Endgame climb (Low 10 / Mid 20 / High 30), averaged across matches</p>
-                                        </TooltipContent>
-                                    </Tooltip>
-                                </TooltipProvider>
-                            </div>
-                            <p className="font-mono text-3xl font-bold text-primary">{stats?.totalScore ?? 0}</p>
-                        </div>
-                        <div>
-                            <p className="text-sm text-muted-foreground uppercase tracking-wider">OPR</p>
-                            <p className="font-mono text-2xl font-bold text-info">{opr !== null ? opr : 'N/A'}</p>
+                            <p className="text-[10px] text-muted-foreground uppercase font-black tracking-widest mb-1 leading-none">Cycles Per Match</p>
+                            <p className="font-mono text-5xl font-black italic text-primary leading-none tracking-tighter">
+                                {((stats?.avgAutoCycles || 0) + (stats?.avgTeleopCycles || 0)).toFixed(1)}
+                            </p>
                         </div>
                         <div className="text-right">
-                            <p className="text-sm text-muted-foreground">Matches</p>
-                            <p className="font-mono text-2xl font-bold">{stats?.matchesPlayed ?? 0}</p>
+                            <p className="text-[10px] text-muted-foreground uppercase font-black tracking-widest mb-1 leading-none">OPR</p>
+                            <p className="font-mono text-4xl font-black italic text-info leading-none tracking-tighter">
+                                {opr !== null ? opr.toFixed(1) : 'N/A'}
+                            </p>
+                        </div>
+                    </div>
+
+                    <div className="mt-6 grid grid-cols-4 gap-2 border-t border-primary/10 pt-4">
+                        <div className="text-center">
+                            <p className="text-[8px] text-muted-foreground uppercase font-bold">Matches</p>
+                            <p className="font-mono text-xl font-black">{stats?.matchesPlayed ?? 0}</p>
+                        </div>
+                        <div className="text-center">
+                            <p className="text-[8px] text-muted-foreground uppercase font-bold">Climb %</p>
+                            <p className={`font-mono text-xl font-black ${getRatingColor(stats?.climbSuccessRate || 0, 100)}`}>
+                                {stats?.climbSuccessRate ?? 0}%
+                            </p>
+                        </div>
+                        <div className="text-center">
+                            <p className="text-[8px] text-muted-foreground uppercase font-bold">Defense</p>
+                            <p className={`font-mono text-xl font-black ${getRatingColor(stats?.avgDefenseEffectiveness || 0, 5)}`}>
+                                {stats?.avgDefenseEffectiveness?.toFixed(1) ?? '0.0'}
+                            </p>
+                        </div>
+                        <div className="text-center">
+                            <p className="text-[8px] text-muted-foreground uppercase font-bold">Incap %</p>
+                            <p className={`font-mono text-xl font-black ${stats?.incapRate && stats.incapRate > 15 ? 'text-destructive' : 'text-foreground'}`}>
+                                {stats?.incapRate ?? 0}%
+                            </p>
                         </div>
                     </div>
                 </div>
 
-                {/* Match Stats - Only show if matches have been played */}
+                {/* Trend Graph */}
+                {stats && stats.cycleHistory && stats.cycleHistory.length > 1 && (
+                    <div className="stat-card">
+                        <div className="flex items-center gap-2 mb-4">
+                            <TrendingUp className="w-5 h-5 text-primary" />
+                            <h2 className="font-bold uppercase tracking-wider text-sm">Cycle Trend</h2>
+                        </div>
+                        <div className="h-48 w-full mt-2">
+                            <ResponsiveContainer width="100%" height="100%">
+                                <LineChart data={stats.cycleHistory}>
+                                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#333" />
+                                    <XAxis dataKey="matchNumber" label={{ value: 'Match', position: 'insideBottom', offset: -5, fontSize: 10 }} tick={{ fontSize: 10 }} />
+                                    <YAxis width={20} tick={{ fontSize: 10 }} />
+                                    <RechartsTooltip contentStyle={{ backgroundColor: '#1a1a1a', border: 'none', borderRadius: '8px', fontSize: '10px' }} />
+                                    <Legend iconType="circle" wrapperStyle={{ fontSize: '10px' }} />
+                                    <Line type="monotone" dataKey="auto" stroke="#ff8c00" strokeWidth={3} dot={{ r: 4 }} name="Auto" />
+                                    <Line type="monotone" dataKey="teleop" stroke="#00d4ff" strokeWidth={3} dot={{ r: 4 }} name="Teleop" />
+                                </LineChart>
+                            </ResponsiveContainer>
+                        </div>
+                    </div>
+                )}
+
+                {/* Match Stats */}
                 {stats && stats.matchesPlayed > 0 ? (
-                    <>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         {/* Autonomous */}
                         <div className="stat-card">
                             <div className="flex items-center gap-2 mb-4">
                                 <CircleDot className="w-5 h-5 text-primary" />
-                                <h2 className="font-semibold">Autonomous</h2>
+                                <h2 className="font-bold uppercase tracking-wider text-sm">Autonomous</h2>
                             </div>
                             <div className="space-y-6">
                                 <div>
-                                    <strong className="block text-sm mb-1">Preload Success</strong>
-                                    <StatBar value={stats.autoPreloadSuccessRate} max={100} label="Success Rate" suffix="%" />
-                                </div>
-                                <div>
-                                    <StatBar value={stats.avgAutoCycles} max={15} label="Avg Auto Cycles" />
-                                    <div className="flex justify-between text-xs text-muted-foreground mt-1 px-1">
-                                        <span>Mean: {stats.meanAutoCycles}</span>
-                                        <span>Median: {stats.medianAutoCycles}</span>
-                                        <span>StdDev: {stats.stdDevAutoCycles}</span>
+                                    <div className="flex justify-between items-end mb-1">
+                                        <p className="text-[10px] text-muted-foreground uppercase font-black">Average Cycles</p>
+                                        <p className="text-3xl font-mono font-black text-primary">{stats.avgAutoCycles}</p>
+                                    </div>
+                                    <StatBar value={stats.avgAutoCycles} max={15} label="" showValue={false} />
+                                    <div className="grid grid-cols-3 gap-2 mt-4">
+                                        <div className="bg-secondary/30 p-2 rounded text-center">
+                                            <p className="text-[8px] text-muted-foreground uppercase font-bold">Mean</p>
+                                            <p className="text-lg font-mono font-black">{stats.meanAutoCycles}</p>
+                                        </div>
+                                        <div className="bg-secondary/30 p-2 rounded text-center">
+                                            <p className="text-[8px] text-muted-foreground uppercase font-bold">Median</p>
+                                            <p className="text-lg font-mono font-black">{stats.medianAutoCycles}</p>
+                                        </div>
+                                        <div className="bg-secondary/30 p-2 rounded text-center">
+                                            <p className="text-[8px] text-muted-foreground uppercase font-bold">StdDev</p>
+                                            <p className="text-lg font-mono font-black">{stats.stdDevAutoCycles}</p>
+                                        </div>
+                                    </div>
+                                    <div className="mt-4 flex items-center justify-between bg-emerald-500/10 p-2 rounded border border-emerald-500/20">
+                                        <p className="text-[10px] text-muted-foreground uppercase font-black font-mono tracking-tighter">Auto Shooting + Intake Rate</p>
+                                        <p className="text-lg font-mono font-black text-emerald-500">{stats.shootPlusIntakeAutoRate}%</p>
+                                    </div>
+                                    <div className="mt-4 p-3 bg-secondary/20 rounded-lg space-y-4">
+                                        <div>
+                                            <p className="text-[8px] text-muted-foreground uppercase font-black mb-2 tracking-widest">Starting Position</p>
+                                            <SegmentedBar
+                                                data={stats.startingPositionStats}
+                                                labels={{ 'outpost_trench': 'Outpost T', 'outpost_bump': 'Outpost B', 'hub': 'Hub', 'depot_trench': 'Depot T', 'depot_bump': 'Depot B' }}
+                                                colors={['bg-primary', 'bg-blue-500', 'bg-emerald-500', 'bg-purple-500', 'bg-pink-500']}
+                                            />
+                                        </div>
+                                        <div className="pt-2 border-t border-border/50">
+                                            <p className="text-[8px] text-muted-foreground uppercase font-black mb-2 tracking-widest">Auto Climb Result</p>
+                                            <SegmentedBar
+                                                data={stats.autoClimbStats}
+                                                labels={{ 'side': 'Side', 'middle': 'Middle', 'failed_attempt': 'Failed' }}
+                                                colors={['bg-emerald-500', 'bg-blue-500', 'bg-rose-500']}
+                                            />
+                                        </div>
+                                        <div className="pt-2 border-t border-border/50 grid grid-cols-2 gap-4">
+                                            <div>
+                                                <p className="text-[8px] text-muted-foreground uppercase font-black mb-1">Avg Hoppers</p>
+                                                <p className="font-mono font-black text-lg">{stats.avgHoppersPassedAuto}</p>
+                                            </div>
+                                            <div>
+                                                <p className="text-[8px] text-muted-foreground uppercase font-black mb-1">Obstacles (%)</p>
+                                                <div className="flex gap-1 flex-wrap">
+                                                    {Object.entries(stats.autoObstacleStats).map(([key, val]) => 
+                                                        val > 0 && key !== 'none' && (
+                                                        <span key={key} className="text-[7px] bg-secondary px-1 py-0.5 rounded font-black text-foreground">
+                                                            {key.replace('_', ' ').toUpperCase()} {val}%
+                                                        </span>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -280,294 +421,293 @@ const TeamDetail = () => {
                         <div className="stat-card">
                             <div className="flex items-center gap-2 mb-4">
                                 <Target className="w-5 h-5 text-info" />
-                                <h2 className="font-semibold">Teleop</h2>
+                                <h2 className="font-bold uppercase tracking-wider text-sm">Teleop</h2>
                             </div>
                             <div className="space-y-6">
                                 <div>
-                                    <StatBar value={stats.avgTeleopCycles} max={30} label="Avg Teleop Cycles" />
-                                    <div className="flex justify-between text-xs text-muted-foreground mt-1 px-1">
-                                        <span>Mean: {stats.meanTeleopCycles}</span>
-                                        <span>Median: {stats.medianTeleopCycles}</span>
-                                        <span>StdDev: {stats.stdDevTeleopCycles}</span>
+                                    <div className="flex justify-between items-end mb-1">
+                                        <p className="text-[10px] text-muted-foreground uppercase font-black">Average Cycles</p>
+                                        <p className="text-3xl font-mono font-black text-info">{stats.avgTeleopCycles}</p>
+                                    </div>
+                                    <StatBar value={stats.avgTeleopCycles} max={30} className="bg-info" label="" showValue={false} />
+                                    <div className="grid grid-cols-3 gap-2 mt-4">
+                                        <div className="bg-secondary/30 p-2 rounded text-center">
+                                            <p className="text-[8px] text-muted-foreground uppercase font-bold">Mean</p>
+                                            <p className="text-lg font-mono font-black">{stats.meanTeleopCycles}</p>
+                                        </div>
+                                        <div className="bg-secondary/30 p-2 rounded text-center">
+                                            <p className="text-[8px] text-muted-foreground uppercase font-bold">Median</p>
+                                            <p className="text-lg font-mono font-black">{stats.medianTeleopCycles}</p>
+                                        </div>
+                                        <div className="bg-secondary/30 p-2 rounded text-center">
+                                            <p className="text-[8px] text-muted-foreground uppercase font-bold">StdDev</p>
+                                            <p className="text-lg font-mono font-black">{stats.stdDevTeleopCycles}</p>
+                                        </div>
+                                    </div>
+                                    <div className="mt-4 flex items-center justify-between bg-emerald-500/10 p-2 rounded border border-emerald-500/20 shadow-sm">
+                                        <div className="flex flex-col">
+                                            <p className="text-[10px] text-muted-foreground uppercase font-black font-mono tracking-tighter">Teleop Shooting + Intake Rate</p>
+                                            <p className="text-[8px] text-muted-foreground/60 uppercase font-black">Success over {stats.matchesPlayed} matches</p>
+                                        </div>
+                                        <p className="text-lg font-mono font-black text-emerald-500">{stats.shootPlusIntakeTeleopRate}%</p>
+                                    </div>
+                                    <div className="mt-4 p-3 bg-secondary/20 rounded-lg space-y-4">
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <div>
+                                                <p className="text-[8px] text-muted-foreground uppercase font-black mb-1">Avg Hoppers</p>
+                                                <p className="font-mono font-black text-lg text-info">{stats.avgHoppersPassed}</p>
+                                            </div>
+                                            <div>
+                                                <p className="text-[8px] text-muted-foreground uppercase font-black mb-1">Herd Fuel (%)</p>
+                                                <p className="font-mono font-black text-lg text-info">{stats.herdsFuelRate}%</p>
+                                            </div>
+                                        </div>
+                                        <div className="pt-2 border-t border-border/50">
+                                            <p className="text-[8px] text-muted-foreground uppercase font-black mb-2 tracking-widest">Obstacle Preference (%)</p>
+                                            <SegmentedBar
+                                                data={stats.teleopObstacleStats}
+                                                labels={{ 'trench': 'Trench', 'bump': 'Bump', 'both': 'Both' }}
+                                                colors={['bg-info', 'bg-purple-500', 'bg-amber-500']}
+                                            />
+                                        </div>
                                     </div>
                                 </div>
                             </div>
                         </div>
 
                         {/* Climbing */}
-                        <div className="stat-card">
+                        <div className="stat-card overflow-hidden">
                             <div className="flex items-center gap-2 mb-4">
                                 <Trophy className="w-5 h-5 text-warning" />
-                                <h2 className="font-semibold">Climbing</h2>
+                                <h2 className="font-bold uppercase tracking-wider text-sm">Climbing Breakdown</h2>
                             </div>
                             <div className="space-y-4">
-                                <StatBar value={stats.climbSuccessRate} max={100} label="Climb Success Rate" suffix="%" />
-                                <StatBar value={stats.highMidClimbRate} max={100} label="High/Mid Climb Rate" suffix="%" />
+                                <div>
+                                    <div className="flex justify-between mb-1 text-[10px] font-bold uppercase">
+                                        <span>Overall Success</span>
+                                        <span className={getRatingColor(stats.climbSuccessRate, 100)}>{stats.climbSuccessRate}%</span>
+                                    </div>
+                                    <StatBar value={stats.climbSuccessRate} max={100} className="bg-warning" label="" showValue={false} />
+                                </div>
+
+                                <div className="mt-6 flex h-4 rounded-full overflow-hidden bg-secondary">
+                                    <div style={{ width: `${stats.l3ClimbRate}%` }} className="bg-warning h-full" />
+                                    <div style={{ width: `${stats.l2ClimbRate}%` }} className="bg-orange-500 h-full border-l border-black/20" />
+                                    <div style={{ width: `${stats.l1ClimbRate}%` }} className="bg-amber-500 h-full border-l border-black/20" />
+                                </div>
+                                <div className="grid grid-cols-3 gap-1 mt-2">
+                                    <div className="text-center">
+                                        <p className="text-[8px] text-muted-foreground uppercase font-bold">Level 3</p>
+                                        <p className="text-xs font-black">{stats.l3ClimbRate}%</p>
+                                    </div>
+                                    <div className="text-center">
+                                        <p className="text-[8px] text-muted-foreground uppercase font-bold">Level 2</p>
+                                        <p className="text-xs font-black">{stats.l2ClimbRate}%</p>
+                                    </div>
+                                    <div className="text-center">
+                                        <p className="text-[8px] text-muted-foreground uppercase font-bold">Level 1</p>
+                                        <p className="text-xs font-black">{stats.l1ClimbRate}%</p>
+                                    </div>
+                                </div>
+                                <div className="mt-4 pt-4 border-t border-border/50">
+                                    <p className="text-[8px] text-muted-foreground uppercase font-black mb-2 tracking-widest">Preference: Bar Position</p>
+                                    <SegmentedBar
+                                        data={stats.climbPositionStats}
+                                        labels={{ 'side': 'Side Only', 'center': 'Center Only' }}
+                                        colors={['bg-warning', 'bg-indigo-500']}
+                                    />
+                                </div>
                             </div>
                         </div>
-                    </>
+
+                        {/* Defense Breakdown */}
+                        <div className="stat-card">
+                            <div className="flex items-center gap-2 mb-4">
+                                <Shield className="w-5 h-5 text-destructive" />
+                                <h2 className="font-bold uppercase tracking-wider text-sm">Defense Strategy</h2>
+                            </div>
+                            <div className="flex flex-col gap-6">
+                                <div className="p-3 bg-secondary/10 rounded-lg">
+                                    <p className="text-[8px] text-muted-foreground uppercase font-black mb-2 tracking-widest">Zone Breakdown (%)</p>
+                                    <SegmentedBar 
+                                        data={stats.defenseLocationStats}
+                                        labels={{'neutral': 'Neutral', 'our_alliance': 'Our Side', 'their_alliance': 'Their Side'}}
+                                        colors={['bg-destructive', 'bg-indigo-500', 'bg-emerald-500']}
+                                    />
+                                </div>
+                                <div className="flex items-center justify-between px-2">
+                                    <div className="flex-1">
+                                        <p className="text-[10px] text-muted-foreground uppercase font-black mb-1">Play Frequency</p>
+                                        <p className="font-mono text-2xl font-black text-destructive">{stats.defensePlayRate}%</p>
+                                    </div>
+                                    <div className="text-right border-l border-border pl-6">
+                                        <p className="text-[10px] text-muted-foreground uppercase font-black mb-1">Effectiveness</p>
+                                        <p className={`text-4xl font-mono font-black italic leading-none ${getRatingColor(stats.avgDefenseEffectiveness, 5)}`}>
+                                            {stats.avgDefenseEffectiveness.toFixed(1)}
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 ) : (
-                    <div className="stat-card text-center py-6">
-                        <p className="text-sm text-muted-foreground">No match scouting data available yet</p>
-                        <Link to="/scout" className="text-xs text-primary hover:underline mt-2 inline-block">
-                            Scout a match →
-                        </Link>
+                    <div className="stat-card text-center py-12 border-dashed">
+                        <AlertTriangle className="w-8 h-8 text-muted-foreground/30 mx-auto mb-2" />
+                        <p className="text-sm text-muted-foreground">No Match Data Found</p>
+                        <Link to="/scout" className="text-xs text-primary hover:underline mt-2 inline-block">Record first match →</Link>
                     </div>
                 )}
 
-            </div>
-
-            {/* Defense */}
-            {stats.defensePlayRate > 0 && (
-                <div className="px-4 mb-4">
-                    <div className="stat-card">
-                        <div className="flex items-center gap-2 mb-4">
-                            <Shield className="w-5 h-5 text-destructive" />
-                            <h2 className="font-semibold">Defense</h2>
+                {/* Stability and Travel */}
+                <div className="grid grid-cols-2 gap-4">
+                    <div className="stat-card border-destructive/20 bg-destructive/5">
+                        <div className="flex items-center gap-2 mb-3">
+                            <AlertTriangle className="w-4 h-4 text-destructive" />
+                            <h2 className="font-bold uppercase tracking-wider text-[10px]">Stability Issues</h2>
                         </div>
-                        <p className="text-sm text-muted-foreground mb-3">
-                            Played defense in{' '}
-                            <span className="font-bold text-foreground">
-                                {entries.filter(e => e.defenseType && e.defenseType !== 'none').length}
-                            </span>
-                            /{entries.length} matches
-                        </p>
-                        <div className="space-y-1">
-                            {(['pushing', 'blocking', 'poaching'] as const).map(type => {
-                                const count = entries.filter(e => e.defenseType === type).length;
-                                if (count === 0) return null;
-                                return (
-                                    <div key={type} className="flex justify-between text-sm">
-                                        <span className="capitalize text-muted-foreground">{type}</span>
-                                        <span className="font-medium">{count}×</span>
-                                    </div>
-                                );
-                            })}
+                        <div className="space-y-4">
+                            <div>
+                                <div className="flex justify-between text-xs mb-1 font-bold">
+                                    <span>Incapacitation</span>
+                                    <span className={stats?.incapRate && stats.incapRate > 0 ? 'text-destructive' : 'text-emerald-500'}>{stats?.incapRate}%</span>
+                                </div>
+                                <StatBar value={stats?.incapRate || 0} max={100} className="bg-destructive" label="" showValue={false} />
+                            </div>
+                            <div>
+                                <div className="flex justify-between text-xs mb-1 font-bold">
+                                    <span>Beaching Rate</span>
+                                    <span className={stats.beachingRate > 0 ? 'text-destructive' : 'text-emerald-500'}>{stats.beachingRate}%</span>
+                                </div>
+                                <StatBar value={stats.beachingRate} max={100} className="bg-destructive/60" label="" showValue={false} />
+                            </div>
+                            {stats.beachingRate > 0 && (
+                                <div className="pt-2 border-t border-destructive/10">
+                                    <p className="text-[8px] text-muted-foreground uppercase font-black mb-2 tracking-widest">Cause Breakdown</p>
+                                    <SegmentedBar
+                                        data={stats.beachingTypeStats}
+                                        labels={{ 'beached_on_bump': 'On Bump', 'beached_on_fuel_off_bump': 'On Fuel', 'other': 'Other' }}
+                                        colors={['bg-destructive', 'bg-orange-500', 'bg-amber-500']}
+                                    />
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                    <div className="stat-card border-emerald-500/20 bg-emerald-500/5">
+                        <div className="flex items-center gap-2 mb-3">
+                            <Navigation className="w-4 h-4 text-emerald-500" />
+                            <h2 className="font-bold uppercase tracking-wider text-[10px]">Travel Perf.</h2>
+                        </div>
+                        <div className="flex flex-col justify-center h-[calc(100%-24px)] text-center">
+                            <div className="py-2">
+                                <p className="text-[10px] text-muted-foreground uppercase font-black mb-1">Driver Skill</p>
+                                <p className={`text-4xl font-mono font-black italic leading-none ${getRatingColor(stats?.avgDriverSkill || 0, 5)}`}>
+                                    {stats?.avgDriverSkill?.toFixed(1) || '—'}
+                                </p>
+                            </div>
                         </div>
                     </div>
                 </div>
-            )}
 
-            {/* Pit Scouting */}
-            <div className="px-4 mb-4">
+                {/* Pit Scouting */}
                 <div className="stat-card">
                     <div className="flex items-center gap-2 mb-4">
                         <Box className="w-5 h-5 text-primary" />
-                        <h2 className="font-semibold">Pit Scouting</h2>
+                        <h2 className="font-bold uppercase tracking-wider text-sm">Pit Recap</h2>
                     </div>
                     {pitData ? (
                         <div className="grid grid-cols-2 gap-4">
                             <div className="space-y-3">
                                 <div>
-                                    <p className="text-[10px] uppercase font-bold text-muted-foreground tracking-tight">Capabilities</p>
-                                    <div className="text-sm space-y-1 mt-1">
-                                        <div className="flex justify-between border-b border-border/50 pb-0.5">
-                                            <span>Auto Climb</span>
-                                            <span className="font-medium capitalize">{pitData.autoClimb}</span>
+                                    <p className="text-[9px] uppercase font-black text-muted-foreground tracking-tighter">Capabilities</p>
+                                    <div className="text-xs space-y-1.5 mt-1">
+                                        <div className="flex justify-between border-b border-border shadow-sm pb-1">
+                                            <span className="text-muted-foreground">Auto Climb</span>
+                                            <span className="font-bold">{Array.isArray(pitData.autoClimb) ? (pitData.autoClimb.length > 0 ? pitData.autoClimb.join(', ') : 'None') : (pitData.autoClimb || 'None')}</span>
                                         </div>
-                                        <div className="flex justify-between border-b border-border/50 pb-0.5">
-                                            <span>Robot Climb</span>
-                                            <span className="font-medium uppercase">{pitData.robotClimb === 'none' ? 'None' : pitData.robotClimb}</span>
+                                        <div className="flex justify-between border-b border-border shadow-sm pb-1">
+                                            <span className="text-muted-foreground">Endgame</span>
+                                            <span className="font-bold uppercase">{Array.isArray(pitData.robotClimb) ? (pitData.robotClimb.length > 0 ? pitData.robotClimb.filter(v => v !== 'none').join(', ') || 'None' : 'None') : (pitData.robotClimb === 'none' ? 'None' : pitData.robotClimb)}</span>
                                         </div>
-                                        {pitData.intakeType && (
-                                            <div className="flex justify-between border-b border-border/50 pb-0.5">
-                                                <span>Intake</span>
-                                                <span className="font-medium">{pitData.intakeType}</span>
-                                            </div>
-                                        )}
-                                        {pitData.shooterType && pitData.shooterType !== 'none' && (
-                                            <div className="flex justify-between border-b border-border/50 pb-0.5">
-                                                <span>Shooter</span>
-                                                <span className="font-medium capitalize">{pitData.shooterType.replace('_', ' ')}</span>
-                                            </div>
-                                        )}
-                                    </div>
-                                </div>
-                                <div>
-                                    <p className="text-[10px] uppercase font-bold text-muted-foreground tracking-tight">Navigation</p>
-                                    <div className="text-sm space-y-1 mt-1">
-                                        <div className="flex justify-between border-b border-border/50 pb-0.5">
-                                            <span>Under Trench</span>
-                                            <span className="font-medium">{pitData.canGoUnderTrench ? 'Yes' : 'No'}</span>
-                                        </div>
-                                        <div className="flex justify-between border-b border-border/50 pb-0.5">
-                                            <span>Over Bump</span>
-                                            <span className="font-medium">{pitData.canGoOverBump ? 'Yes' : 'No'}</span>
+                                        <div className="flex justify-between border-b border-border shadow-sm pb-1">
+                                            <span className="text-muted-foreground">Intake</span>
+                                            <span className="font-bold">{pitData.intakeType}</span>
                                         </div>
                                     </div>
                                 </div>
                             </div>
                             <div className="space-y-3">
                                 <div>
-                                    <p className="text-[10px] uppercase font-bold text-muted-foreground tracking-tight">Scoring</p>
-                                    <div className="text-sm space-y-1 mt-1">
-                                        <div className="flex justify-between border-b border-border/50 pb-0.5">
-                                            <span>Avg. Balls</span>
-                                            <span className="font-mono font-medium">{pitData.avgBalls}</span>
+                                    <p className="text-[9px] uppercase font-black text-muted-foreground tracking-tighter">Hoppers</p>
+                                    <div className="text-xs space-y-1.5 mt-1">
+                                        <div className="flex justify-between border-b border-border shadow-sm pb-1">
+                                            <span className="text-muted-foreground">Capacity</span>
+                                            <span className="font-mono font-black">{pitData.hopperCapacity ?? 0}</span>
                                         </div>
-                                        <div className="flex justify-between border-b border-border/50 pb-0.5">
-                                            <span>Ball Capacity</span>
-                                            <span className="font-mono font-medium">{pitData.maxBalls}</span>
+                                        <div className="flex justify-between border-b border-border shadow-sm pb-1">
+                                            <span className="text-muted-foreground">Rate</span>
+                                            <span className="font-mono font-black">{pitData.ballsPerSecond} B/s</span>
+                                        </div>
+                                        <div className="flex justify-between border-b border-border shadow-sm pb-1">
+                                            <span className="text-muted-foreground">Under Trench</span>
+                                            <span className={`font-bold ${pitData.canGoUnderTrench ? 'text-emerald-500' : 'text-destructive'}`}>{pitData.canGoUnderTrench ? 'Yes' : 'No'}</span>
                                         </div>
                                     </div>
-                                </div>
-                                <div className="bg-primary/5 p-2 rounded-lg border border-primary/10">
-                                    <p className="text-[10px] uppercase font-bold text-primary/70 tracking-tight mb-1">Last Updated</p>
-                                    <p className="text-xs font-mono">{new Date(pitData.timestamp).toLocaleDateString()}</p>
                                 </div>
                             </div>
                         </div>
                     ) : (
-                        <div className="text-center py-4 bg-secondary/20 rounded-lg">
-                            <p className="text-sm text-muted-foreground">No pit scouting data recorded</p>
-                            <Link to="/pit-scout" className="text-xs text-primary hover:underline mt-1 inline-block">
-                                Scout this team →
-                            </Link>
+                        <div className="text-center py-6 bg-secondary/10 rounded-lg">
+                            <p className="text-xs text-muted-foreground">Missing Pit Data</p>
                         </div>
                     )}
                 </div>
-            </div>
 
-            {/* Recent Matches */}
-            {entries.length > 0 && (
+                {/* Match List */}
                 <div className="stat-card">
                     <div className="flex items-center justify-between mb-4">
-                        <div className="flex items-center gap-4">
-                            <h2 className="font-semibold">Match History</h2>
-                            {isAdmin && (
-                                <div className="flex gap-2 text-xs">
-                                    <button
-                                        onClick={() => setSelectedEntries(new Set(entries.map(e => e.id)))}
-                                        className="text-primary hover:underline font-medium"
-                                    >
-                                        Select All
-                                    </button>
-                                    <span className="text-muted-foreground">|</span>
-                                    <button
-                                        onClick={() => setSelectedEntries(new Set())}
-                                        className="text-muted-foreground hover:text-foreground hover:underline font-medium"
-                                    >
-                                        Deselect
-                                    </button>
-                                </div>
-                            )}
-                        </div>
+                        <h2 className="font-bold uppercase tracking-wider text-sm">Match History</h2>
                         {isAdmin && (
-                            <span className="text-xs text-muted-foreground">
-                                {selectedEntries.size} select
-                            </span>
+                            <div className="flex gap-2 text-xs">
+                                <button onClick={() => setSelectedEntries(new Set(entries.map(e => e.id)))} className="text-primary hover:underline">All</button>
+                                <button onClick={() => setSelectedEntries(new Set())} className="text-muted-foreground hover:text-foreground">None</button>
+                            </div>
                         )}
                     </div>
-                    <div className="space-y-3">
+                    <div className="space-y-2">
                         {entries.slice().reverse().map((entry) => (
-                            <div key={entry.id} className="border-b border-border pb-3 last:border-0 last:pb-0">
-                                <div className="flex justify-between items-center mb-2">
-                                    <div className="flex items-center gap-3">
-                                        {isAdmin ? (
-                                            <button
-                                                onClick={() => toggleSelection(entry.id)}
-                                                className={`p-1 -ml-1 rounded transition-colors ${selectedEntries.has(entry.id) ? 'text-primary' : 'text-muted-foreground'}`}
-                                            >
-                                                {selectedEntries.has(entry.id) ? (
-                                                    <CheckSquare className="w-5 h-5" />
-                                                ) : (
-                                                    <Square className="w-5 h-5" />
-                                                )}
+                            <div key={entry.id} className="bg-secondary/20 p-3 rounded-lg border border-border/50">
+                                <div className="flex justify-between items-center mb-1">
+                                    <div className="flex items-center gap-2">
+                                        {isAdmin && (
+                                            <button onClick={() => toggleSelection(entry.id)} className={selectedEntries.has(entry.id) ? 'text-primary' : 'text-muted-foreground'}>
+                                                {selectedEntries.has(entry.id) ? <CheckSquare className="w-4 h-4" /> : <Square className="w-4 h-4" />}
                                             </button>
-                                        ) : null}
-                                        <span className="font-mono font-bold text-base">Match {entry.matchNumber}</span>
+                                        )}
+                                        <span className="font-mono font-black">M{entry.matchNumber}</span>
                                     </div>
                                     <div className="flex items-center gap-2">
-                                        <div className="bg-secondary px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
-                                            {entry.shootingRange}
-                                        </div>
+                                        <span className="text-[10px] font-bold text-primary italic uppercase leading-none border border-primary/30 px-1.5 py-0.5 rounded">
+                                            {entry.autoCycles + entry.teleopCycles} Cyc
+                                        </span>
                                         {isAdmin && !selectedEntries.has(entry.id) && (
-                                            <button
-                                                onClick={() => handleDeleteMatch(entry.id)}
-                                                className="p-1 text-muted-foreground hover:text-destructive transition-colors ml-2"
-                                                title="Delete Single Match"
-                                            >
-                                                <Trash2 className="w-4 h-4" />
+                                            <button onClick={() => handleDeleteMatch(entry.id)} className="text-muted-foreground hover:text-destructive">
+                                                <Trash2 className="w-3.5 h-3.5" />
                                             </button>
                                         )}
                                     </div>
                                 </div>
-
-                                <div className={`space-y-3 ${isAdmin ? 'pl-7' : ''}`}>
-                                    {/* Stats Grid */}
-                                    <div className="grid grid-cols-2 gap-3">
-                                        {/* Auto Column */}
-                                        <div className="space-y-1">
-                                            <p className="text-[10px] uppercase font-bold text-muted-foreground tracking-tight">Autonomous</p>
-                                            <div className="text-sm space-y-1">
-                                                <div className="flex justify-between border-b border-border/50 pb-0.5">
-                                                    <span>Hoppers</span>
-                                                    <span className="font-mono font-medium text-foreground">{entry.autoCycles}</span>
-                                                </div>
-                                                <div className="flex justify-between border-b border-border/50 pb-0.5">
-                                                    <span>Preload</span>
-                                                    <span className="font-medium text-foreground">
-                                                        {entry.autoPreload
-                                                            ? (entry.autoPreloadScored ? 'Scored All' : `${entry.autoPreloadCount ?? 0} Scored`)
-                                                            : 'None'}
-                                                    </span>
-                                                </div>
-                                                <div className="flex justify-between border-b border-border/50 pb-0.5">
-                                                    <span>Climb</span>
-                                                    <span className="font-medium text-foreground">{autoClimbLabels[entry.autoClimb] ?? entry.autoClimb}</span>
-                                                </div>
-                                                <div className="flex justify-between border-b border-border/50 pb-0.5">
-                                                    <span>Travel</span>
-                                                    <span className="font-medium text-foreground">{obstacleLabels[entry.autoObstacle ?? 'none']}</span>
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        {/* Teleop Column */}
-                                        <div className="space-y-1">
-                                            <p className="text-[10px] uppercase font-bold text-muted-foreground tracking-tight">Teleop & Endgame</p>
-                                            <div className="text-sm space-y-1">
-                                                <div className="flex justify-between border-b border-border/50 pb-0.5">
-                                                    <span>Hoppers</span>
-                                                    <span className="font-mono font-medium text-foreground">{entry.teleopCycles}</span>
-                                                </div>
-                                                <div className="flex justify-between border-b border-border/50 pb-0.5">
-                                                    <span>Defense</span>
-                                                    <span className="font-medium text-foreground capitalize">
-                                                        {entry.defenseType && entry.defenseType !== 'none'
-                                                            ? `${entry.defenseType} · ${(entry.defenseLocation ?? 'none').replace('_', ' ')}`
-                                                            : 'None'}
-                                                    </span>
-                                                </div>
-                                                <div className="flex justify-between border-b border-border/50 pb-0.5">
-                                                    <span>Climb</span>
-                                                    <span className="font-medium text-foreground">
-                                                        {climbLabels[entry.climbResult]}
-                                                        {entry.climbPosition && entry.climbPosition !== 'none' && ` · ${entry.climbPosition}`}
-                                                        {entry.climbResult !== 'none' && entry.climbStability > 0 && ` (${entry.climbStability}★)`}
-                                                    </span>
-                                                </div>
-                                                <div className="flex justify-between border-b border-border/50 pb-0.5">
-                                                    <span>Travel</span>
-                                                    <span className="font-medium text-foreground">{obstacleLabels[entry.teleopObstacle ?? 'none']}</span>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-
-
-                                    {entry.notes && (
-                                        <div className="text-sm text-muted-foreground bg-secondary/20 p-2 rounded border-l-2 border-primary/30">
-                                            <span className="font-bold text-[10px] uppercase block mb-0.5 opacity-70">Notes</span>
-                                            <p className="italic whitespace-pre-wrap">"{entry.notes}"</p>
-                                        </div>
-                                    )}
+                                <div className="text-[10px] text-muted-foreground font-medium flex gap-2">
+                                    <span>Climb: {entry.climbResult}</span>
+                                    <span>•</span>
+                                    <span>{entry.playedDefense ? `Def (${entry.defenseEffectiveness})` : 'No Def'}</span>
+                                    {entry.incapacitated && <span className="text-destructive font-black uppercase ml-auto">INCAP</span>}
                                 </div>
+                                {entry.notes && <p className="text-[10px] leading-tight italic text-muted-foreground mt-2 border-l border-primary/20 pl-2">"{entry.notes}"</p>}
                             </div>
                         ))}
                     </div>
                 </div>
-            )}
+            </div>
         </div>
     );
 };

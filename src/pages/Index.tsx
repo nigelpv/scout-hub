@@ -14,18 +14,21 @@ const Index = () => {
 
   useEffect(() => {
     const loadStats = async () => {
-      // If we have cached data, this returns instantly.
-      // If not, it waits for the server.
+      setLoading(true);
       const entries = await getEntries();
       setEntriesCount(entries.length);
       setTeamsCount(getUniqueTeamsFromEntries(entries).length);
       setLoading(false);
       setIsFirstLoad(false);
+      // If we have data (count > 0), don't show the hint
+      if (entries.length > 0) {
+        setWakeUpHint(false);
+      }
     };
 
     loadStats();
 
-    // Listen for background background cache updates (Stale-While-Revalidate)
+    // Listen for background cache updates (Stale-While-Revalidate)
     const handleUpdate = (e: Event) => {
       const updatedEntries = (e as CustomEvent).detail;
       setEntriesCount(updatedEntries.length);
@@ -36,16 +39,22 @@ const Index = () => {
 
     window.addEventListener('scout_entries_updated', handleUpdate);
 
-    // If still loading after 3 seconds, show the "waking up" hint
+    // If still loading (or expecting a background check) after 3.5 seconds, show the "waking up" hint
     const timer = setTimeout(() => {
-      if (loading) setWakeUpHint(true);
-    }, 3000);
+      // Only show hint if we have NO entries yet (initial load) 
+      // or if we are still explicitly in a loading state.
+      setEntriesCount(prev => {
+        if (prev === 0) setWakeUpHint(true);
+        return prev;
+      });
+    }, 3500);
 
     return () => {
       window.removeEventListener('scout_entries_updated', handleUpdate);
       clearTimeout(timer);
     };
-  }, [loading]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const getLimitColor = () => {
     if (entriesCount >= ENTRY_LIMIT) return 'text-destructive';

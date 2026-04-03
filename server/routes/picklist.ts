@@ -22,9 +22,15 @@ router.get('/', async (req, res) => {
             manualOverride: row.manual_override,
         }));
         res.json(mappedPicklist);
-    } catch (err) {
-        console.error('Error fetching picklist:', err);
-        res.status(500).json({ error: 'Failed to fetch picklist' });
+    } catch (err: any) {
+        const timestamp = new Date().toISOString();
+        console.error(`[${timestamp}] Error fetching picklist:`, {
+            message: err.message,
+            code: err.code,
+            details: err.details,
+            hint: err.hint
+        });
+        res.status(500).json({ error: 'Failed to fetch picklist', details: err.message });
     }
 });
 
@@ -58,8 +64,14 @@ router.put('/', async (req, res) => {
         res.json({ success: true });
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (err: any) {
-        console.error('Error updating picklist:', err);
-        res.status(500).json({ error: 'Failed to update picklist' });
+        const timestamp = new Date().toISOString();
+        console.error(`[${timestamp}] Error updating picklist:`, {
+            message: err.message,
+            code: err.code,
+            details: err.details,
+            hint: err.hint
+        });
+        res.status(500).json({ error: 'Failed to update picklist', details: err.message });
     }
 });
 

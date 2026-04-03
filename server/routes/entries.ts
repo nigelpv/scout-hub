@@ -2,12 +2,32 @@ import { Router } from 'express';
 import { supabase } from '../supabase.js';
 
 const router = Router();
+
+// Safely parses a field that may be a JSON array string, a plain old string, or already an array.
+// Returns an empty array for old plain-text values like 'none', 'short', null, etc.
+function safeParseArray(val: unknown): string[] {
+    if (Array.isArray(val)) return val;
+    if (typeof val !== 'string' || !val) return [];
+    try {
+        const parsed = JSON.parse(val);
+        return Array.isArray(parsed) ? parsed : [];
+    } catch {
+        // Legacy plain string value (e.g. 'none', 'short') — treat as empty
+        return [];
+    }
+}
 router.get('/', async (req, res) => {
     try {
-        const { data: entries, error } = await supabase
+        const { event } = req.query;
+        let query = supabase
             .from('scouting_entries')
-            .select('*')
-            .order('timestamp', { ascending: false });
+            .select('*');
+
+        if (event) {
+            query = query.eq('event', event);
+        }
+
+        const { data: entries, error } = await query.order('timestamp', { ascending: false });
 
         if (error) throw error;
 
@@ -20,28 +40,43 @@ router.get('/', async (req, res) => {
             teamNumber: row.team_number,
             scoutName: row.scout_name,
             timestamp: parseInt(row.timestamp),
-            autoCycles: row.auto_cycles,
-            autoPreload: row.auto_preload,
-            autoPreloadScored: row.auto_preload_scored,
-            autoPreloadCount: row.auto_preload_count || 0,
+            shootingRange: safeParseArray(row.shooting_range),
+            startingPosition: (row.starting_position || 'hub') as 'outpost_trench' | 'outpost_bump' | 'hub' | 'depot_trench' | 'depot_bump',
+            autoCycles: row.auto_cycles || 0,
+            hoppersPassedAuto: row.hoppers_passed_auto || 0,
             autoClimb: row.auto_climb,
-            autoObstacle: (row.auto_obstacle || 'none') as 'none' | 'trench' | 'bump' | 'both',
-            teleopCycles: row.teleop_cycles,
-            defenseType: (row.defense_type || 'none') as 'none' | 'pushing' | 'blocking' | 'poaching',
-            defenseLocation: (row.defense_location || 'none') as 'none' | 'neutral' | 'our_alliance' | 'their_alliance',
-            shootingRange: row.shooting_range || null,
+            autoObstacle: (row.auto_obstacle || 'none') as 'none' | 'outpost_trench' | 'depot_trench' | 'outpost_bump' | 'depot_bump' | 'both',
+            teleopCycles: row.teleop_cycles || 0,
+            hoppersPassed: row.hoppers_passed || 0,
+            playedDefense: row.defense_played || false,
+            defenseEffectiveness: row.defense_effectiveness || 0,
+            defenseLocation: safeParseArray(row.defense_location),
             teleopObstacle: (row.teleop_obstacle || 'none') as 'none' | 'trench' | 'bump' | 'both',
-            fuelBeaching: row.fuel_beaching || false,
-            fuelBeachingType: (row.fuel_beaching_type || 'none') as 'none' | 'off_bump' | 'random',
-            climbResult: row.climb_result,
+            beachingType: safeParseArray(row.beaching_type),
+            herdsFuelThroughTrench: row.herds_fuel_through_trench || false,
+            shootPlusIntakeAuto: row.shoot_plus_intake_auto || false,
+            shootPlusIntakeTeleop: row.shoot_plus_intake_teleop || false,
+            climbResult: (row.climb_result || 'none') as 'none' | 'L1' | 'L2' | 'L3' | 'failed_attempt',
             climbPosition: (row.climb_position || 'none') as 'none' | 'side' | 'center',
-            climbStability: row.climb_stability || 0,
-            notes: row.notes,
+            driverSkill: row.driver_skill || 3,
+            incapacitated: row.disabled_or_shut_down || false,
+            notes: row.notes || '',
         }));
         res.json(mappedEntries);
-    } catch (err) {
-        console.error('Error fetching entries:', err);
-        res.status(500).json({ error: 'Failed to fetch entries' });
+    } catch (err: any) {
+        const timestamp = new Date().toISOString();
+        console.error(`[${timestamp}] Error fetching entries:`, {
+            message: err.message,
+            code: err.code,
+            details: err.details,
+            hint: err.hint,
+            stack: err.stack
+        });
+        res.status(500).json({ 
+            error: 'Failed to fetch entries', 
+            details: err.message,
+            code: err.code 
+        });
     }
 });
 
@@ -65,28 +100,39 @@ router.get('/team/:teamNumber', async (req, res) => {
             teamNumber: row.team_number,
             scoutName: row.scout_name,
             timestamp: parseInt(row.timestamp),
-            autoCycles: row.auto_cycles,
-            autoPreload: row.auto_preload,
-            autoPreloadScored: row.auto_preload_scored,
-            autoPreloadCount: row.auto_preload_count || 0,
+            shootingRange: safeParseArray(row.shooting_range),
+            startingPosition: (row.starting_position || 'hub') as 'outpost_trench' | 'outpost_bump' | 'hub' | 'depot_trench' | 'depot_bump',
+            autoCycles: row.auto_cycles || 0,
+            hoppersPassedAuto: row.hoppers_passed_auto || 0,
             autoClimb: row.auto_climb,
-            autoObstacle: (row.auto_obstacle || 'none') as 'none' | 'trench' | 'bump' | 'both',
-            teleopCycles: row.teleop_cycles,
-            defenseType: (row.defense_type || 'none') as 'none' | 'pushing' | 'blocking' | 'poaching',
-            defenseLocation: (row.defense_location || 'none') as 'none' | 'neutral' | 'our_alliance' | 'their_alliance',
-            shootingRange: row.shooting_range || null,
+            autoObstacle: (row.auto_obstacle || 'none') as 'none' | 'outpost_trench' | 'depot_trench' | 'outpost_bump' | 'depot_bump' | 'both',
+            teleopCycles: row.teleop_cycles || 0,
+            hoppersPassed: row.hoppers_passed || 0,
+            playedDefense: row.defense_played || false,
+            defenseEffectiveness: row.defense_effectiveness || 0,
+            defenseLocation: safeParseArray(row.defense_location),
             teleopObstacle: (row.teleop_obstacle || 'none') as 'none' | 'trench' | 'bump' | 'both',
-            fuelBeaching: row.fuel_beaching || false,
-            fuelBeachingType: (row.fuel_beaching_type || 'none') as 'none' | 'off_bump' | 'random',
-            climbResult: row.climb_result,
+            beachingType: safeParseArray(row.beaching_type),
+            herdsFuelThroughTrench: row.herds_fuel_through_trench || false,
+            shootPlusIntakeAuto: row.shoot_plus_intake_auto || false,
+            shootPlusIntakeTeleop: row.shoot_plus_intake_teleop || false,
+            climbResult: (row.climb_result || 'none') as 'none' | 'L1' | 'L2' | 'L3' | 'failed_attempt',
             climbPosition: (row.climb_position || 'none') as 'none' | 'side' | 'center',
-            climbStability: row.climb_stability || 0,
-            notes: row.notes,
+            driverSkill: row.driver_skill || 3,
+            incapacitated: row.disabled_or_shut_down || false,
+            notes: row.notes || '',
         }));
         res.json(mappedEntries);
-    } catch (err) {
-        console.error('Error fetching team entries:', err);
-        res.status(500).json({ error: 'Failed to fetch team entries' });
+    } catch (err: any) {
+        const timestamp = new Date().toISOString();
+        console.error(`[${timestamp}] Error fetching team entries:`, {
+            teamNumber: req.params.teamNumber,
+            message: err.message,
+            code: err.code,
+            details: err.details,
+            hint: err.hint
+        });
+        res.status(500).json({ error: 'Failed to fetch team entries', details: err.message });
     }
 });
 
@@ -119,26 +165,26 @@ router.post('/', async (req, res) => {
                 team_number: entry.teamNumber,
                 scout_name: entry.scoutName || null,
                 timestamp: entry.timestamp,
+                starting_position: entry.startingPosition || 'hub',
                 auto_cycles: entry.autoCycles || 0,
-                auto_preload: entry.autoPreload || false,
-                auto_preload_scored: entry.autoPreloadScored || false,
-                auto_preload_count: entry.autoPreloadCount || 0,
+                hoppers_passed_auto: entry.hoppersPassedAuto || 0,
                 auto_climb: entry.autoClimb || 'none',
                 auto_obstacle: entry.autoObstacle || 'none',
                 teleop_cycles: entry.teleopCycles || 0,
-                defense_type: entry.defenseType || 'none',
-                defense_location: entry.defenseLocation || 'none',
-                defense_effectiveness: 0,
-                defense_played: entry.defenseType !== 'none',
-                shooting_range: entry.shootingRange || null,
+                hoppers_passed: entry.hoppersPassed || 0,
+                defense_location: JSON.stringify(entry.defenseLocation || []),
+                defense_effectiveness: entry.defenseEffectiveness || 0,
+                defense_played: entry.playedDefense || false,
                 teleop_obstacle: entry.teleopObstacle || 'none',
-                fuel_beaching: entry.fuelBeaching || false,
-                fuel_beaching_type: entry.fuelBeachingType || 'none',
+                beaching_type: JSON.stringify(entry.beachingType || []),
+                herds_fuel_through_trench: entry.herdsFuelThroughTrench || false,
+                shoot_plus_intake_auto: entry.shootPlusIntakeAuto || false,
+                shoot_plus_intake_teleop: entry.shootPlusIntakeTeleop || false,
                 climb_result: entry.climbResult || 'none',
                 climb_position: entry.climbPosition || 'none',
-                climb_stability: entry.climbStability || 0,
-                notes: entry.notes || '',
-                robot_speed: 0
+                driver_skill: entry.driverSkill || 3,
+                disabled_or_shut_down: entry.incapacitated || false,
+                notes: entry.notes || ''
             });
 
         if (insertError) {
@@ -150,8 +196,16 @@ router.post('/', async (req, res) => {
         res.status(201).json({ success: true, id: entry.id });
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (err: any) {
-        console.error('Error creating entry:', err.message);
-        res.status(500).json({ error: 'Failed to create entry', details: err.message });
+        const timestamp = new Date().toISOString();
+        console.error(`[${timestamp}] Error creating entry:`, {
+            team: req.body?.teamNumber,
+            match: req.body?.matchNumber,
+            message: err.message,
+            code: err.code,
+            details: err.details,
+            hint: err.hint
+        });
+        res.status(500).json({ error: 'Failed to create entry', details: err.message, code: err.code });
     }
 });
 
@@ -222,7 +276,7 @@ router.post('/delete-batch-teams', async (req, res) => {
         const { error } = await supabase
             .from('scouting_entries')
             .delete()
-            .in('team_number', teamNumbers.map((n: any) => parseInt(n)));
+            .in('team_number', teamNumbers.map((n: string | number) => parseInt(String(n))));
 
         if (error) throw error;
 

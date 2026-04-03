@@ -10,28 +10,34 @@ export interface ScoutingEntry {
     teamNumber: number;
     scoutName?: string;
     timestamp: number;
+    shootingRange?: string | string[];
+
+    // Match Info
+    startingPosition: 'outpost_trench' | 'outpost_bump' | 'hub' | 'depot_trench' | 'depot_bump';
 
     // Autonomous
     autoCycles: number;
-    autoPreload: boolean;
-    autoPreloadScored: boolean;
-    autoPreloadCount: number;
-    autoClimb: 'none' | 'side' | 'middle';
-    autoObstacle: 'none' | 'trench' | 'bump' | 'both';
+    hoppersPassedAuto: number;
+    autoClimb: 'none' | 'side' | 'middle' | 'failed_attempt';
+    autoObstacle: 'none' | 'outpost_trench' | 'depot_trench' | 'outpost_bump' | 'depot_bump' | 'both';
+    shootPlusIntakeAuto: boolean;
 
     // Teleop
     teleopCycles: number;
-    defenseType: 'none' | 'pushing' | 'blocking' | 'poaching';
-    defenseLocation: 'none' | 'neutral' | 'our_alliance' | 'their_alliance';
-    shootingRange: 'alliance' | 'close_neutral' | 'far_neutral' | 'opponent' | null;
+    hoppersPassed: number;
+    playedDefense: boolean;
+    defenseEffectiveness: number; // 0-5 (0 = none/did not play)
+    defenseLocation: string[]; // multi-select: 'none', 'neutral', 'our_alliance', 'their_alliance'
     teleopObstacle: 'none' | 'trench' | 'bump' | 'both';
-    fuelBeaching: boolean;
-    fuelBeachingType: 'none' | 'off_bump' | 'random';
+    beachingType: string[]; // multi-select: 'beached_on_bump', 'beached_on_fuel_off_bump', 'other'
+    herdsFuelThroughTrench: boolean;
+    shootPlusIntakeTeleop: boolean;
 
     // Endgame
-    climbResult: 'none' | 'low' | 'mid' | 'high';
+    climbResult: 'none' | 'L1' | 'L2' | 'L3' | 'failed_attempt';
     climbPosition: 'none' | 'side' | 'center';
-    climbStability: number; // 0-5
+    driverSkill: number; // 1-5
+    incapacitated: boolean;
 
     notes: string;
 }
@@ -43,16 +49,37 @@ export interface TeamStats {
     meanAutoCycles: number;
     medianAutoCycles: number;
     stdDevAutoCycles: number;
-    autoPreloadSuccessRate: number;
+    avgHoppersPassedAuto: number;
     avgTeleopCycles: number;
     meanTeleopCycles: number;
     medianTeleopCycles: number;
     stdDevTeleopCycles: number;
+    avgHoppersPassed: number;
     climbSuccessRate: number;
-    highMidClimbRate: number;
+    l1ClimbRate: number;
+    l2ClimbRate: number;
+    l3ClimbRate: number;
     defensePlayRate: number; // % of matches where defense was played
+    avgDefenseEffectiveness: number;
+    defenseLocationStats: Record<string, number>; // Location -> % of defense matches
+    beachingRate: number; // % of matches with any beaching
+    incapRate: number; // % of matches incapacitated
+    shootPlusIntakeAutoRate: number; // % of matches where they shot while intaking in auto
+    shootPlusIntakeTeleopRate: number; // % of matches where they shot while intaking in teleop
+    avgDriverSkill: number;
+    
+    // Detailed Stats (Expanding)
+    startingPositionStats: Record<string, number>; // Position -> % of matches
+    autoClimbStats: Record<string, number>; // Result -> % of matches
+    autoObstacleStats: Record<string, number>; // Obstacle -> % of matches
+    teleopObstacleStats: Record<string, number>; // Obstacle -> % of matches
+    beachingTypeStats: Record<string, number>; // Type -> % of matches
+    herdsFuelRate: number; // % of matches they herded fuel
+    climbPositionStats: Record<string, number>; // Side vs Center %
+    
     totalScore: number; // Computed ranking score
     opr?: number;
+    cycleHistory?: { matchNumber: number; auto: number; teleop: number; total: number }[];
 }
 
 export interface PicklistTeam {
@@ -62,16 +89,20 @@ export interface PicklistTeam {
 }
 
 export interface PitScoutingEntry {
+    event: string;
     teamNumber: number;
     scoutName: string;
-    autoClimb: 'none' | 'side' | 'middle';
-    robotClimb: 'none' | 'low' | 'mid' | 'high';
-    avgBalls: number;
-    maxBalls: number;
+    autoClimb: string[]; // multi-select: 'none', 'side', 'middle'
+    robotClimb: string[]; // multi-select: 'none', 'L1', 'L2', 'L3'
+    ballsPerSecond: number;
     canGoUnderTrench: boolean;
     canGoOverBump: boolean;
+    hopperCapacity: number;
     intakeType: string;
-    shooterType: 'turret' | 'variable_angle' | 'fixed' | 'other' | 'none';
+    shooterType: string;
+    frontPhoto: boolean;
+    backPhoto: boolean;
+    notes: string;
     timestamp: number;
 }
 

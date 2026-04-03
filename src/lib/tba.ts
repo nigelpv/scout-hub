@@ -52,10 +52,10 @@ const fetchTBA = async (endpoint: string) => {
 };
 
 // Simple cache for match data to avoid redundant requests
-let matchCache: Record<string, TBAMatch> = {};
+const matchCache: Record<string, TBAMatch> = {};
 
 export const initializeTBACache = () => {
-  const stored = getStoredMatches(EVENT_KEY);
+  const stored = getStoredMatches(EVENT_KEY());
   stored.forEach(match => {
     matchCache[match.key] = match;
   });

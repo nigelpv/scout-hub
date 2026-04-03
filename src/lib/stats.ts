@@ -24,67 +24,173 @@ export function calculateTeamStatsFromEntries(entries: ScoutingEntry[]): TeamSta
     const teamNumber = entries[0].teamNumber;
 
     // Auto Stats
-    const autoCyclesValues = entries.map(e => e.autoCycles);
+    const autoCyclesValues = entries.map(e => e.autoCycles || 0);
     const avgAutoCycles = autoCyclesValues.reduce((a, b) => a + b, 0) / matchesPlayed;
     const meanAutoCycles = avgAutoCycles;
     const medianAutoCycles = calculateMedian(autoCyclesValues);
     const stdDevAutoCycles = calculateStdDev(autoCyclesValues, avgAutoCycles);
 
-
-    const preloadSuccesses = entries.filter(e => e.autoPreload && e.autoPreloadScored).length;
-    const preloadAttempts = entries.filter(e => e.autoPreload).length;
-    const autoPreloadSuccessRate = preloadAttempts > 0 ? (preloadSuccesses / preloadAttempts) * 100 : 0;
+    const hoppersPassedAutoValues = entries.map(e => e.hoppersPassedAuto || 0);
+    const avgHoppersPassedAuto = hoppersPassedAutoValues.reduce((a, b) => a + b, 0) / matchesPlayed;
 
     // Teleop Stats
-    const teleopCyclesValues = entries.map(e => e.teleopCycles);
+    const teleopCyclesValues = entries.map(e => e.teleopCycles || 0);
     const avgTeleopCycles = teleopCyclesValues.reduce((a, b) => a + b, 0) / matchesPlayed;
     const meanTeleopCycles = avgTeleopCycles;
     const medianTeleopCycles = calculateMedian(teleopCyclesValues);
     const stdDevTeleopCycles = calculateStdDev(teleopCyclesValues, avgTeleopCycles);
 
+    const hoppersPassedValues = entries.map(e => e.hoppersPassed || 0);
+    const avgHoppersPassed = hoppersPassedValues.reduce((a, b) => a + b, 0) / matchesPlayed;
 
     // Climb Stats
     const successfulClimbs = entries.filter(e =>
-        e.climbResult === 'low' || e.climbResult === 'mid' || e.climbResult === 'high'
+        e.climbResult === 'L1' || e.climbResult === 'L2' || e.climbResult === 'L3'
     ).length;
     const climbSuccessRate = (successfulClimbs / matchesPlayed) * 100;
 
-    const highMidClimbs = entries.filter(e =>
-        e.climbResult === 'mid' || e.climbResult === 'high'
-    ).length;
-    const highMidClimbRate = (highMidClimbs / matchesPlayed) * 100;
+    const l1Climbs = entries.filter(e => e.climbResult === 'L1').length;
+    const l2Climbs = entries.filter(e => e.climbResult === 'L2').length;
+    const l3Climbs = entries.filter(e => e.climbResult === 'L3').length;
+
+    const l1ClimbRate = (l1Climbs / matchesPlayed) * 100;
+    const l2ClimbRate = (l2Climbs / matchesPlayed) * 100;
+    const l3ClimbRate = (l3Climbs / matchesPlayed) * 100;
 
     // Defense Stats
-    const defenseMatches = entries.filter(e => e.defenseType && e.defenseType !== 'none').length;
+    const defenseEntries = entries.filter(e => e.playedDefense);
+    const defenseMatches = defenseEntries.length;
     const defensePlayRate = (defenseMatches / matchesPlayed) * 100;
 
+    const defenseEffectivenessValues = entries.map(e => e.defenseEffectiveness || 0).filter(v => v > 0);
+    const avgDefenseEffectiveness = defenseEffectivenessValues.length > 0
+        ? defenseEffectivenessValues.reduce((a, b) => a + b, 0) / defenseEffectivenessValues.length
+        : 0;
+
+    // Defense Location Stats
+    const defenseLocationStats: Record<string, number> = {
+        'neutral': 0,
+        'our_alliance': 0,
+        'their_alliance': 0
+    };
+
+    if (matchesPlayed > 0) {
+        defenseEntries.forEach(e => {
+            if (Array.isArray(e.defenseLocation)) {
+                e.defenseLocation.forEach(loc => {
+                    if (defenseLocationStats[loc] !== undefined) {
+                        defenseLocationStats[loc]++;
+                    }
+                });
+            }
+        });
+
+        // Convert to percentages of TOTAL matches (per match stat)
+        Object.keys(defenseLocationStats).forEach(key => {
+            defenseLocationStats[key] = Math.round((defenseLocationStats[key] / matchesPlayed) * 100);
+        });
+    }
+
+    // Issues & Stability
+    const beachedMatches = entries.filter(e => e.beachingType && e.beachingType.length > 0 && !e.beachingType.includes('none')).length;
+    const beachingRate = (beachedMatches / matchesPlayed) * 100;
+
+    const incapMatches = entries.filter(e => e.incapacitated).length;
+    const incapRate = (incapMatches / matchesPlayed) * 100;
+
+    // Driver Skill
+    const driverSkillValues = entries.map(e => e.driverSkill || 0).filter(v => v > 0);
+    const avgDriverSkill = driverSkillValues.length > 0
+        ? driverSkillValues.reduce((a, b) => a + b, 0) / driverSkillValues.length
+        : 0;
+    
+    // Shooting while intaking stats
+    const shootPlusIntakeAutoCount = entries.filter(e => e.shootPlusIntakeAuto).length;
+    const shootPlusIntakeAutoRate = (shootPlusIntakeAutoCount / matchesPlayed) * 100;
+    
+    const shootPlusIntakeTeleopCount = entries.filter(e => e.shootPlusIntakeTeleop).length;
+    const shootPlusIntakeTeleopRate = (shootPlusIntakeTeleopCount / matchesPlayed) * 100;
+
+    // Detailed Stats (Expanding)
+    const herdsFuelCount = entries.filter(e => e.herdsFuelThroughTrench).length;
+    const herdsFuelRate = (herdsFuelCount / matchesPlayed) * 100;
+
+    const startingPositionStats: Record<string, number> = { 'hub': 0, 'outpost_trench': 0, 'depot_trench': 0, 'outpost_bump': 0, 'depot_bump': 0 };
+    const autoClimbStats: Record<string, number> = { 'none': 0, 'side': 0, 'middle': 0, 'failed_attempt': 0 };
+    const autoObstacleStats: Record<string, number> = { 'none': 0, 'outpost_trench': 0, 'depot_trench': 0, 'outpost_bump': 0, 'depot_bump': 0, 'trench': 0, 'bump': 0, 'both': 0 };
+    const teleopObstacleStats: Record<string, number> = { 'none': 0, 'trench': 0, 'bump': 0, 'both': 0 };
+    const beachingTypeStats: Record<string, number> = { 'beached_on_bump': 0, 'beached_on_fuel_off_bump': 0, 'other': 0 };
+    const climbPositionStats: Record<string, number> = { 'none': 0, 'side': 0, 'center': 0 };
+
+    entries.forEach(e => {
+        // Dynamic stats collection to handle legacy values (e.g., left_trench, right_trench)
+        if (e.startingPosition) {
+            startingPositionStats[e.startingPosition] = (startingPositionStats[e.startingPosition] || 0) + 1;
+        }
+        if (e.autoClimb) {
+            autoClimbStats[e.autoClimb] = (autoClimbStats[e.autoClimb] || 0) + 1;
+        }
+        if (e.autoObstacle) {
+            autoObstacleStats[e.autoObstacle] = (autoObstacleStats[e.autoObstacle] || 0) + 1;
+        }
+        if (e.teleopObstacle) {
+            teleopObstacleStats[e.teleopObstacle] = (teleopObstacleStats[e.teleopObstacle] || 0) + 1;
+        }
+        if (e.climbPosition) {
+            climbPositionStats[e.climbPosition] = (climbPositionStats[e.climbPosition] || 0) + 1;
+        }
+        
+        if (Array.isArray(e.beachingType)) {
+            e.beachingType.forEach(t => {
+                if (t && t !== 'none') {
+                    beachingTypeStats[t] = (beachingTypeStats[t] || 0) + 1;
+                }
+            });
+        }
+    });
+
+    // Convert counts to percentages
+    [startingPositionStats, autoClimbStats, autoObstacleStats, teleopObstacleStats, beachingTypeStats, climbPositionStats].forEach(statObj => {
+        Object.keys(statObj).forEach(key => {
+            statObj[key] = Math.round((statObj[key] / matchesPlayed) * 100);
+        });
+    });
+
+    // Cycle History (for Trend Graph)
+    const cycleHistory = entries
+        .sort((a, b) => a.matchNumber - b.matchNumber)
+        .map(e => ({
+            matchNumber: e.matchNumber,
+            auto: e.autoCycles || 0,
+            teleop: e.teleopCycles || 0,
+            total: (e.autoCycles || 0) + (e.teleopCycles || 0)
+        }));
 
     // Score calculation (Match-by-Match)
-    const teleopClimbPoints: Record<string, number> = {
+    const climbPoints: Record<string, number> = {
         'none': 0,
-        'low': 10,
-        'mid': 20,
-        'high': 30
+        'L1': 10,
+        'L2': 20,
+        'L3': 30,
+        'failed_attempt': 0,
     };
 
     const matchScores = entries.map(e => {
-        // Auto Fuel: Preload + Cycles
-        let preloadPts = 0;
-        if (e.autoPreload) {
-            preloadPts = e.autoPreloadScored ? 8 : (e.autoPreloadCount || 0);
-        }
-        const autoFuelPts = e.autoCycles + preloadPts;
+        // Auto: hoppers into hub + hoppers passed
+        const autoHubPts = (e.autoCycles || 0);
+        const autoHopperPts = (e.hoppersPassedAuto || 0);
 
-        // Auto Climb: 15 points if not 'none'
-        const autoClimbPts = (e.autoClimb !== 'none') ? 15 : 0;
+        // Auto Climb: 15 points if not 'none' or 'failed_attempt'
+        const autoClimbPts = (e.autoClimb !== 'none' && e.autoClimb !== 'failed_attempt') ? 15 : 0;
 
-        // Teleop Hoppers Scored
-        const teleopFuelPts = e.teleopCycles;
+        // Teleop: hoppers into hub + hoppers passed
+        const teleopFuelPts = (e.teleopCycles || 0);
+        const teleopHopperPts = (e.hoppersPassed || 0);
 
         // Endgame Climb
-        const teleopClimbPts = teleopClimbPoints[e.climbResult] || 0;
+        const climbPts = climbPoints[e.climbResult] || 0;
 
-        return autoFuelPts + autoClimbPts + teleopFuelPts + teleopClimbPts;
+        return autoHubPts + autoHopperPts + autoClimbPts + teleopFuelPts + teleopHopperPts + climbPts;
     });
 
     const totalScore = matchScores.reduce((a, b) => a + b, 0) / matchesPlayed;
@@ -96,15 +202,33 @@ export function calculateTeamStatsFromEntries(entries: ScoutingEntry[]): TeamSta
         meanAutoCycles: Math.round(meanAutoCycles * 10) / 10,
         medianAutoCycles: Math.round(medianAutoCycles * 10) / 10,
         stdDevAutoCycles: Math.round(stdDevAutoCycles * 10) / 10,
-        autoPreloadSuccessRate: Math.round(autoPreloadSuccessRate),
+        avgHoppersPassedAuto: Math.round(avgHoppersPassedAuto * 10) / 10,
         avgTeleopCycles: Math.round(avgTeleopCycles * 10) / 10,
         meanTeleopCycles: Math.round(meanTeleopCycles * 10) / 10,
         medianTeleopCycles: Math.round(medianTeleopCycles * 10) / 10,
         stdDevTeleopCycles: Math.round(stdDevTeleopCycles * 10) / 10,
+        avgHoppersPassed: Math.round(avgHoppersPassed * 10) / 10,
         climbSuccessRate: Math.round(climbSuccessRate),
-        highMidClimbRate: Math.round(highMidClimbRate),
+        l1ClimbRate: Math.round(l1ClimbRate),
+        l2ClimbRate: Math.round(l2ClimbRate),
+        l3ClimbRate: Math.round(l3ClimbRate),
         defensePlayRate: Math.round(defensePlayRate),
+        avgDefenseEffectiveness: Math.round(avgDefenseEffectiveness * 10) / 10,
+        defenseLocationStats,
+        beachingRate: Math.round(beachingRate),
+        incapRate: Math.round(incapRate),
+        shootPlusIntakeAutoRate: Math.round(shootPlusIntakeAutoRate),
+        shootPlusIntakeTeleopRate: Math.round(shootPlusIntakeTeleopRate),
+        avgDriverSkill: Math.round(avgDriverSkill * 10) / 10,
+        startingPositionStats,
+        autoClimbStats,
+        autoObstacleStats,
+        teleopObstacleStats,
+        beachingTypeStats,
+        herdsFuelRate: Math.round(herdsFuelRate),
+        climbPositionStats,
         totalScore: Math.round(totalScore * 10) / 10,
+        cycleHistory
     };
 }
 
@@ -116,14 +240,35 @@ export function createEmptyStats(teamNumber: number): TeamStats {
         meanAutoCycles: 0,
         medianAutoCycles: 0,
         stdDevAutoCycles: 0,
-        autoPreloadSuccessRate: 0,
+        avgHoppersPassedAuto: 0,
         avgTeleopCycles: 0,
         meanTeleopCycles: 0,
         medianTeleopCycles: 0,
         stdDevTeleopCycles: 0,
+        avgHoppersPassed: 0,
         climbSuccessRate: 0,
-        highMidClimbRate: 0,
+        l1ClimbRate: 0,
+        l2ClimbRate: 0,
+        l3ClimbRate: 0,
         defensePlayRate: 0,
+        avgDefenseEffectiveness: 0,
+        defenseLocationStats: {
+            'neutral': 0,
+            'our_alliance': 0,
+            'their_alliance': 0
+        },
+        beachingRate: 0,
+        incapRate: 0,
+        shootPlusIntakeAutoRate: 0,
+        shootPlusIntakeTeleopRate: 0,
+        avgDriverSkill: 0,
+        startingPositionStats: { 'hub': 0, 'outpost_trench': 0, 'depot_trench': 0, 'outpost_bump': 0, 'depot_bump': 0 },
+        autoClimbStats: { 'none': 0, 'side': 0, 'middle': 0, 'failed_attempt': 0 },
+        autoObstacleStats: { 'none': 0, 'outpost_trench': 0, 'depot_trench': 0, 'outpost_bump': 0, 'depot_bump': 0, 'trench': 0, 'bump': 0, 'both': 0 },
+        teleopObstacleStats: { 'none': 0, 'trench': 0, 'bump': 0, 'both': 0 },
+        beachingTypeStats: { 'beached_on_bump': 0, 'beached_on_fuel_off_bump': 0, 'other': 0 },
+        herdsFuelRate: 0,
+        climbPositionStats: { 'none': 0, 'side': 0, 'center': 0 },
         totalScore: 0,
     };
 }
