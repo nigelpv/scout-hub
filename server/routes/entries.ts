@@ -139,17 +139,17 @@ router.get('/team/:teamNumber', async (req, res) => {
 // POST new entry
 router.post('/', async (req, res) => {
     try {
-        // Check entry limit (500)
+        // Check entry limit (2000)
         const { count, error: countError } = await supabase
             .from('scouting_entries')
             .select('*', { count: 'exact', head: true });
 
         if (countError) throw countError;
 
-        if (count && count >= 500) {
+        if (count && count >= 2000) {
             return res.status(403).json({
                 error: 'Entry limit reached',
-                message: 'The website is limited to 500 entries. Please delete old entries to add more.'
+                message: 'The website is limited to 2000 entries. Please delete old entries to add more.'
             });
         }
 

@@ -19,7 +19,7 @@ const TBA_OPR_CACHE_KEY = 'tba_opr_cache';
 
 // Custom event for sync status updates
 export const SYNC_EVENT = 'scout_sync_update';
-export const ENTRY_LIMIT = 800;
+export const ENTRY_LIMIT = 2000;
 
 export interface SyncStatus {
   pendingCount: number;
